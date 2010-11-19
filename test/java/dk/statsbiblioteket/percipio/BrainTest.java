@@ -1,0 +1,81 @@
+package dk.statsbiblioteket.percipio;
+
+import dk.statsbiblioteket.percipio.Brain;
+import dk.statsbiblioteket.percipio.datastructures.Signature;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.Assert.assertTrue;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: abr
+ * Date: Nov 17, 2010
+ * Time: 10:35:15 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class BrainTest {
+
+    Marshaller marshaller;
+    Unmarshaller unmarshaller;
+
+    @Before
+    public void setUp() throws Exception {
+
+        JAXBContext context = JAXBContext.newInstance(Signature.class);
+
+        marshaller = context.createMarshaller();
+        marshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
+
+        unmarshaller = context.createUnmarshaller();
+
+    }
+
+    @After
+    public void tearDown() throws Exception {
+    }
+
+    @Test
+    public void testTest() throws Exception {
+    }
+
+    @Test
+    public void testScore() throws Exception {
+        List<File> pdffiles = Arrays.asList(new File("test/resources/pdf").listFiles());
+
+
+        ArrayList<File> arraylist = new ArrayList<File>();
+        arraylist.addAll(pdffiles);
+        File firstPdf = arraylist.remove(3);
+
+        Signature signature = Brain.learn(arraylist.toArray(new File[0]));
+        int score = Brain.score(signature, firstPdf);
+        assertTrue("Score to low, this should really be a pdf file", score > 10);
+/*
+        System.out.println("score for pdf file '"+firstPdf.getName()+"' is "+score);
+        marshaller.marshal(signature,System.out);
+*/
+
+    }
+
+    @Test
+    public void testRelearn() throws Exception {
+    }
+
+    @Test
+    public void testLearn() throws Exception {
+
+        File[] pdffiles = new File("test/resources/pdf").listFiles();
+        Signature signature = Brain.learn(pdffiles);
+
+    }
+}
