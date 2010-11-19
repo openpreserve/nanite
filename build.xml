@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
 <project default="all" name="sbutil" basedir=".">
 
-    <property name="project.name" value="fido" />
-    <property name="project.version.variant" value=""/>
-    <property name="project.version" value="0.1.0${project.version.variant}" />
-    <property name="builder" value="abr" />
+    <property file="build.properties"/>
+
     <property name="release" value="${project.name}-${project.version}" />
 
     <!-- Build deps -->
-    <property name="sbutil.compiler.version" value="1.6"/>
-    <property name="sbutil.ant.version" value="1.7.0"/>
+    <property name="compiler.version" value="1.6"/>
+    <property name="ant.version" value="1.7.0"/>
 
     <!-- Persistent files and directories -->
     <property name="src.dir" value="${basedir}/src"/>
@@ -65,21 +63,7 @@
 
     <!-- Ensure we have correct Java and Ant versions -->
     <target name="depends">
-        <!--
-                <echo message="Checking Java compiler version is ${sbutil.compiler.version}"/>
-                <condition property="hasJava">
-                    <equals arg1="${sbutil.compiler.version}" arg2="${java.specification.version}"/>
-                </condition>
-                <fail message="Currently Summa only compiles with Java ${sbutil.compiler.version}. Found Java ${java.specification.version}"
-                      unless="hasJava"/>
-
-                <echo message="Checking Ant version is atleast ${sbutil.ant.version}"/>
-                <condition property="hasAnt">
-                    <antversion atleast="${sbutil.ant.version}"/>
-                </condition>
-                <fail message="Currently Summa only compiles with Ant ${sbutil.ant.version}. Found Ant ${ant.version}"
-                      unless="hasAnt"/>
-        -->
+        <!--TODO-->
     </target>
 
     <target name="prepare" depends="depends">
@@ -117,7 +101,7 @@
                 <include name="**/*.xslt"/>
             </fileset>
         </copy>
-        <jar basedir="${build.dir}" compress="true" jarfile="${release}.jar">
+        <jar basedir="${build.dir}" compress="true" jarfile="${dist.dir}/${release}.jar" >
             <manifest>
                 <attribute name="Main-Class" value="${main-class}" />
             </manifest>
