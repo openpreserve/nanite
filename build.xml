@@ -127,6 +127,37 @@
         </zip>
     </target>
 
+     <target name="test">
+        <property name="test.formatter" value="plain"/>
+        <property name="test.usefile" value="false"/>
+        <antcall target=".test.run"/>
+    </target>
+
+    <target name="test.xml">
+        <property name="test.formatter" value="xml"/>
+        <property name="test.usefile" value="true"/>
+        <antcall target=".test.run"/>
+    </target>
+
+
+    <!-- Only run this target indirectly via the test or test.xml targets
+         It needs the test.formatter and test.usefile properties to be set -->
+    <target name=".test.run" depends="compile-test">
+        <!-- We need to fork the JVM and set the java.class.path property
+             to be able to pick resources from the classpath up (like
+             resource bundles). JUnit will override the classpath. -->
+        <junit printsummary="withOutAndErr" haltonfailure="yes"
+               haltonerror="yes" fork="yes" maxmemory="512m">
+            <sysproperty key="java.class.path" value="${test.base}"/>
+            <classpath refid="test.base.path" />
+            <formatter type="${test.formatter}" usefile="${test.usefile}" />
+
+            <!-- add tests here -->
+            <test name="dk.statsbiblioteket.percipio.BrainTest"/>
+        </junit>
+    </target>
+    
+
     <!-- Depends on the 'jar' target to make
          sure that we copy over any needed XSLTs-->
     <target name="compile-test" depends="jar">
