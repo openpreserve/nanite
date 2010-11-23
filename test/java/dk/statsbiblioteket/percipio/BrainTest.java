@@ -1,6 +1,7 @@
 package dk.statsbiblioteket.percipio;
 
 import dk.statsbiblioteket.percipio.Brain;
+import dk.statsbiblioteket.percipio.datastructures.Score;
 import dk.statsbiblioteket.percipio.datastructures.Signature;
 import org.junit.After;
 import org.junit.Before;
@@ -57,9 +58,11 @@ public class BrainTest {
         arraylist.addAll(pdffiles);
         File firstPdf = arraylist.remove(3);
 
-        Signature signature = Brain.learn(arraylist.toArray(new File[0]));
-        int score = Brain.score(signature, firstPdf);
-        assertTrue("Score to low, this should really be a pdf file", score > 10);
+        Brain brain = new Brain();
+
+        Signature signature = brain.learn(arraylist.toArray(new File[0]));
+        Score score = brain.score(Arrays.asList(new Signature[]{signature}), firstPdf);
+        assertTrue("Score to low, this should really be a pdf file", score.getScoreboard().first().getA() > 10);
 /*
         System.out.println("score for pdf file '"+firstPdf.getName()+"' is "+score);
         marshaller.marshal(signature,System.out);
@@ -74,8 +77,9 @@ public class BrainTest {
     @Test
     public void testLearn() throws Exception {
 
+        Brain brain = new Brain();
         File[] pdffiles = new File("test/resources/pdf").listFiles();
-        Signature signature = Brain.learn(pdffiles);
+        Signature signature = brain.learn(pdffiles);
 
     }
 }

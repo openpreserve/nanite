@@ -1,6 +1,7 @@
 package dk.statsbiblioteket.percipio;
 
 import dk.statsbiblioteket.percipio.Brain;
+import dk.statsbiblioteket.percipio.datastructures.Score;
 import dk.statsbiblioteket.percipio.datastructures.Signature;
 
 import javax.xml.bind.JAXBContext;
@@ -8,10 +9,13 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by IntelliJ IDEA.
@@ -31,43 +35,82 @@ public class Percipio {
 
         String command = args[0];
 
+
+        String signatureArg = "";
+        String numberOfMatchesArg = "";
         ArrayList<File> files = new ArrayList<File>();
+
         for (int i = 1; i < args.length; i++) {
             String arg = args[i];
+            if (arg.equals("-s")){
+                i++;
+                signatureArg = args[i];
+                continue;
+            }
+            if (arg.equals("-n")){
+                i++;
+                numberOfMatchesArg = args[i];
+                continue;
+            }
+
             File file = new File(arg);
-            if (file.isDirectory()){
-                files.addAll(Arrays.asList(file.listFiles()));
-            } else{
+            if (file.isFile()){//TODO recursion
                 files.add(file);
             }
         }
 
+
+
+        Brain brain = new Brain();
+
         if (command.equals("learn")){
-            Signature signature = Brain.learn(files.toArray(new File[0]));
-            Brain.test(files.toArray(new File[0]),signature);
+            Signature signature = brain.learn(files);
+            brain.test(files,signature);
 
             StringWriter writer = new StringWriter();
             marshaller.marshal(signature,writer);
             System.out.println(writer.toString());
         }
-
-        if (command.equals("sniff")){
-            Signature signature = (Signature)unmarshaller.unmarshal(System.in);
-            Brain.test(files.toArray(new File[0]),signature);
-        }
-
         if (command.equals("relearn")){
-            //signatures
             Signature signature = (Signature)unmarshaller.unmarshal(System.in);
-
-            signature = Brain.relearn(signature,files.toArray(new File[0]));
-            Brain.test(files.toArray(new File[0]),signature);
+            signature = brain.relearn(signature,files);
+            brain.test(files,signature);
 
             StringWriter writer = new StringWriter();
             marshaller.marshal(signature,writer);
             System.out.println(writer.toString());
         }
+        if (command.equals("sniff")){
+            List<Signature> signatures = parseSignatures(unmarshaller, signatureArg);
 
+            Map<File, Score> scores = brain.score(signatures,files);
+            //TODO printout
+        }
+
+
+    }
+
+    private static List<Signature> parseSignatures(Unmarshaller unmarshaller, String signatureArg)
+            throws JAXBException {
+        File signatureFolder = new File(signatureArg);
+        List<Signature> signatures = new ArrayList<Signature>();
+        if (signatureFolder.isDirectory()){
+            File[] signatureFiles = signatureFolder.listFiles(new FilenameFilter() {
+
+                public boolean accept(File dir, String name) {
+                    if (name.endsWith(".sig")) {
+                        return true;
+                    }
+                    return false;
+                }
+            });
+
+            for (File signatureFile : signatureFiles) {
+                Signature signature = (Signature)unmarshaller.unmarshal(signatureFile);
+                signatures.add(signature);
+            }
+        }
+        return signatures;
     }
 
 }
