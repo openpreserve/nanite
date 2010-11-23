@@ -17,7 +17,7 @@ public class Score {
         scores = new TreeSet(new Comparator<Pair<Integer,Signature>>(){
 
             public int compare(Pair o1, Pair o2) {
-                return o1.a.compareTo(o2.a);
+                return -o1.a.compareTo(o2.a);
             }
         });
     }

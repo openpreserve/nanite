@@ -61,11 +61,14 @@ public class BytePattern {
 
     @XmlElement(name = "ASCII")
     public String getAscii(){
-        return new String(pattern, Charset.forName("US-ASCII"));
+        return Bytes.stripNonValidXMLCharacters(new String(pattern, Charset.forName("US-ASCII")));
+        
     }
 
     public void setAscii(String ascii){
         //do nothing
     }
+
+
 
 }

@@ -37,7 +37,7 @@ public class Percipio {
 
 
         String signatureArg = "";
-        String numberOfMatchesArg = "";
+        int numberOfMatchesArg = 5;
         ArrayList<File> files = new ArrayList<File>();
 
         for (int i = 1; i < args.length; i++) {
@@ -49,7 +49,7 @@ public class Percipio {
             }
             if (arg.equals("-n")){
                 i++;
-                numberOfMatchesArg = args[i];
+                numberOfMatchesArg = new Integer(args[i]);
                 continue;
             }
 
@@ -84,11 +84,33 @@ public class Percipio {
             List<Signature> signatures = parseSignatures(unmarshaller, signatureArg);
 
             Map<File, Score> scores = brain.score(signatures,files);
-            //TODO printout
+            for (File file : scores.keySet()) {
+                printScores(file,scores.get(file), numberOfMatchesArg);
+            }
+            
+
         }
 
 
     }
+
+    private static void printScores(File file, Score score, int numberOfMatches) {
+        int total = 0;
+        for (Score.Pair<Integer, Signature> integerSignaturePair : score.getScoreboard()) {
+            total += integerSignaturePair.getA();
+        }
+        int prints = 0;
+        for (Score.Pair<Integer, Signature> integerSignaturePair : score.getScoreboard()) {
+            String message = integerSignaturePair.getB().getGeneral().getName() + ": " +
+                             ((int)((integerSignaturePair.getA()+0.0)*10000 / total)+0.0)/100 + "%";
+            System.out.println(message);
+            prints++;
+            if (prints > numberOfMatches){
+                break;
+            }
+        }
+    }
+
 
     private static List<Signature> parseSignatures(Unmarshaller unmarshaller, String signatureArg)
             throws JAXBException {
