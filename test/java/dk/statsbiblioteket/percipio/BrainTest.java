@@ -45,9 +45,6 @@ public class BrainTest {
     public void tearDown() throws Exception {
     }
 
-    @Test
-    public void testTest() throws Exception {
-    }
 
     @Test
     public void testScore() throws Exception {
@@ -60,18 +57,42 @@ public class BrainTest {
 
         Brain brain = new Brain();
 
-        Signature signature = brain.learn(arraylist.toArray(new File[0]));
+        Signature signature = brain.learn(arraylist);
         Score score = brain.score(Arrays.asList(new Signature[]{signature}), firstPdf);
         assertTrue("Score to low, this should really be a pdf file", score.getScoreboard().first().getA() > 10);
-/*
-        System.out.println("score for pdf file '"+firstPdf.getName()+"' is "+score);
-        marshaller.marshal(signature,System.out);
-*/
 
+        System.out.println("score for pdf file '"+firstPdf.getName()+"' is "+score.getScoreboard().first().getA());
+        /*marshaller.marshal(signature,System.out);*/
     }
 
     @Test
     public void testRelearn() throws Exception {
+        List<File> pdffiles = Arrays.asList(new File("test/resources/pdf").listFiles());
+
+
+        ArrayList<File> arraylist = new ArrayList<File>();
+        arraylist.addAll(pdffiles);
+        File firstPdf = arraylist.remove(1);
+        File secondPdf = arraylist.remove(2);
+        File thirdPdf = arraylist.remove(3);
+
+        Brain brain = new Brain();
+
+        Signature signature = brain.learn(arraylist);
+        Score score = brain.score(Arrays.asList(new Signature[]{signature}), firstPdf);
+        /*System.out.println("score for pdf file '"+firstPdf.getName()+"' is "+score.getScoreboard().first().getA());*/
+        assertTrue("Score to low, this signature should be improved", score.getScoreboard().first().getA() < 10);
+
+        /*marshaller.marshal(signature,System.out);
+*/
+        Signature relearnedSig = brain.relearn(signature, secondPdf, thirdPdf);
+        score = brain.score(Arrays.asList(new Signature[]{signature}), firstPdf);
+        assertTrue("Score to low, this should really be a pdf file", score.getScoreboard().first().getA() > 10);
+
+        /*System.out.println("score for pdf file '"+firstPdf.getName()+"' is "+score.getScoreboard().first().getA());
+        marshaller.marshal(signature,System.out);
+*/
+
     }
 
     @Test
