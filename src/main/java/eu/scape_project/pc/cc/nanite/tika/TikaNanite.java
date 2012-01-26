@@ -6,6 +6,7 @@ package eu.scape_project.pc.cc.nanite.tika;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
@@ -20,6 +21,8 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
+ * Base on http://wiki.apache.org/tika/RecursiveMetadata
+ * 
  * @author AnJackson
  * 
  */
@@ -58,9 +61,17 @@ public class TikaNanite {
 			super.parse(stream, content, metadata, context);
 
 			System.out.println("----");
-			System.out.println(metadata);
+			System.out.println("resourceName = "+metadata.get(Metadata.RESOURCE_NAME_KEY));
 			System.out.println("----");
-			System.out.println(content.toString());
+			String[] names = metadata.names();
+			Arrays.sort(names);
+			for( String name : names ) {
+				System.out.println("MD:"+name+": "+metadata.get(name));
+			}
+			System.out.println("----");
+			String text = content.toString();
+			if( text.length() > 100 ) text = text.substring(0,200);
+			System.out.println(text);
 		}
 	}
 

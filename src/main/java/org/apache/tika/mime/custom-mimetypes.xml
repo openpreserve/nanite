@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- See http://tika.apache.org/1.0/parser_guide.html#Add_your_MIME-Type -->
+<mime-info>
+
+  <mime-type type="application/x-ibooks+zip">
+    <sub-class-of type="application/epub+zip" />
+    <acronym>iBooks</acronym>
+    <_comment>Apple iBooks Author publication format</_comment>
+    <magic priority="50">
+      <match value="PK\003\004" type="string" offset="0">
+        <match value="mimetypeapplication/x-ibooks+zip" type="string" offset="30"/>
+      </match>
+    </magic>
+    <glob pattern="*.ibooks"/>
+  </mime-type>
+
+
+  <!-- NOTES:
+        * This is almost identical to the vnd.apple.pages signature, and it's not quite clear how to tell between them.
+        * The vnd.apple.* MIME Types are not 'proper' ones as they are not registered with IANA. 
+
+In an example file, the header looks like this:
+- - - -
+<?xml version="1.0"?>
+<sl:document xmlns:sfa="http://developer.apple.com/namespaces/sfa" xmlns:sf="http://developer.apple.com/namespaces/sf" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sl="http://developer.apple.com/namespaces/sl" sl:version="102011120100" sfa:ID="KFTextbookModel-0" sl:generator="ibauthor" sl:app_build_date="Jan 12 2012, 17:46:22" sl:app_bundle_version="159">
+- - - -
+cut -b 279-301 index.xml
+sl:generator="ibauthor"   
+
+    <sub-class-of type="application/vnd.apple.iwork" />
+
+        -->
+  <mime-type type="application/vnd.apple.ibauthor">
+    <sub-class-of type="application/vnd.apple.pages" />
+    <root-XML localName="document" namespaceURI="http://developer.apple.com/namespaces/sl" />
+    <!-- If you can match inside files inside the zip, you could say:
+    <magic priority="50">
+      <match value="sl:generator=&quot;ibauthor&quot;" type="string" offset="279" />
+    </magic>
+     -->
+    <glob pattern="*.iba" />
+  </mime-type>
+</mime-info>
