@@ -12,6 +12,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.PropertyConfigurator;
@@ -28,6 +30,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileExce
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManager;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManagerException;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureType;
+import uk.gov.nationalarchives.droid.submitter.SubmissionGateway;
 
 /**
  * 
@@ -35,14 +38,37 @@ import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureType;
  * From droid command line
  * - ReportCommand which launches a profileWalker,
  * - which fires a FileEventHandler when it hits a file,
- * - AsyncDroid subtype SubmissionGateway, 
+ * - which submits an Identification request to the AsyncDroid subtype SubmissionGateway, 
  * - which calls DroidCore,
  * - which calls uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier
  * - Following which, SubmissionGateway does some handleContainer stuff, 
  * executes the container matching engine and does some complex logic to resolve the result.
  * 
+ * This is all further complicated by the way a mix of Spring and Java is used to initialize
+ * things, which makes partial or fast initialization rather difficult.
+ * 
+ * For droid-command-line, the stringing together starts with:
+ * /droid-command-line/src/main/resources/META-INF/ui-spring.xml
+ * this sets up the ProfileContextLocator and the SpringProfileInstanceFactory.
+ * Other parts of the code set up Profiles and eventually call:
+ * uk.gov.nationalarchives.droid.profile.ProfileContextLocator.openProfileInstanceManager(ProfileInstance)
+ * which calls
+ * uk.gov.nationalarchives.droid.profile.SpringProfileInstanceFactory.getProfileInstanceManager(ProfileInstance, Properties)
+ * which then injects more xml, including:
+ * @see /droid-results/src/main/resources/META-INF/spring-results.xml
+ * which sets up most of the SubmissionGateway and identification stuff
+ * (including the BinarySignatureIdentifier and the Container identifiers).
+ * 
+ * The ui-spring.xml file also includes
+ * /droid-results/src/main/resources/META-INF/spring-signature.xml
+ * which sets up the pronomClient for downloading binary and container signatures.
+ * 
+ * So, the profile stuff is hooked into the DB stuff which is hooked into the identifiers.
+ * Everything is tightly coupled, so teasing it apart is hard work.
+ * 
  * @see uk.gov.nationalarchives.droid.submitter.SubmissionGateway
  * @see uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier
+ * @see uk.gov.nationalarchives.droid.submitter.FileEventHandler.onEvent(File, ResourceId, ResourceId)
  * 
  * Also found 
  * @see uk.gov.nationalarchives.droid.command.action.DownloadSignatureUpdateCommand
@@ -63,9 +89,10 @@ public class Nanite {
 	private SignatureManager sm;
 	private ClassPathXmlApplicationContext context;
 	private BinarySignatureIdentifier bsi;
+	private SubmissionGateway sg;
 
 
-	public Nanite() throws IOException, SignatureFileException {
+	public Nanite() throws IOException, SignatureFileException, SignatureManagerException {
 		System.setProperty("consoleLogThreshold","INFO");
 		System.setProperty("logFile", "./nanite.log");
 		PropertyConfigurator.configure(this.getClass().getClassLoader().getResource("log4j.properties"));
@@ -88,6 +115,7 @@ public class Nanite {
 		context = new ClassPathXmlApplicationContext("classpath*:/META-INF/ui-spring.xml");
         context.registerShutdownHook();
 		sm = (SignatureManager) context.getBean("signatureManager");
+		//sg = (SubmissionGateway) context.getBean("submissionGateway");
         
 		// Without Spring, you need something like...		
 /*		DroidGlobalConfig dgc = new DroidGlobalConfig();	
@@ -111,8 +139,10 @@ public class Nanite {
 		
 		// Now set up the Binary Signature Identifier with the right signature from the manager:
 		bsi = new BinarySignatureIdentifier();
-		bsi.setSignatureFile(sm.getDefaultSignatures().get(SignatureType.BINARY).getFile().getAbsolutePath());
+		bsi.setSignatureFile(sm.downloadLatest(SignatureType.BINARY).getFile().getAbsolutePath());
 		bsi.init();
+
+		
 	}
 
 	/**
@@ -134,6 +164,27 @@ public class Nanite {
 	 */
 	public IdentificationResultCollection identify(IdentificationRequest ir) {
 		return bsi.matchBinarySignatures(ir);
+		/*
+		Future<IdentificationResultCollection> task = sg.submit(ir);
+		while( ! task.isDone() ) {
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		try {
+			return task.get();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+		*/
 	}
 
 	/**
