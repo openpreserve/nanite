@@ -92,7 +92,7 @@ public class Nanite {
 	private SubmissionGateway sg;
 
 
-	public Nanite() throws IOException, SignatureFileException, SignatureManagerException {
+	public Nanite() throws IOException, SignatureFileException {
 		System.setProperty("consoleLogThreshold","INFO");
 		System.setProperty("logFile", "./nanite.log");
 		PropertyConfigurator.configure(this.getClass().getClassLoader().getResource("log4j.properties"));
@@ -139,7 +139,12 @@ public class Nanite {
 		
 		// Now set up the Binary Signature Identifier with the right signature from the manager:
 		bsi = new BinarySignatureIdentifier();
-		bsi.setSignatureFile(sm.downloadLatest(SignatureType.BINARY).getFile().getAbsolutePath());
+		try {
+			bsi.setSignatureFile(sm.downloadLatest(SignatureType.BINARY).getFile().getAbsolutePath());
+		} catch (SignatureManagerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		bsi.init();
 
 		
