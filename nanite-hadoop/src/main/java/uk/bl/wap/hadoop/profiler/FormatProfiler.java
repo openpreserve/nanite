@@ -28,10 +28,10 @@ import uk.bl.wap.hadoop.ArchiveFileInputFormat;
  */
 
 @SuppressWarnings( { "deprecation" } )
-public class ARCFormatProfiler extends Configured implements Tool {
+public class FormatProfiler extends Configured implements Tool {
 
 	public int run( String[] args ) throws IOException {
-		JobConf conf = new JobConf( getConf(), ARCFormatProfiler.class );
+		JobConf conf = new JobConf( getConf(), FormatProfiler.class );
 
 		String line = null;
 		BufferedReader br = new BufferedReader( new FileReader( args[ 0 ] ) );
@@ -43,7 +43,7 @@ public class ARCFormatProfiler extends Configured implements Tool {
 
 		conf.setJobName( args[ 0 ] + "_" + System.currentTimeMillis() );
 		conf.setInputFormat( ArchiveFileInputFormat.class );
-		conf.setMapperClass( ARCFormatProfilerMapper.class );
+		conf.setMapperClass( FormatProfilerMapper.class );
 		conf.setReducerClass( FormatProfilerReducer.class );
 		conf.setOutputFormat( TextOutputFormat.class );
 		conf.set( "map.output.key.field.separator", "" );
@@ -63,7 +63,7 @@ public class ARCFormatProfiler extends Configured implements Tool {
 			System.exit( 0 );
 
 		}
-		int ret = ToolRunner.run( new ARCFormatProfiler(), args );
+		int ret = ToolRunner.run( new FormatProfiler(), args );
 
 		System.exit( ret );
 	}

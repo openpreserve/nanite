@@ -7,6 +7,9 @@ package uk.bl.wap.hadoop.profiler;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,16 +29,14 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;
 
-import static org.archive.io.warc.WARCConstants.HEADER_KEY_DATE;
-
 @SuppressWarnings( { "deprecation" } )
-public class WARCFormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
+public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
 	String workingDirectory = "";
 	Tika tika = new Tika();
 	Nanite nanite = null;
 	File tmpFile = null;
 
-	public WARCFormatProfilerMapper() {
+	public FormatProfilerMapper() {
 	 try {
 		nanite = new Nanite();
 		tmpFile = File.createTempFile("Nanite", "tmp");
@@ -67,8 +68,10 @@ public class WARCFormatProfilerMapper extends MapReduceBase implements Mapper<Te
 			try {
 				// The crawl year:
 				String wctID = this.getWctTi( key.toString() );
-				String waybackDate = ( ( String ) header.getHeaderFields().get( HEADER_KEY_DATE ) ).replaceAll( "[^0-9]", "" );
-				String waybackYear = waybackDate.substring(0,4);
+				String waybackDate = ( ( String ) value.getRecord().getHeader().getDate() ).replaceAll( "[^0-9]", "" );
+				String waybackYear = "unknown";
+				if( waybackDate != null ) 
+					waybackYear = waybackDate.substring(0,4);
 
 				// Type according to server:
 				serverType = value.getHttpHeader("Content-Type");
@@ -92,16 +95,26 @@ public class WARCFormatProfilerMapper extends MapReduceBase implements Mapper<Te
 				}
 				} catch( Exception e ) {
 					e.printStackTrace();
-					System.out.println("Exception on Nanite invocation: "+e);
-					output.collect( new Text("LOG: Droid threw exception: "+e), new Text(wctID));
+					System.err.println("Exception on Nanite invocation: "+e);
+					output.collect( new Text("LOG: Droid threw exception: "+e+"\n"+getStackTrace(e)), new Text(wctID));
 				}
 
 				output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType ), new Text( waybackYear ) );
 			} catch( Exception e ) {
 				System.err.println( e.getMessage() );
+				output.collect( new Text("LOG: Analysis threw exception: "+e+"\n"+getStackTrace(e)), new Text(key));
 			}
+		} else {
+			output.collect( new Text("LOG: Empty header fields. "), new Text(key));
 		}
 	}
+	
+	private static String getStackTrace(Throwable aThrowable) {
+	    final Writer result = new StringWriter();
+	    final PrintWriter printWriter = new PrintWriter(result);
+	    aThrowable.printStackTrace(printWriter);
+	    return result.toString();
+	  }
 
 	private String getWctTi( String warcName ) {
 		Pattern pattern = Pattern.compile( "^BL-\\b([0-9]+)\\b.*\\.warc(\\.gz)?$" );
