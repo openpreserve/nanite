@@ -4,6 +4,7 @@
   	<name>Nanite</name>
   	<description>Nanite is a tiny Droid - a compact Hadoop and CLI friendly version of the Droid tool.</description>
   	<groupId>eu.scape-project.nanite</groupId>
+	<artifactId>nanite-droid</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
 	<build>
@@ -160,15 +161,7 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.7</version>
-			<type>jar</type>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>uk.gov.nationalarchives</groupId>
-			<artifactId>droid-core</artifactId>
-			<version>6.0</version>
-			<type>jar</type>
-			<scope>compile</scope>
 		</dependency>
 <!--
 		<dependency>
@@ -179,13 +172,6 @@
 			<scope>compile</scope>
 		</dependency>
 -->
-		<dependency>
-			<groupId>uk.gov.nationalarchives</groupId>
-			<artifactId>droid-results</artifactId>
-			<version>6.0</version>
-			<type>jar</type>
-			<scope>compile</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring</artifactId>
@@ -223,30 +209,43 @@
 			<version>1.0</version>
 		</dependency>
 		<dependency>
-			<groupId>uk.gov.nationalarchives</groupId>
+			<groupId>eu.scape-project.droid</groupId>
+			<artifactId>droid-core</artifactId>
+			<version>6.0.2-SNAPSHOT</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>eu.scape-project.droid</groupId>
+			<artifactId>droid-results</artifactId>
+			<version>6.0.2-SNAPSHOT</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>eu.scape-project.droid</groupId>
 			<artifactId>droid-container</artifactId>
-			<version>6.0</version>
+			<version>6.0.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>uk.gov.nationalarchives</groupId>
+			<groupId>eu.scape-project.droid</groupId>
 			<artifactId>droid-export</artifactId>
-			<version>6.0</version>
+			<version>6.0.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>uk.gov.nationalarchives</groupId>
+			<groupId>eu.scape-project.droid</groupId>
 			<artifactId>droid-report</artifactId>
-			<version>6.0</version>
+			<version>6.0.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>uk.gov.nationalarchives</groupId>
+			<groupId>eu.scape-project.droid</groupId>
 			<artifactId>droid-export-interfaces</artifactId>
-			<version>6.0</version>
+			<version>6.0.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>uk.gov.nationalarchives</groupId>
+			<groupId>eu.scape-project.droid</groupId>
 			<artifactId>droid-command-line</artifactId>
-			<version>6.0</version>
+			<version>6.0.2-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
-	<artifactId>nanite-droid</artifactId>
 </project>

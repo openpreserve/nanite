@@ -21,7 +21,7 @@ import org.archive.io.ArchiveRecordHeader;
 
 import eu.scape_project.pc.cc.nanite.Nanite;
 
-import uk.bl.wap.hadoop.WritableWARCRecord;
+import uk.bl.wap.hadoop.WritableArchiveRecord;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;
@@ -29,7 +29,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileExce
 import static org.archive.io.warc.WARCConstants.HEADER_KEY_DATE;
 
 @SuppressWarnings( { "deprecation" } )
-public class WARCFormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableWARCRecord, Text, Text> {
+public class WARCFormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
 	String workingDirectory = "";
 	Tika tika = new Tika();
 	Nanite nanite = null;
@@ -57,7 +57,7 @@ public class WARCFormatProfilerMapper extends MapReduceBase implements Mapper<Te
 	}
 
 	@Override
-	public void map( Text key, WritableWARCRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
+	public void map( Text key, WritableArchiveRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
 		ArchiveRecordHeader header = value.getRecord().getHeader();
 		String serverType = null;
 		String tikaType = null;

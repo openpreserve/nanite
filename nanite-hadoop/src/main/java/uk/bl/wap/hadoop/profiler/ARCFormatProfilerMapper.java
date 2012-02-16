@@ -24,14 +24,13 @@ import org.archive.io.ArchiveRecordHeader;
 
 import eu.scape_project.pc.cc.nanite.Nanite;
 
-import uk.bl.wap.hadoop.WritableARCRecord;
-import uk.bl.wap.hadoop.WritableWARCRecord;
+import uk.bl.wap.hadoop.WritableArchiveRecord;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;
 
 @SuppressWarnings( { "deprecation" } )
-public class ARCFormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableARCRecord, Text, Text> {
+public class ARCFormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
 	String workingDirectory = "";
 	Tika tika = new Tika();
 	Nanite nanite = null;
@@ -59,7 +58,7 @@ public class ARCFormatProfilerMapper extends MapReduceBase implements Mapper<Tex
 	}
 
 	@Override
-	public void map( Text key, WritableARCRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
+	public void map( Text key, WritableArchiveRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
 		ArchiveRecordHeader header = value.getRecord().getHeader();
 		String serverType = null;
 		String tikaType = null;
@@ -69,7 +68,7 @@ public class ARCFormatProfilerMapper extends MapReduceBase implements Mapper<Tex
 			try {
 				// The crawl year:
 				String wctID = this.getWctTi( key.toString() );
-				String waybackDate = ( ( String ) value.getRecord().getMetaData().getDate() ).replaceAll( "[^0-9]", "" );
+				String waybackDate = ( ( String ) value.getRecord().getHeader().getDate() ).replaceAll( "[^0-9]", "" );
 				String waybackYear = "unknown";
 				if( waybackDate != null ) 
 					waybackYear = waybackDate.substring(0,4);

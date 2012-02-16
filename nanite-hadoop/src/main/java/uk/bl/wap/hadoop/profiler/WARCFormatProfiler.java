@@ -18,7 +18,7 @@ import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.util.Tool;
 
-import uk.bl.wap.hadoop.WARCFileInputFormat;
+import uk.bl.wap.hadoop.ArchiveFileInputFormat;
 
 /**
  * WARCTikExtractor
@@ -42,7 +42,7 @@ public class WARCFormatProfiler extends Configured implements Tool {
 		FileOutputFormat.setOutputPath( conf, new Path( args[ 1 ] ) );
 
 		conf.setJobName( args[ 0 ] + "_" + System.currentTimeMillis() );
-		conf.setInputFormat( WARCFileInputFormat.class );
+		conf.setInputFormat( ArchiveFileInputFormat.class );
 		conf.setMapperClass( WARCFormatProfilerMapper.class );
 		conf.setReducerClass( FormatProfilerReducer.class );
 		conf.setOutputFormat( TextOutputFormat.class );

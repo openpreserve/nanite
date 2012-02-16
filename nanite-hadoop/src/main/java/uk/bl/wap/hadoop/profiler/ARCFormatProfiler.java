@@ -18,8 +18,7 @@ import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.util.Tool;
 
-import uk.bl.wap.hadoop.ARCFileInputFormat;
-import uk.bl.wap.hadoop.WARCFileInputFormat;
+import uk.bl.wap.hadoop.ArchiveFileInputFormat;
 
 /**
  * WARCTikExtractor
@@ -43,7 +42,7 @@ public class ARCFormatProfiler extends Configured implements Tool {
 		FileOutputFormat.setOutputPath( conf, new Path( args[ 1 ] ) );
 
 		conf.setJobName( args[ 0 ] + "_" + System.currentTimeMillis() );
-		conf.setInputFormat( ARCFileInputFormat.class );
+		conf.setInputFormat( ArchiveFileInputFormat.class );
 		conf.setMapperClass( ARCFormatProfilerMapper.class );
 		conf.setReducerClass( FormatProfilerReducer.class );
 		conf.setOutputFormat( TextOutputFormat.class );
