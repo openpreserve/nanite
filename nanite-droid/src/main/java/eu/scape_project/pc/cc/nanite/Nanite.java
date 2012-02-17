@@ -139,12 +139,17 @@ public class Nanite {
 		
 		// Now set up the Binary Signature Identifier with the right signature from the manager:
 		bsi = new BinarySignatureIdentifier();
-		try {
-			bsi.setSignatureFile(sm.downloadLatest(SignatureType.BINARY).getFile().getAbsolutePath());
-		} catch (SignatureManagerException e) {
+		//try {
+		    // This modifies the version to be used?
+	        //System.setProperty("profile.defaultBinarySigFileVersion", "DROID_SignatureFile_V54");
+			// This downloads:
+			//bsi.setSignatureFile(sm.downloadLatest(SignatureType.BINARY).getFile().getAbsolutePath());
+		    // This uses a local file instead of downloading.
+			bsi.setSignatureFile("C:/Users/AnJackson/workspace/nanite/nanite-droid/src/main/resources/DROID_SignatureFile_V55 - no EOF.xml");
+		//} catch (SignatureManagerException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+			//e.printStackTrace();
+		//}
 		bsi.init();
 
 		
@@ -154,12 +159,15 @@ public class Nanite {
 	 * @return The version of the binary signature file that is in use.
 	 */
 	public int getBinarySigFileVersion() {
+		return Integer.parseInt(bsi.getSigFile().getVersion());
+		/*
 		try {
 			return sm.getDefaultSignatures().get(SignatureType.BINARY).getVersion();
 		} catch (SignatureFileException e) {
 			e.printStackTrace();
 			return -1;
 		}
+		*/
 	}
 
 	/**
