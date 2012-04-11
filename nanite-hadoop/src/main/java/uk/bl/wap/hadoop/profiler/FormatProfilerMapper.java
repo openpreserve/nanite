@@ -7,6 +7,8 @@ package uk.bl.wap.hadoop.profiler;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -15,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -107,7 +110,11 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		droidType = "application/octet-stream";
 		try {
 			IdentificationResultCollection irc = nanite.identify(
-					Nanite.createByteArrayIdentificationRequest(tmpFile.toURI(), value.getPayload()));
+					Nanite.createByteArrayIdentificationRequest(tmpFile.toURI(), value.getPayload()) );
+			/*
+			IdentificationResultCollection ircf = nanite.identify(
+					Nanite.createFileIdentificationRequest(tmpFile) );
+			*/
 			if( irc.getResults().size() > 0 ) {
 				IdentificationResult res = irc.getResults().get(0);
 				droidType = Nanite.getMimeTypeFromResult(res);
@@ -122,6 +129,16 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Return the output for collation:
 		output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType ), new Text( waybackYear ) );
+	}
+	
+	private File copyToTempFile( String name, byte[] content, int max_bytes ) throws Exception {
+		File tmp = File.createTempFile("FmtTmp-", name);
+		IOUtils.copy(new ByteArrayInputStream(content, 0, max_bytes), new FileOutputStream(tmp));
+		return tmp;
+	}
+	
+	private File copyToTempFile( String name, byte[] content ) throws Exception {
+		return copyToTempFile(name,content,Integer.MAX_VALUE);
 	}
 	
 	private static String getStackTrace(Throwable aThrowable) {
