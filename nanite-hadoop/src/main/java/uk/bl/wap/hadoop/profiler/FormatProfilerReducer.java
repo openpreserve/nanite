@@ -11,9 +11,6 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 
-import uk.bl.wap.util.solr.SolrRecord;
-import uk.bl.wap.util.solr.WctEnricher;
-
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfilerReducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
 	public FormatProfilerReducer() {}
