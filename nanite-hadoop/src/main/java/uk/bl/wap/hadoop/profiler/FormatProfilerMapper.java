@@ -5,14 +5,17 @@ package uk.bl.wap.hadoop.profiler;
  * http://hadoop.apache.org/common/docs/r0.18.3/mapred_tutorial.html
  */
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -20,6 +23,7 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.tika.Tika;
+import org.apache.tika.metadata.Metadata;
 import org.archive.io.ArchiveRecordHeader;
 
 import eu.scape_project.pc.cc.nanite.Nanite;
@@ -41,12 +45,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		nanite = new Nanite();
 		tmpFile = File.createTempFile("Nanite", "tmp");
 		tmpFile.deleteOnExit();
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-		System.out.println("Exception on Nanite instanciation: "+e);
-	} catch (SignatureFileException e) {
-		// TODO Auto-generated catch block
+	} catch ( Exception e) {
 		e.printStackTrace();
 		System.out.println("Exception on Nanite instanciation: "+e);
 	}
@@ -81,6 +80,16 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 				// Type according to Tiki:
 				tikaType = tika.detect( value.getPayload() );
+				// Now perform full parse:
+				Metadata md = new Metadata();
+				tika.parse( new ByteArrayInputStream( value.getPayload() ), md );
+				for( String name : md.names() ) {
+				}
+				String tikaAppId = md.get( Metadata.APPLICATION_NAME )+"_"+md.get( Metadata.APPLICATION_VERSION);
+				if( !"_".equals(tikaAppId) ) {
+					tikaType = tikaType+"; appid=\""+tikaAppId+"\"";
+				}
+				
 				
 				// Type according to Droid/Nanite:
 				droidType = "application/octet-stream";
