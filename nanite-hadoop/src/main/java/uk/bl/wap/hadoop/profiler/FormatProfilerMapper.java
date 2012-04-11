@@ -9,7 +9,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.regex.Matcher;
@@ -22,6 +21,7 @@ import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.log4j.Logger;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.archive.io.ArchiveRecordHeader;
@@ -31,24 +31,23 @@ import eu.scape_project.pc.cc.nanite.Nanite;
 import uk.bl.wap.hadoop.WritableArchiveRecord;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
-import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
+	private static Logger log = Logger.getLogger(FormatProfilerMapper.class.getName());
 	String workingDirectory = "";
 	Tika tika = new Tika();
 	Nanite nanite = null;
 	File tmpFile = null;
 
 	public FormatProfilerMapper() {
-	 try {
-		nanite = new Nanite();
-		tmpFile = File.createTempFile("Nanite", "tmp");
-		tmpFile.deleteOnExit();
-	} catch ( Exception e) {
-		e.printStackTrace();
-		System.out.println("Exception on Nanite instanciation: "+e);
-	}
+		try {
+			nanite = new Nanite();
+			tmpFile = File.createTempFile("Nanite", "tmp");
+		} catch ( Exception e) {
+			e.printStackTrace();
+			log.error("Exception on Nanite instanciation: "+e);
+		}
 	}
 
 	@Override
@@ -59,63 +58,70 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	@Override
 	public void map( Text key, WritableArchiveRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
 		ArchiveRecordHeader header = value.getRecord().getHeader();
-		String serverType = null;
-		String tikaType = null;
-		String droidType = null;
+		String serverType = "unknown";
+		String tikaType = "unknown";
+		String droidType = "unknown";
+		String waybackYear = "unknown";
 
+		// Get the ID:
+		String wctID = this.getWctTi( key.toString() );
+		
+		// Get the server header data:
 		if( !header.getHeaderFields().isEmpty() ) {
-			try {
-				// The crawl year:
-				String wctID = this.getWctTi( key.toString() );
-				String waybackDate = ( ( String ) value.getRecord().getHeader().getDate() ).replaceAll( "[^0-9]", "" );
-				String waybackYear = "unknown";
-				if( waybackDate != null ) 
-					waybackYear = waybackDate.substring(0,4);
+			// The crawl year:
+			String waybackDate = ( ( String ) value.getRecord().getHeader().getDate() ).replaceAll( "[^0-9]", "" );
+			if( waybackDate != null ) 
+				waybackYear = waybackDate.substring(0,4);
 
-				// Type according to server:
-				serverType = value.getHttpHeader("Content-Type");
-				if( serverType == null ) {
-					output.collect( new Text("LOG: Server Content-Type is null."), new Text(wctID));
-				}
-
-				// Type according to Tiki:
-				tikaType = tika.detect( value.getPayload() );
-				// Now perform full parse:
-				Metadata md = new Metadata();
-				tika.parse( new ByteArrayInputStream( value.getPayload() ), md );
-				for( String name : md.names() ) {
-				}
-				String tikaAppId = md.get( Metadata.APPLICATION_NAME )+"_"+md.get( Metadata.APPLICATION_VERSION);
-				if( !"_".equals(tikaAppId) ) {
-					tikaType = tikaType+"; appid=\""+tikaAppId+"\"";
-				}
-				
-				
-				// Type according to Droid/Nanite:
-				droidType = "application/octet-stream";
-				try {
-				IdentificationResultCollection irc = nanite.identify(
-						Nanite.createByteArrayIdentificationRequest(tmpFile.toURI(), value.getPayload()));
-				if( irc.getResults().size() > 0 ) {
-					IdentificationResult res = irc.getResults().get(0);
-					droidType = Nanite.getMimeTypeFromResult(res);
-				} else {
-					output.collect( new Text("LOG: Droid found no match."), new Text(wctID));
-				}
-				} catch( Exception e ) {
-					e.printStackTrace();
-					System.err.println("Exception on Nanite invocation: "+e);
-					output.collect( new Text("LOG: Droid threw exception: "+e+"\n"+getStackTrace(e)), new Text(wctID));
-				}
-
-				output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType ), new Text( waybackYear ) );
-			} catch( Exception e ) {
-				System.err.println( e.getMessage() );
-				output.collect( new Text("LOG: Analysis threw exception: "+e+"\n"+getStackTrace(e)), new Text(key));
+			// Type according to server:
+			serverType = value.getHttpHeader("Content-Type");
+			if( serverType == null ) {
+				output.collect( new Text("LOG: Server Content-Type is null."), new Text(wctID));
 			}
 		} else {
 			output.collect( new Text("LOG: Empty header fields. "), new Text(key));
 		}
+
+
+		// Type according to Tiki:
+		try {
+			tikaType = tika.detect( value.getPayload() );
+			// Now perform full parse:
+			Metadata md = new Metadata();
+			tika.parse( new ByteArrayInputStream( value.getPayload() ), md );
+			//for( String name : md.names() ) {
+			//}
+			String tikaAppId = "";
+			if( md.get( Metadata.APPLICATION_NAME ) != null ) tikaAppId += md.get( Metadata.APPLICATION_NAME );
+			if( md.get( Metadata.APPLICATION_VERSION ) != null ) tikaAppId += "_"+md.get( Metadata.APPLICATION_VERSION);
+			if( ! "".equals(tikaAppId) ) {
+				tikaType = tikaType+"; appid=\""+tikaAppId+"\"";
+			}
+
+		} catch( Exception e ) {
+			log.error( e.getMessage() );
+			output.collect( new Text("LOG:ERROR Analysis threw exception: "+e+"\n"+getStackTrace(e)), new Text(key+" "+tmpFile+" "+value));
+		}
+
+		// Type according to Droid/Nanite:
+		droidType = "application/octet-stream";
+		try {
+			IdentificationResultCollection irc = nanite.identify(
+					Nanite.createByteArrayIdentificationRequest(tmpFile.toURI(), value.getPayload()));
+			if( irc.getResults().size() > 0 ) {
+				IdentificationResult res = irc.getResults().get(0);
+				droidType = Nanite.getMimeTypeFromResult(res);
+			} else {
+				output.collect( new Text("LOG: Droid found no match."), new Text(wctID));
+			}
+		} catch( Exception e ) {
+			e.printStackTrace();
+			log.error("Exception on Nanite invocation: "+e);
+			output.collect( new Text("LOG:ERROR Droid threw exception: "+e+"\n"+getStackTrace(e)), new Text(wctID) );
+		}
+
+		// Return the output for collation:
+		output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType ), new Text( waybackYear ) );
 	}
 	
 	private static String getStackTrace(Throwable aThrowable) {
@@ -143,5 +149,21 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		if( tmpFile.exists() ) {
 			tmpFile.delete();
 		}
+	}
+	
+
+	/**
+	 * A simple test class to check the classpath is set up ok.
+	 * 
+	 * @param args
+	 * @throws Exception 
+	 * @throws IOException 
+	 * @throws ConfigurationException 
+	 */
+	public static void  main( String[] args ) throws Exception {
+		File file = new File(args[0]);
+		Nanite nan = new Nanite();
+		System.out.println("Nanite using binary sig. file version "+nan.getBinarySigFileVersion());
+		nan.getMimeType(file);	
 	}
 }
