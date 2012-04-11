@@ -369,6 +369,27 @@ public class Nanite {
 		}
 		return mimeType;
 	}
+	
+	public String getMimeType( File file ) throws FileNotFoundException, IOException, ConfigurationException, SignatureFileException {
+		//IdentificationRequest ir = createFileIdentificationRequest(file);
+		
+		//byte[] data =  org.apache.commons.io.FileUtils.readFileToByteArray(file);
+		//IdentificationRequest ir = createByteArrayIdentificationRequest(file.toURI(), data);		
+
+		IdentificationRequest ir = createInputStreamIdentificationRequest(file.toURI(), new FileInputStream(file) );		
+
+		IdentificationResultCollection resultCollection = this.identify(ir);
+		//System.out.println("MATCHING: "+resultCollection.getResults());
+		for( IdentificationResult result : resultCollection.getResults() ) {
+			String mimeType = result.getMimeType();
+			if( result.getVersion() != null && ! "".equals(result.getVersion())) {
+				mimeType += ";version="+result.getVersion();
+			}
+			System.out.println("MATCHING: "+result.getPuid()+", "+result.getName()+" "+result.getVersion());
+			System.out.println("Content-Type: "+Nanite.getMimeTypeFromResult(result));
+		}
+		return Nanite.getMimeTypeFromResult(resultCollection.getResults().get(0));		
+	}
 
 	/**
 	 * @param args
@@ -379,27 +400,9 @@ public class Nanite {
 	 */
 	public static void main(String[] args) throws IOException, SignatureManagerException, ConfigurationException, SignatureFileException {
 		File file = new File(args[0]);
-		//IdentificationRequest ir = createFileIdentificationRequest(file);
-		
-		//byte[] data =  org.apache.commons.io.FileUtils.readFileToByteArray(file);
-		//IdentificationRequest ir = createByteArrayIdentificationRequest(file.toURI(), data);		
-
-		IdentificationRequest ir = createInputStreamIdentificationRequest(file.toURI(), new FileInputStream(file) );		
-
 		Nanite nan = new Nanite();
 		System.out.println("Nanite using binary sig. file version "+nan.getBinarySigFileVersion());
-		
-		IdentificationResultCollection resultCollection = nan.identify(ir);
-		//System.out.println("MATCHING: "+resultCollection.getResults());
-		for( IdentificationResult result : resultCollection.getResults() ) {
-			String mimeType = result.getMimeType();
-			if( result.getVersion() != null && ! "".equals(result.getVersion())) {
-				mimeType += ";version="+result.getVersion();
-			}
-			System.out.println("MATCHING: "+result.getPuid()+", "+result.getName()+" "+result.getVersion());
-			System.out.println("Content-Type: "+Nanite.getMimeTypeFromResult(result));
-		}
-		
+		nan.getMimeType(file);
 	}
 	
 
