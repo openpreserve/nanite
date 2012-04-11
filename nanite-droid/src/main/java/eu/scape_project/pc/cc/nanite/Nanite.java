@@ -9,28 +9,39 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import uk.gov.nationalarchives.droid.container.httpservice.ContainerSignatureHttpService;
 import uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
+import uk.gov.nationalarchives.droid.core.interfaces.config.DroidGlobalConfig;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.FileSystemIdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManager;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManagerException;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureType;
+import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureUpdateService;
+import uk.gov.nationalarchives.droid.signature.PronomSignatureService;
+import uk.gov.nationalarchives.droid.signature.SignatureManagerImpl;
 import uk.gov.nationalarchives.droid.submitter.SubmissionGateway;
+import uk.gov.nationalarchives.pronom.PronomService;
 
 /**
  * 
@@ -86,13 +97,72 @@ import uk.gov.nationalarchives.droid.submitter.SubmissionGateway;
 public class Nanite {
 	
 	
-	private SignatureManager sm;
-	private ClassPathXmlApplicationContext context;
 	private BinarySignatureIdentifier bsi;
-	private SubmissionGateway sg;
+	//private SignatureManager sm;
+	//private ClassPathXmlApplicationContext context;
+	//private SubmissionGateway sg;
+	
+	/**
+	 * The default DroidGlobalConfig hardcodes V45 as the default SigFile version.
+	 * (Note that there is a FIXME indicating that they wish to change this to be the latest version).
+	 * 
+	 * I've sub-classed that class so that the defaults can be overridden, and the latest Sig. File can be used.
+	 * 
+	 * @author Andrew Jackson <Andrew.Jackson@bl.uk>
+	 */
+	public class NaniteGlobalConfig extends DroidGlobalConfig {
+	    private static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V59.xml";
+
+	    /**
+	     * Extend the constructor to ensure we set add the desired sig file.
+	     * @throws IOException
+	     */
+	    public NaniteGlobalConfig() throws IOException {
+			super();
+	        createResourceFile(getSignatureFileDir(), DROID_SIGNATURE_FILE, DROID_SIGNATURE_FILE);
+		}
+		
+		/**
+		 * Override init to set the default property version.
+		 */
+		public void init() throws ConfigurationException {
+	        super.init();
+	        this.getProperties().setProperty("profile.defaultBinarySigFileVersion", "DROID_SignatureFile_V59");
+		}
+		
+		/**
+		 * Copied this in from the parent class as it's a private method.
+		 * 
+		 * @param resourceDir
+		 * @param fileName
+		 * @param resourceName
+		 * @throws IOException
+		 */
+		private void createResourceFile(File resourceDir, String fileName, String resourceName) throws IOException {
+	        InputStream in = getClass().getClassLoader().getResourceAsStream(resourceName);
+	        if (in == null) {
+	        	//log.warn("Resource not found: " + resourceName);
+	        } else {
+	            File resourcefile = new File(resourceDir, fileName);
+	            if (resourcefile.createNewFile()) {
+	                OutputStream out = new FileOutputStream(resourcefile);
+	                try {
+	                    IOUtils.copy(in, out);
+	                } finally {
+	                    if (out != null) {
+	                        out.close();
+	                    }
+	                    if (in != null) {
+	                        in.close();
+	                    }
+	                }
+	            }
+	        }
+	    }
+	}
 
 
-	public Nanite() throws IOException, SignatureFileException {
+	public Nanite() throws IOException, SignatureFileException, ConfigurationException {
 		System.setProperty("consoleLogThreshold","INFO");
 		System.setProperty("logFile", "./nanite.log");
 		PropertyConfigurator.configure(this.getClass().getClassLoader().getResource("log4j.properties"));
@@ -110,24 +180,29 @@ public class Nanite {
 			}
 		}
 		System.setProperty(DROID_USER, droidDir.getAbsolutePath());
-		
+
+		/*
+	
 		// Fire up required classes via Spring:
 		context = new ClassPathXmlApplicationContext("classpath*:/META-INF/ui-spring.xml");
         context.registerShutdownHook();
 		sm = (SignatureManager) context.getBean("signatureManager");
 		//sg = (SubmissionGateway) context.getBean("submissionGateway");
-        
-		// Without Spring, you need something like...		
-/*		DroidGlobalConfig dgc = new DroidGlobalConfig();	
+		
+        */
+		
+		// Without Spring, you can support basic usage using this:
+		NaniteGlobalConfig dgc = new NaniteGlobalConfig();			
 		dgc.init();
-		System.out.println("Tjhis: "+dgc.getProperties());
 		SignatureManagerImpl sm = new SignatureManagerImpl();
 		sm.setConfig(dgc);
 		
+/*		
+ 		// This was a further attempt to set up the SignatureManager manually instead of via Spring. Doesn't work very well.
 		Map<SignatureType, SignatureUpdateService> signatureUpdateServices = new HashMap<SignatureType, SignatureUpdateService>();
 		PronomSignatureService pss = new PronomSignatureService();
 		pss.setFilenamePattern("DROID_SignatureFile_V%s.xml");
-		PronomService pronomService;
+		PronomService pronomService = null;
 		pss.setPronomService(pronomService);
 		signatureUpdateServices.put(SignatureType.BINARY, pss);
 		signatureUpdateServices.put(SignatureType.CONTAINER, new ContainerSignatureHttpService() );
@@ -135,24 +210,32 @@ public class Nanite {
 		sm.init();
 */
 		
-		//SignatureFileInfo latest = sm.downloadLatest(SignatureType.BINARY);
-		
 		// Now set up the Binary Signature Identifier with the right signature from the manager:
 		bsi = new BinarySignatureIdentifier();
-		//try {
-		    // This modifies the version to be used?
-	        //System.setProperty("profile.defaultBinarySigFileVersion", "DROID_SignatureFile_V54");
-			// This downloads:
-			//bsi.setSignatureFile(sm.downloadLatest(SignatureType.BINARY).getFile().getAbsolutePath());
-		    // This uses a local file instead of downloading.
-			bsi.setSignatureFile("C:/Users/AnJackson/workspace/nanite/nanite-droid/src/main/resources/DROID_SignatureFile_V55 - no EOF.xml");
-		//} catch (SignatureManagerException e) {
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
-		//}
-		bsi.init();
 
+		/*
+		// This downloads the latest version:
+		try {
+			bsi.setSignatureFile(sm.downloadLatest(SignatureType.BINARY).getFile().getAbsolutePath());
+		} catch (SignatureManagerException e) {
+			e.printStackTrace();
+		}
+		*/
+
+		// This lists the available sig. files (no downloads):
+        //for( String item : sm.getAvailableSignatureFiles().get(SignatureType.BINARY).keySet() ) {
+        //	System.out.println("Key:"+item+" "+sm.getAvailableSignatureFiles().get(SignatureType.BINARY).get(item).getVersion());
+        //}
+
+		// This uses the cached default sig. file as specified by the GlobalConfig class:
+		bsi.setSignatureFile(sm.getDefaultSignatures().get(SignatureType.BINARY).getFile().getAbsolutePath());
 		
+        // This uses a local file instead, but requires a path to a local file.
+	    //bsi.setSignatureFile("C:/Users/AnJackson/workspace/nanite/nanite-droid/src/main/resources/DROID_SignatureFile_V55 - no EOF.xml");
+	    //bsi.setSignatureFile("C:/Users/AnJackson/workspace/nanite/nanite-droid/src/main/resources/DROID_SignatureFile_V55.xml");
+
+		// The sig. files is specified, so initialise the binary sig matcher:
+		bsi.init();		
 	}
 
 	/**
