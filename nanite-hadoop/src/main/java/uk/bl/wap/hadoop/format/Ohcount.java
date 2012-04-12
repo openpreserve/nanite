@@ -6,12 +6,14 @@ package uk.bl.wap.hadoop.format;
 import java.io.File;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
  */
 public class Ohcount {
+	private static Logger log = Logger.getLogger(Ohcount.class.getName());
 	
 	public static final String OH_300_STATIC_BIN = "ohcount-3.0.0-static";
 	
@@ -32,18 +34,23 @@ public class Ohcount {
 		try {
 			String[] command = { OH_BIN, "-d", input.getAbsolutePath() };
 			ProcessBuilder pb = new ProcessBuilder(command);
+			System.out.println("command = "+ pb.command());
 			Process p = pb.start();
 			p.waitFor();
 			String result = IOUtils.toString(p.getInputStream());
 			p.destroy();
+			System.out.println("result = "+result);
 			int index = result.indexOf("\t");
-			if ( index > 0 ) 
-				return "text/x-"+result.substring(0, index);
+			if ( index > 0 ) {
+				result = result.substring(0, index);
+				if( ! "(null)".equals(result) )
+					return "text/x-"+result;
+			}
 		} catch( Exception e ) {
-			System.err.println("ohcount identify Caught exception: "+e);
+			log.error("ohcount identify Caught exception: "+e);
 			e.printStackTrace();
 		}
-		return null;
+		return "application/octetstream";
 	}
 	
 	public static void main( String[] args ) {

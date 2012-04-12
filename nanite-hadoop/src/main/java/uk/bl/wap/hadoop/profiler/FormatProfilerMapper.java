@@ -38,6 +38,7 @@ import eu.scape_project.pc.cc.nanite.Nanite;
 
 import uk.bl.wap.hadoop.WritableArchiveRecord;
 import uk.bl.wap.hadoop.format.Ohcount;
+import uk.bl.wap.hadoop.util.Unpack;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 
@@ -77,9 +78,22 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		e.printStackTrace();
 	}*/
 		
-		DistributedCache.createSymlink(job);
-		this.workingDirectory = job.get( "mapred.work.output.dir" );
-		oh = new Ohcount( new File( this.workingDirectory, Ohcount.OH_300_STATIC_BIN ));
+		
+		// Instanciate Ohcount using the location of the binary:	
+		try {
+			//File ohcount = new File( DistributedCache.getLocalCacheFiles(job)[0].toString() );
+			File ohcount = Unpack.streamToTemp(FormatProfiler.class, "native/linux_x64/"+Ohcount.OH_300_STATIC_BIN, true);
+			oh = new Ohcount( ohcount );
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+		// This returns a hdfs URI:
+		//this.workingDirectory = job.get( "mapred.work.output.dir" );
+		this.workingDirectory = job.getWorkingDirectory().toString();
 		
 	}
 
@@ -122,26 +136,43 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			String tikaAppId = "";
 			if( md.get( Metadata.APPLICATION_NAME ) != null ) tikaAppId += md.get( Metadata.APPLICATION_NAME );
 			if( md.get( Metadata.APPLICATION_VERSION ) != null ) tikaAppId += "_"+md.get( Metadata.APPLICATION_VERSION);
+			// For PDF, dig in:
+			if( "application/pdf".equals(tikaType) ) {
+				// PDF has Creator and Producer application properties:
+				String creator = md.get("creator");
+				String producer = md.get("producer");
+				tikaAppId = creator+" + "+producer;
+			}
+			// Append the appid
 			if( ! "".equals(tikaAppId) ) {
 				tikaType = tikaType+"; appid=\""+tikaAppId+"\"";
 			}
 
-		} catch( Exception e ) {
+		} catch( Throwable e ) {
 			log.error( e.getMessage() );
+			e.printStackTrace();
 			output.collect( new Text("LOG:ERROR Analysis threw exception: "+e+"\n"+getStackTrace(e)), new Text(key+" "+tmpFile+" "+value));
 		}
 		
 		// Ohcount
+		/*
 		String ohType = "application/octetstream";
 		if( tikaType.startsWith("text") ) {
 			try {
-				File contentTmp = this.copyToTempFile(wctID, value.getPayload());
+				// This could maybe be made to work, but the real name is often hidden, e.g. javascript downloads as resource.asp?identifier.
+				//String name = value.getRecord().getHeader().getUrl();
+				//name = name.substring( name.lastIndexOf("/") + 1);
+				String name = wctID;
+				File contentTmp = this.copyToTempFile(name, value.getPayload());
 				ohType = oh.identify(contentTmp);
 				contentTmp.delete();
-			} catch (Exception e1) {
-				e1.printStackTrace();
+			} catch (Exception e) {
+				log.error( e.getMessage() );
+				e.printStackTrace();
+				output.collect( new Text("LOG:ERROR Analysis threw exception: "+e+"\n"+getStackTrace(e)), new Text(key+" "+tmpFile+" "+value));
 			}
 		}
+		*/
 
 		// Type according to Droid/Nanite:
 		droidType = "application/octet-stream";
@@ -159,24 +190,28 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				output.collect( new Text("LOG: Droid found no match."), new Text(wctID));
 			}
 		} catch( Exception e ) {
-			e.printStackTrace();
 			log.error("Exception on Nanite invocation: "+e);
+			e.printStackTrace();
 			output.collect( new Text("LOG:ERROR Droid threw exception: "+e+"\n"+getStackTrace(e)), new Text(wctID) );
 		}
 
 		// Return the output for collation:
-		output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType+"\t"+ohType ), new Text( waybackYear ) );
+		output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType ), new Text( waybackYear ) );
 	}
 	
 	private File copyToTempFile( String name, byte[] content, int max_bytes ) throws Exception {
 		File tmp = File.createTempFile("FmtTmp-", name);
-		IOUtils.copy(new ByteArrayInputStream(content, 0, max_bytes), new FileOutputStream(tmp));
+		FileOutputStream fos = new FileOutputStream(tmp);
+		IOUtils.copy(new ByteArrayInputStream(content, 0, max_bytes), fos);
+		fos.flush();
+		fos.close();
 		return tmp;
 	}
 	
 	private static int BUF_8KB = 8*1024;
 
 	private File copyToTempFile( String name, byte[] content ) throws Exception {
+		//if( content.length < BUF_8KB )
 		return copyToTempFile(name, content, BUF_8KB);
 	}
 	

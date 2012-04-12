@@ -48,9 +48,9 @@ public class FormatProfiler extends Configured implements Tool {
 		
 		// Add the ohcount binary to the distributed cache.
 		File ohcount = Unpack.streamToTemp(FormatProfiler.class, "native/linux_x64/"+Ohcount.OH_300_STATIC_BIN, true);
-		DistributedCache.addCacheFile( ohcount.toURI(), conf );
+		//DistributedCache.addCacheFile( ohcount.toURI(), conf );
 		
-		// Run in local/debug mode:
+		// Run in local/debug mode: This requires that mapred.local.dir is a valid writeable folder.
 		//conf.set("mapred.job.tracker", "local");
 
 		conf.setJobName( args[ 0 ] + "_" + System.currentTimeMillis() );
