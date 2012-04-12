@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.bl.wap.hadoop.profiler;
+package uk.bl.wap.hadoop.format;
 
 import java.io.File;
 
@@ -12,6 +12,8 @@ import org.apache.commons.io.IOUtils;
  *
  */
 public class Ohcount {
+	
+	public static final String OH_300_STATIC_BIN = "ohcount-3.0.0-static";
 	
 	private static String OH_BIN = "ohcount";
 	

@@ -1,6 +1,7 @@
 package uk.bl.wap.hadoop.profiler;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
@@ -21,6 +22,8 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.util.Tool;
 
 import uk.bl.wap.hadoop.ArchiveFileInputFormat;
+import uk.bl.wap.hadoop.format.Ohcount;
+import uk.bl.wap.hadoop.util.Unpack;
 
 /**
  * WARCTikExtractor
@@ -44,7 +47,11 @@ public class FormatProfiler extends Configured implements Tool {
 		FileOutputFormat.setOutputPath( conf, new Path( args[ 1 ] ) );
 		
 		// Add the ohcount binary to the distributed cache.
-		DistributedCache.addCacheFile( URI.create("ohcount"), conf );
+		File ohcount = Unpack.streamToTemp(FormatProfiler.class, "native/linux_x64/"+Ohcount.OH_300_STATIC_BIN, true);
+		DistributedCache.addCacheFile( ohcount.toURI(), conf );
+		
+		// Run in local/debug mode:
+		//conf.set("mapred.job.tracker", "local");
 
 		conf.setJobName( args[ 0 ] + "_" + System.currentTimeMillis() );
 		conf.setInputFormat( ArchiveFileInputFormat.class );

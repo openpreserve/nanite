@@ -1,4 +1,4 @@
-package uk.bl.wap.hadoop.profiler;
+package uk.bl.wap.hadoop.entities;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

@@ -1,4 +1,4 @@
-package uk.bl.wap.hadoop.profiler;
+package uk.bl.wap.hadoop.util;
 
 import java.io.Closeable;
 import java.io.File;

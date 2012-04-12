@@ -37,6 +37,7 @@ import org.archive.io.ArchiveRecordHeader;
 import eu.scape_project.pc.cc.nanite.Nanite;
 
 import uk.bl.wap.hadoop.WritableArchiveRecord;
+import uk.bl.wap.hadoop.format.Ohcount;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 
@@ -78,7 +79,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		
 		DistributedCache.createSymlink(job);
 		this.workingDirectory = job.get( "mapred.work.output.dir" );
-		oh = new Ohcount( new File( this.workingDirectory, "ohcount"));
+		oh = new Ohcount( new File( this.workingDirectory, Ohcount.OH_300_STATIC_BIN ));
 		
 	}
 
