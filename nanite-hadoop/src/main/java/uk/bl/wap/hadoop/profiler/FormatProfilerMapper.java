@@ -156,7 +156,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		
 		// Ohcount
 		/*
-		String ohType = "application/octetstream";
+		String ohType = "application/octet-stream";
 		if( tikaType.startsWith("text") ) {
 			try {
 				// This could maybe be made to work, but the real name is often hidden, e.g. javascript downloads as resource.asp?identifier.
@@ -186,8 +186,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			if( irc.getResults().size() > 0 ) {
 				IdentificationResult res = irc.getResults().get(0);
 				droidType = Nanite.getMimeTypeFromResult(res);
-			} else {
-				output.collect( new Text("LOG: Droid found no match."), new Text(wctID));
 			}
 		} catch( Exception e ) {
 			log.error("Exception on Nanite invocation: "+e);

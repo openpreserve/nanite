@@ -50,7 +50,7 @@ public class Ohcount {
 			log.error("ohcount identify Caught exception: "+e);
 			e.printStackTrace();
 		}
-		return "application/octetstream";
+		return "application/octet-stream";
 	}
 	
 	public static void main( String[] args ) {
