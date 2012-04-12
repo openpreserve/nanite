@@ -31,8 +31,13 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
 import org.apache.tika.Tika;
+import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.sax.WriteOutContentHandler;
 import org.archive.io.ArchiveRecordHeader;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.helpers.DefaultHandler;
 
 import eu.scape_project.pc.cc.nanite.Nanite;
 
@@ -46,7 +51,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollect
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
 	private static Logger log = Logger.getLogger(FormatProfilerMapper.class.getName());
 	String workingDirectory = "";
-	Tika tika = new Tika();
+	Tika tika = null;
 	Nanite nanite = null;
 	Ohcount oh = null;
 	File tmpFile = null;
@@ -57,6 +62,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 	@Override
 	public void configure( JobConf job ) {
+		// Set up Tika:
+		tika = new Tika();
+		// Set up Nanite:
 		try {
 			nanite = new Nanite();
 			tmpFile = File.createTempFile("Nanite", "tmp");
@@ -126,37 +134,55 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 
 
-		// Type according to Tiki:
 		try {
-			// Make a new instance each time, as OOM and file handles were apparently building up.
-			tika = new Tika();
+			// Type according to Tiki:
 			tikaType = tika.detect( value.getPayload() );
-			// Now perform full parse:
-			Metadata md = new Metadata();
-			tika.parse( new ByteArrayInputStream( value.getPayload() ), md );
-			//tikaType = md.get( Metadata.CONTENT_TYPE );
-			//for( String name : md.names() ) {
-			//}
-			String tikaAppId = "";
-			if( md.get( Metadata.APPLICATION_NAME ) != null ) tikaAppId += md.get( Metadata.APPLICATION_NAME );
-			if( md.get( Metadata.APPLICATION_VERSION ) != null ) tikaAppId += " "+md.get( Metadata.APPLICATION_VERSION);
-			// For PDF, dig in:
-			if( "application/pdf".equals(tikaType) ) {
-				// PDF has Creator and Producer application properties:
-				String creator = md.get("creator");
-				String producer = md.get("producer");
-				tikaAppId = creator+" + "+producer;
-			}
-			// Append the appid
-			if( ! "".equals(tikaAppId) ) {
-				tikaType = tikaType+"; appid=\""+tikaAppId+"\"";
-			}
-
 		} catch( Throwable e ) {
 			log.error( e.getMessage() );
 			e.printStackTrace();
-			output.collect( new Text("LOG:ERROR Analysis threw exception: "+e+"\n"+getStackTrace(e)), new Text(key+" "+tmpFile+" "+value));
+			//output.collect( new Text("LOG:ERROR Tika.detect threw exception: "+e+"\n"+getStackTrace(e)), new Text(key+" "+tmpFile+" "+value));
 		}
+
+		// Now perform full parse...
+		// Set up metadata object:
+		Metadata md = new Metadata();
+		// Now perform the parsing:
+		try {
+			// Abort handler, limiting the output size, to avoid OOM:
+			ContentHandler ch = new WriteOutContentHandler(BUF_8KB);
+			// Silent handler:
+			//ContentHandler ch = new DefaultHandler();
+			// Set up a parse context:
+			ParseContext ctx = new ParseContext();
+			// Parse:
+			tika.getParser().parse( new ByteArrayInputStream( value.getPayload() ), ch, md, ctx );
+			// One could forcibly limit the size if OOM is still causing problems, like this:
+			//tika.getParser().parse( new ByteArrayInputStream( value.getPayload(), 0, BUF_8KB ), ch, md, ctx );
+		} catch( Throwable e ) {
+			log.error( e.getMessage() );
+			e.printStackTrace();
+			//output.collect( new Text("LOG:ERROR Tika.parse threw exception: "+e+"\n"+getStackTrace(e)), new Text(key+" "+tmpFile+" "+value));
+		}
+
+		//for( String name : md.names() ) {
+		//}
+		String tikaAppId = "";
+		if( md.get( Metadata.APPLICATION_NAME ) != null ) tikaAppId += md.get( Metadata.APPLICATION_NAME );
+		if( md.get( Metadata.APPLICATION_VERSION ) != null ) tikaAppId += " "+md.get( Metadata.APPLICATION_VERSION);
+		// For PDF, dig in:
+		if( "application/pdf".equals(tikaType) ) {
+			// PDF has Creator and Producer application properties:
+			String creator = md.get("creator");
+			String producer = md.get("producer");
+			if( creator != null ) tikaAppId = creator;
+			if( creator != null && producer != null ) tikaAppId += " + ";
+			if( producer != null) tikaAppId += producer;
+		}
+		// Append the appid
+		if( ! "".equals(tikaAppId) ) {
+			tikaType = tikaType+"; appid=\""+tikaAppId+"\"";
+		}
+
 		
 		// Ohcount
 		/*
