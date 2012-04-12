@@ -47,7 +47,7 @@ public class FormatProfiler extends Configured implements Tool {
 		FileOutputFormat.setOutputPath( conf, new Path( args[ 1 ] ) );
 		
 		// Add the ohcount binary to the distributed cache.
-		File ohcount = Unpack.streamToTemp(FormatProfiler.class, "native/linux_x64/"+Ohcount.OH_300_STATIC_BIN, true);
+		//File ohcount = Unpack.streamToTemp(FormatProfiler.class, "native/linux_x64/"+Ohcount.OH_300_STATIC_BIN, true);
 		//DistributedCache.addCacheFile( ohcount.toURI(), conf );
 		
 		// Run in local/debug mode: This requires that mapred.local.dir is a valid writeable folder.
@@ -63,6 +63,9 @@ public class FormatProfiler extends Configured implements Tool {
 		conf.setOutputKeyClass( Text.class );
 		conf.setOutputValueClass( Text.class );
 		conf.setMapOutputValueClass( Text.class );
+		
+		// Manually set a large number of reducers:
+		conf.setNumReduceTasks(50);
 		
 		JobClient.runJob( conf );
 		return 0;

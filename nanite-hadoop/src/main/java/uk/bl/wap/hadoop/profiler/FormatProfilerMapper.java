@@ -60,6 +60,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		try {
 			nanite = new Nanite();
 			tmpFile = File.createTempFile("Nanite", "tmp");
+			tmpFile.deleteOnExit();
 		} catch ( Exception e) {
 			e.printStackTrace();
 			log.error("Exception on Nanite instanciation: "+e);
@@ -127,10 +128,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Type according to Tiki:
 		try {
+			// Make a new instance each time, as OOM and file handles were apparently building up.
+			tika = new Tika();
 			tikaType = tika.detect( value.getPayload() );
 			// Now perform full parse:
 			Metadata md = new Metadata();
 			tika.parse( new ByteArrayInputStream( value.getPayload() ), md );
+			//tikaType = md.get( Metadata.CONTENT_TYPE );
 			//for( String name : md.names() ) {
 			//}
 			String tikaAppId = "";
@@ -199,6 +203,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	
 	private File copyToTempFile( String name, byte[] content, int max_bytes ) throws Exception {
 		File tmp = File.createTempFile("FmtTmp-", name);
+		tmp.deleteOnExit();
 		FileOutputStream fos = new FileOutputStream(tmp);
 		IOUtils.copy(new ByteArrayInputStream(content, 0, max_bytes), fos);
 		fos.flush();
