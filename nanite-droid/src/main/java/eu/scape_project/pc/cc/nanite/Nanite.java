@@ -358,14 +358,12 @@ public class Nanite {
 			}
 		} else {
 			// If there isn't a MIME type, make one up:
-			String name = res.getName();
-			if( res.getVersion() != null && ! "".equals(res.getVersion()) ) {
-				name += "-" + res.getVersion();
-			}
-			name = name.replace("\"", "");
-			name = name.replace(" ", "-").toLowerCase();
+			String id = "puid-"+res.getPuid().replace("/", "-");
+			String name = res.getName().replace("\"","'");
+			String version = res.getVersion().replace("\"","'");
 			// Add the puid as a parameter:
-			mimeType = "application/x-"+name+"; puid="+res.getPuid();
+			mimeType = "application/x-"+id+"; name=\""+name+"\"";
+			if( ! "null".equals(version) ) mimeType += "; version=\""+version+"\"";
 		}
 		return mimeType;
 	}
