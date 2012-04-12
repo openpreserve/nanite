@@ -3,11 +3,13 @@ package uk.bl.wap.hadoop.profiler;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -40,6 +42,9 @@ public class FormatProfiler extends Configured implements Tool {
 		}
 		
 		FileOutputFormat.setOutputPath( conf, new Path( args[ 1 ] ) );
+		
+		// Add the ohcount binary to the distributed cache.
+		DistributedCache.addCacheFile( URI.create("ohcount"), conf );
 
 		conf.setJobName( args[ 0 ] + "_" + System.currentTimeMillis() );
 		conf.setInputFormat( ArchiveFileInputFormat.class );

@@ -22,6 +22,10 @@ public class Ohcount {
 		OH_BIN = ohcount_binary;
 	}
 	
+	public Ohcount( File ohcount_binary ) {
+		OH_BIN = ohcount_binary.getAbsolutePath();
+	}
+	
 	public String identify( File input ) {
 		try {
 			String[] command = { OH_BIN, "-d", input.getAbsolutePath() };

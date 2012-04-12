@@ -13,11 +13,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.URI;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.filecache.DistributedCache;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -41,9 +46,15 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	String workingDirectory = "";
 	Tika tika = new Tika();
 	Nanite nanite = null;
+	Ohcount oh = null;
 	File tmpFile = null;
+	private FileSystem hdfs;
 
 	public FormatProfilerMapper() {
+	}
+
+	@Override
+	public void configure( JobConf job ) {
 		try {
 			nanite = new Nanite();
 			tmpFile = File.createTempFile("Nanite", "tmp");
@@ -51,11 +62,24 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			e.printStackTrace();
 			log.error("Exception on Nanite instanciation: "+e);
 		}
-	}
-
-	@Override
-	public void configure( JobConf job ) {
+		
+		/*
+		try {
+		this.hdfs = FileSystem.get( job );
+		URI[] uris = DistributedCache.getCacheFiles(job);
+		if( uris != null ) {
+			for( URI uri : uris ) {
+				FSDataInputStream input = hdfs.open( new Path( uri.getPath()) );
+			}
+		}
+	} catch( IOException e ) {
+		e.printStackTrace();
+	}*/
+		
+		DistributedCache.createSymlink(job);
 		this.workingDirectory = job.get( "mapred.work.output.dir" );
+		oh = new Ohcount( new File( this.workingDirectory, "ohcount"));
+		
 	}
 
 	@Override
@@ -105,6 +129,18 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			log.error( e.getMessage() );
 			output.collect( new Text("LOG:ERROR Analysis threw exception: "+e+"\n"+getStackTrace(e)), new Text(key+" "+tmpFile+" "+value));
 		}
+		
+		// Ohcount
+		String ohType = "application/octetstream";
+		if( tikaType.startsWith("text") ) {
+			try {
+				File contentTmp = this.copyToTempFile(wctID, value.getPayload());
+				ohType = oh.identify(contentTmp);
+				contentTmp.delete();
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+		}
 
 		// Type according to Droid/Nanite:
 		droidType = "application/octet-stream";
@@ -128,7 +164,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 
 		// Return the output for collation:
-		output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType ), new Text( waybackYear ) );
+		output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType+"\t"+ohType ), new Text( waybackYear ) );
 	}
 	
 	private File copyToTempFile( String name, byte[] content, int max_bytes ) throws Exception {
@@ -137,8 +173,10 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		return tmp;
 	}
 	
+	private static int BUF_8KB = 8*1024;
+
 	private File copyToTempFile( String name, byte[] content ) throws Exception {
-		return copyToTempFile(name,content,Integer.MAX_VALUE);
+		return copyToTempFile(name, content, BUF_8KB);
 	}
 	
 	private static String getStackTrace(Throwable aThrowable) {
