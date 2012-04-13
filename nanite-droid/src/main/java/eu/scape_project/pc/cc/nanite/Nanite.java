@@ -354,7 +354,7 @@ public class Nanite {
 			// Patch on a version parameter if there isn't one there already:
 			if( !mimeType.contains("version=") && 
 					res.getVersion() != null && ! "".equals(res.getVersion()) ) {
-				mimeType += "; version="+res.getVersion();
+				mimeType += "; version=\""+res.getVersion()+"\"";
 			}
 		} else {
 			// If there isn't a MIME type, make one up:

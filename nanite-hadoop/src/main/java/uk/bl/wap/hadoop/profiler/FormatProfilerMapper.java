@@ -173,7 +173,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// PDF Version, if any:
 		if( md.get("pdf:version") != null ) tikaType += "; version=\""+md.get("pdf:version")+"\"";
 		// For PDF, create separate tags:
-		if( "application/pdf".equals(tikaType) ) {
+		if( tikaType.startsWith("application/pdf") ) {
 			// PDF has Creator and Producer application properties:
 			String creator = md.get("creator").replace("\"","'");
 			if( creator != null ) tikaType += "; creator=\""+creator+"\"";
