@@ -170,6 +170,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		//for( String name : md.names() ) {
 		//}
+		// PDF Version, if any:
+		if( md.get("pdf:version") != null ) tikaType += "; version="+md.get("pdf:version");
+		// Application ID@
 		String tikaAppId = "";
 		if( md.get( Metadata.APPLICATION_NAME ) != null ) tikaAppId += md.get( Metadata.APPLICATION_NAME );
 		if( md.get( Metadata.APPLICATION_VERSION ) != null ) tikaAppId += " "+md.get( Metadata.APPLICATION_VERSION);

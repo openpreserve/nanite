@@ -65,7 +65,7 @@ public class PDFParser extends AbstractParser {
 
 	public static void main( String[] args ) {
 		try {
-			FileInputStream input = new FileInputStream( new File( "src/test/resources/test.pdf" ) );
+			FileInputStream input = new FileInputStream( new File( "src/test/resources/simple-password-copy.pdf" ) );
 			OutputStream output = System.out; //new FileOutputStream( new File( "Z:/part-00001.xml" ) );
 			PdfReader reader = new PdfReader( input );
 			StringBuilder builder = new StringBuilder();
@@ -79,8 +79,9 @@ public class PDFParser extends AbstractParser {
 			
 			output.write( builder.toString().getBytes( "UTF-8" ) );			
 			
-			output.write( metadata.toString().getBytes( "UTF-8" ) );
-
+			for( String key : metadata.names() ) {
+				output.write( (key+" : "+metadata.get(key)+"\n").getBytes( "UTF-8" ) );
+			}
 			output.close();
 		} catch( Exception e ) {
 			e.printStackTrace();
@@ -126,7 +127,7 @@ public class PDFParser extends AbstractParser {
 			// Add other data of interest:
 			metadata.set("pdf:version", "1."+reader.getPdfVersion());
 			metadata.set("pdf:numPages", ""+reader.getNumberOfPages());
-			metadata.set("pdf:cryptoMode", ""+reader.getCryptoMode());
+			metadata.set("pdf:cryptoMode", ""+getCryptoModeAsString(reader));
 			metadata.set("pdf:openedWithFullPermissions", ""+reader.isOpenedWithFullPermissions());
 			metadata.set("pdf:encrypted", ""+reader.isEncrypted());
 			metadata.set("pdf:metadataEncrypted", ""+reader.isMetadataEncrypted());
@@ -140,6 +141,14 @@ public class PDFParser extends AbstractParser {
 		} catch( Exception e ) {
 			System.err.println( "PDFParser.extractMetadata(): " + e.getMessage() );
 		}
+	}
+	
+	private static String getCryptoModeAsString( PdfReader reader ) {
+		int mode = reader.getCryptoMode();
+		// TODO Make this into a more readable string, but tricky as it's a bitmask.
+		// Need to use FLAG_A|FLAG_B output syntax, as strace does.
+		// @see com.itextpdf.text.pdf.PDFEncryption.setCryptoMode(int mode, int kl);
+		return ""+mode;
 	}
 
 	/**
