@@ -171,20 +171,19 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		//for( String name : md.names() ) {
 		//}
 		// PDF Version, if any:
-		if( md.get("pdf:version") != null ) tikaType += "; version="+md.get("pdf:version");
-		// Application ID@
+		if( md.get("pdf:version") != null ) tikaType += "; version=\""+md.get("pdf:version")+"\"";
+		// For PDF, create separate tags:
+		if( "application/pdf".equals(tikaType) ) {
+			// PDF has Creator and Producer application properties:
+			String creator = md.get("creator").replace("\"","'");
+			if( creator != null ) tikaType += "; creator=\""+creator+"\"";
+			String producer = md.get("producer").replace("\"","'");
+			if( producer != null) tikaType += "; producer=\""+producer+"\"";
+		}
+		// Application ID, MS Office only AFAICT
 		String tikaAppId = "";
 		if( md.get( Metadata.APPLICATION_NAME ) != null ) tikaAppId += md.get( Metadata.APPLICATION_NAME );
 		if( md.get( Metadata.APPLICATION_VERSION ) != null ) tikaAppId += " "+md.get( Metadata.APPLICATION_VERSION);
-		// For PDF, dig in:
-		if( "application/pdf".equals(tikaType) ) {
-			// PDF has Creator and Producer application properties:
-			String creator = md.get("creator");
-			String producer = md.get("producer");
-			if( creator != null ) tikaAppId = creator;
-			if( creator != null && producer != null ) tikaAppId += " + ";
-			if( producer != null) tikaAppId += producer;
-		}
 		// Append the appid
 		if( ! "".equals(tikaAppId) ) {
 			tikaType = tikaType+"; appid=\""+tikaAppId+"\"";

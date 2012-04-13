@@ -16,6 +16,7 @@
  */
 package uk.bl.wap.tika.parser.pdf;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,16 +26,21 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
 
+import org.apache.jempbox.xmp.XMPMetadata;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AbstractParser;
 import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.image.xmp.JempboxExtractor;
 import org.apache.tika.sax.XHTMLContentHandler;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
+import com.itextpdf.text.pdf.PdfDictionary;
+import com.itextpdf.text.pdf.PdfName;
 import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.PdfString;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 
 /**
@@ -65,7 +71,7 @@ public class PDFParser extends AbstractParser {
 
 	public static void main( String[] args ) {
 		try {
-			FileInputStream input = new FileInputStream( new File( "src/test/resources/simple-password-copy.pdf" ) );
+			FileInputStream input = new FileInputStream( new File( "src/test/resources/jap_91055688_japredcross_ss_ue_fnl_12212011.pdf" ));//simple-PDFA-1a.pdf" ) );
 			OutputStream output = System.out; //new FileOutputStream( new File( "Z:/part-00001.xml" ) );
 			PdfReader reader = new PdfReader( input );
 			StringBuilder builder = new StringBuilder();
@@ -133,13 +139,46 @@ public class PDFParser extends AbstractParser {
 			metadata.set("pdf:metadataEncrypted", ""+reader.isMetadataEncrypted());
 			metadata.set("pdf:128key", ""+reader.is128Key());
 			metadata.set("pdf:tampered", ""+reader.isTampered());
+			// Also grap XMP metadata, if present:
+			byte[] xmpmd = reader.getMetadata();
+			if( xmpmd != null ) {
+				// This is standard Tika code for parsing standard stuff from the XMP:
+				JempboxExtractor extractor = new JempboxExtractor(metadata);
+				extractor.parse( new ByteArrayInputStream( xmpmd ) );
+				// This is custom XMP-handling code:
+				XMPMetadata xmp = XMPMetadata.load( new ByteArrayInputStream( xmpmd ) );
+				// There is a special class for grabbing data in the PDF schema - not sure it will add much here:
+				// Could parse xmp:CreatorTool and pdf:Producer etc. etc. out of here.
+				//XMPSchemaPDF pdfxmp = xmp.getPDFSchema();
+				// Added a PDF/A schema class:
+				xmp.addXMLNSMapping(XMPSchemaPDFA.NAMESPACE, XMPSchemaPDFA.class);
+				XMPSchemaPDFA pdfaxmp = (XMPSchemaPDFA) xmp.getSchemaByClass(XMPSchemaPDFA.class);
+				if( pdfaxmp != null ) {
+					metadata.set("pdfaid:part", pdfaxmp.getPart());
+					metadata.set("pdfaid:conformance", pdfaxmp.getConformance());
+					String version = "A-"+pdfaxmp.getPart()+pdfaxmp.getConformance().toLowerCase();
+					//metadata.set("pdfa:version", version );					
+					metadata.set("pdf:version", version );					
+				}
+			}
+			// Attempt to determine Adobe extension level:
+			PdfDictionary extensions = reader.getCatalog().getAsDict(PdfName.EXTENSIONS);
+			if( extensions != null ) {
+				PdfDictionary adobeExt = extensions.getAsDict(PdfName.ADBE);
+				if( adobeExt != null ) {
+					PdfName baseVersion = adobeExt.getAsName(PdfName.BASEVERSION);
+					int el = adobeExt.getAsNumber(PdfName.EXTENSIONLEVEL).intValue();
+					metadata.set("pdf:version", baseVersion.toString().substring(1)+" Adobe Extension Level "+el );
+				}
+			}
 			// Ensure the normalised metadata are mapped in:
 			if(  map.get( "Title" ) != null ) 
 				metadata.set( Metadata.TITLE, map.get( "Title" ) );
 			if(  map.get( "Author" ) != null ) 
 				metadata.set( Metadata.AUTHOR, map.get( "Author" ) );
 		} catch( Exception e ) {
-			System.err.println( "PDFParser.extractMetadata(): " + e.getMessage() );
+			System.err.println( "PDFParser.extractMetadata() caught Exception: " + e.getMessage() );
+			e.printStackTrace();
 		}
 	}
 	
