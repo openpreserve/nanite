@@ -18,9 +18,9 @@ import org.apache.tika.parser.CompositeParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.ParserDecorator;
+import org.apache.tika.sax.WriteOutContentHandler;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
 import uk.bl.wap.tika.parser.pdf.PDFParser;
 
@@ -36,7 +36,7 @@ public class TikaNanite {
 		
 		CompositeParser autoDetectParser = new AutoDetectParser();
 		// Wrap it in a recursive parser, to access the metadata.
-		Parser parser = autoDetectParser; //new RecursiveMetadataParser(autoDetectParser);
+		Parser parser = new RecursiveMetadataParser(autoDetectParser);
 		// Override the built-in PDF parser (based on PDFBox) with our own (based in iText):
 		MediaType pdf = MediaType.parse("application/pdf");
 		Map<MediaType, Parser> parsers = autoDetectParser.getParsers();
@@ -47,9 +47,9 @@ public class TikaNanite {
 		context.set(Parser.class, parser);
 
 		// Basic handler (ignores/pass-through-in-silence):
-		ContentHandler handler = new DefaultHandler();
+		//ContentHandler handler = new DefaultHandler();
 		// Abort handler, limiting the output size, to avoid OOM:
-		//ContentHandler handler = new WriteOutContentHandler(100*1024);
+		ContentHandler handler = new WriteOutContentHandler(100*1024);
 		
 		Metadata metadata = new Metadata();
 		InputStream stream = TikaInputStream.get(new File(args[0]));
@@ -68,6 +68,10 @@ public class TikaNanite {
 		System.out.println("----");		
 	}
 
+	/**
+	 * 
+	 * @author AnJackson
+	 */
 	private static class RecursiveMetadataParser extends ParserDecorator {
 
 		/** */
@@ -81,8 +85,6 @@ public class TikaNanite {
 		public void parse(InputStream stream, ContentHandler ignore,
 				Metadata metadata, ParseContext context) throws IOException,
 				SAXException, TikaException {
-			
-//			ContentHandler handler = new BodyContentHandler();
 			
 			super.parse(stream, ignore, metadata, context);
 

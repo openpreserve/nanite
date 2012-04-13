@@ -19,8 +19,8 @@ main JAR file, e.g. 'target/nanite-hadoop-0.0.1-SNAPSHOT-job.jar'.
 TODO
 ----
 
-* Change nanite-droid to use file extensions or PUID instead of long names for the x- MIME types.
-* Add a nanite-ohcount that uses ohcount-3.0.0-static and at least extracts the main type.
+* Mega bonus points: Add new tika detector for plain text that uses a Weka Baysian filter to spot scripts/code/markup.
+* Extreme mega bonus points: Extend tika to run http://cmusphinx.sourceforge.net/ and extract text from audio/video.
 
 
 [anjackson@explorer ~]$ ohcount-3.0.0-static -i apps/ohcount-3.0.0/test/src_licenses/gpl_t1.c

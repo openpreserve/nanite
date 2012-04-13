@@ -153,6 +153,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			ParseContext ctx = new ParseContext();
 			// Set up the parser:
 			CompositeParser autoDetectParser = new AutoDetectParser();
+			// Override the built-in PDFBox parser:
 			MediaType pdf = MediaType.parse("application/pdf");
 			Map<MediaType, Parser> parsers = autoDetectParser.getParsers();
 			parsers.put( pdf, new PDFParser() );
