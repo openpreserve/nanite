@@ -53,5 +53,10 @@
   		<artifactId>tika-parsers</artifactId>
   		<version>1.1</version>
   	</dependency>
+  	<dependency>
+  		<groupId>eu.scape-project.nanite</groupId>
+  		<artifactId>nanite-tika</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
   </dependencies>
 </project>

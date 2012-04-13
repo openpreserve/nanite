@@ -17,7 +17,6 @@
 package uk.bl.wap.tika.parser.pdf;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.File;
@@ -134,8 +133,10 @@ public class PDFParser extends AbstractParser {
 			metadata.set("pdf:128key", ""+reader.is128Key());
 			metadata.set("pdf:tampered", ""+reader.isTampered());
 			// Ensure the normalised metadata are mapped in:
-			metadata.set( Metadata.TITLE, map.get( "Title" ) );
-			metadata.set( Metadata.AUTHOR, map.get( "Author" ) );
+			if(  map.get( "Title" ) != null ) 
+				metadata.set( Metadata.TITLE, map.get( "Title" ) );
+			if(  map.get( "Author" ) != null ) 
+				metadata.set( Metadata.AUTHOR, map.get( "Author" ) );
 		} catch( Exception e ) {
 			System.err.println( "PDFParser.extractMetadata(): " + e.getMessage() );
 		}

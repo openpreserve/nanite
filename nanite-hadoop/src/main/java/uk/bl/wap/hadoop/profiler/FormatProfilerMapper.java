@@ -7,22 +7,17 @@ package uk.bl.wap.hadoop.profiler;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.URI;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.filecache.DistributedCache;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -31,19 +26,21 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
 import org.apache.tika.Tika;
-import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.CompositeParser;
 import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.WriteOutContentHandler;
 import org.archive.io.ArchiveRecordHeader;
 import org.xml.sax.ContentHandler;
-import org.xml.sax.helpers.DefaultHandler;
-
 import eu.scape_project.pc.cc.nanite.Nanite;
 
 import uk.bl.wap.hadoop.WritableArchiveRecord;
 import uk.bl.wap.hadoop.format.Ohcount;
 import uk.bl.wap.hadoop.util.Unpack;
+import uk.bl.wap.tika.parser.pdf.PDFParser;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 
@@ -55,7 +52,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	Nanite nanite = null;
 	Ohcount oh = null;
 	File tmpFile = null;
-	private FileSystem hdfs;
+	//private FileSystem hdfs;
 
 	public FormatProfilerMapper() {
 	}
@@ -154,8 +151,14 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			//ContentHandler ch = new DefaultHandler();
 			// Set up a parse context:
 			ParseContext ctx = new ParseContext();
-			// Parse:
-			tika.getParser().parse( new ByteArrayInputStream( value.getPayload() ), ch, md, ctx );
+			// Set up the parser:
+			CompositeParser autoDetectParser = new AutoDetectParser();
+			MediaType pdf = MediaType.parse("application/pdf");
+			Map<MediaType, Parser> parsers = autoDetectParser.getParsers();
+			parsers.put( pdf, new PDFParser() );
+			autoDetectParser.setParsers(parsers);
+			// Parse
+			autoDetectParser.parse( new ByteArrayInputStream( value.getPayload() ), ch, md, ctx );
 			// One could forcibly limit the size if OOM is still causing problems, like this:
 			//tika.getParser().parse( new ByteArrayInputStream( value.getPayload(), 0, BUF_8KB ), ch, md, ctx );
 		} catch( Throwable e ) {
