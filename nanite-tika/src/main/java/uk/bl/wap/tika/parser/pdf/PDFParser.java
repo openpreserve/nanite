@@ -40,7 +40,6 @@ import org.xml.sax.SAXException;
 import com.itextpdf.text.pdf.PdfDictionary;
 import com.itextpdf.text.pdf.PdfName;
 import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfString;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 
 /**
@@ -71,7 +70,7 @@ public class PDFParser extends AbstractParser {
 
 	public static void main( String[] args ) {
 		try {
-			FileInputStream input = new FileInputStream( new File( "src/test/resources/jap_91055688_japredcross_ss_ue_fnl_12212011.pdf" ));//simple-PDFA-1a.pdf" ) );
+			FileInputStream input = new FileInputStream( new File( "src/test/resources/simple-PDFA-1a.pdf" ) );
 			OutputStream output = System.out; //new FileOutputStream( new File( "Z:/part-00001.xml" ) );
 			PdfReader reader = new PdfReader( input );
 			StringBuilder builder = new StringBuilder();
