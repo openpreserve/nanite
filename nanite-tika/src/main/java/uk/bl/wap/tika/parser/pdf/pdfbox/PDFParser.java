@@ -235,7 +235,7 @@ public class PDFParser extends AbstractParser {
 					COSDictionary adobeExt = (COSDictionary) extensions.getDictionaryObject(extName);
 					String baseVersion = adobeExt.getNameAsString(COSName.getPDFName("BaseVersion"));
 					int el = adobeExt.getInt(COSName.getPDFName("ExtensionLevel"));
-					metadata.set("pdf:version", baseVersion+", Adobe Extension Level "+el );
+					metadata.set("pdf:version", baseVersion+" Adobe Extension Level "+el );
 					// TODO WARN if this embedded version is inconsistent with document header version?
 				} else {
 					// WARN that there is an Extension, but it's not Adobe's, and so is a 'new' format'.

@@ -188,8 +188,20 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		if( ! "".equals(tikaAppId) ) {
 			tikaType = tikaType+"; appid=\""+tikaAppId+"\"";
 		}
-
-		
+		// Images, e.g. JPEG and TIFF, can have 'Software', 'tiff:Software',
+		md.get( Metadata.SOFTWARE );
+		md.get( "Software" );
+		// PNGs have a 'tEXt tEXtEntry: keyword=Software, value=GPL Ghostscript 8.71'
+		md.get("tEXt tEXtEntry").replace("keyword=Software, value=", "");
+		/* Some JPEGs have this:
+Jpeg Comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
+comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
+		 */
+		md.get(Metadata.LAST_MODIFIED); //might be useful, as would any embedded version
+		// e.g. a jpg with 'Date/Time: 2011:10:07 11:35:42'?
+		// e.g. a png with
+		// 'Document ImageModificationTime: year=2011, month=7, day=29, hour=15, minute=33, second=5'
+		// 'tIME: year=2011, month=7, day=29, hour=15, minute=33, second=5'
 		// Ohcount
 		/*
 		String ohType = "application/octet-stream";
