@@ -22,7 +22,7 @@ import org.apache.tika.sax.WriteOutContentHandler;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
-import uk.bl.wap.tika.parser.pdf.PDFParser;
+import uk.bl.wap.tika.parser.pdf.itext.PDFParser;
 
 /**
  * Base on http://wiki.apache.org/tika/RecursiveMetadata

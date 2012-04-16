@@ -16,22 +16,30 @@
  */
 package uk.bl.wap.tika.parser.pdf.pdfbox;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.jempbox.xmp.XMPMetadata;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.io.RandomAccess;
 import org.apache.pdfbox.io.RandomAccessFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.persistence.util.COSObjectKey;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.io.TemporaryResources;
@@ -45,6 +53,9 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.PasswordProvider;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import uk.bl.wap.tika.parser.pdf.XMPSchemaPDFA;
 
 /**
  * PDF parser.
@@ -184,6 +195,55 @@ public class PDFParser extends AbstractParser {
         	addMetadata(metadata, name, info.getDictionary().getDictionaryObject(key));
             }
         }
+		// Add other data of interest:
+		metadata.set("pdf:version", ""+document.getDocument().getVersion());
+		metadata.set("pdf:numPages", ""+document.getNumberOfPages());
+		//metadata.set("pdf:cryptoMode", ""+getCryptoModeAsString(reader));
+		//metadata.set("pdf:openedWithFullPermissions", ""+reader.isOpenedWithFullPermissions());
+		metadata.set("pdf:encrypted", ""+document.isEncrypted());
+		//metadata.set("pdf:metadataEncrypted", ""+document.isMetadataEncrypted());
+		//metadata.set("pdf:128key", ""+reader.is128Key());
+		//metadata.set("pdf:tampered", ""+reader.isTampered());
+        try {
+			XMPMetadata xmp = document.getDocumentCatalog().getMetadata().exportXMPMetadata();
+			// There is a special class for grabbing data in the PDF schema - not sure it will add much here:
+			// Could parse xmp:CreatorTool and pdf:Producer etc. etc. out of here.
+			//XMPSchemaPDF pdfxmp = xmp.getPDFSchema();
+			// Added a PDF/A schema class:
+			xmp.addXMLNSMapping(XMPSchemaPDFA.NAMESPACE, XMPSchemaPDFA.class);
+			XMPSchemaPDFA pdfaxmp = (XMPSchemaPDFA) xmp.getSchemaByClass(XMPSchemaPDFA.class);
+			if( pdfaxmp != null ) {
+				metadata.set("pdfaid:part", pdfaxmp.getPart());
+				metadata.set("pdfaid:conformance", pdfaxmp.getConformance());
+				String version = "A-"+pdfaxmp.getPart()+pdfaxmp.getConformance().toLowerCase();
+				//metadata.set("pdfa:version", version );					
+				metadata.set("pdf:version", version );					
+			}
+			// TODO WARN if this XMP version is inconsistent with document header version?
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// Attempt to determine Adobe extension level, if present:
+		COSDictionary root = document.getDocumentCatalog().getCOSDictionary();
+		COSDictionary extensions = (COSDictionary) root.getDictionaryObject(COSName.getPDFName("Extensions") );
+		if( extensions != null ) {
+			for( COSName extName : extensions.keySet() ) {
+				// If it's an Adobe one, interpret it to determine the extension level:
+				if( extName.equals( COSName.getPDFName("ADBE") )) {
+					COSDictionary adobeExt = (COSDictionary) extensions.getDictionaryObject(extName);
+					String baseVersion = adobeExt.getNameAsString(COSName.getPDFName("BaseVersion"));
+					int el = adobeExt.getInt(COSName.getPDFName("ExtensionLevel"));
+					metadata.set("pdf:version", baseVersion+", Adobe Extension Level "+el );
+					// TODO WARN if this embedded version is inconsistent with document header version?
+				} else {
+					// WARN that there is an Extension, but it's not Adobe's, and so is a 'new' format'.
+					metadata.set("pdf:foundNonAdobeExtensionName", extName.getName());
+				}
+			}
+		}
+
     }
 
     private void addMetadata(Metadata metadata, String name, String value) {
@@ -285,4 +345,21 @@ public class PDFParser extends AbstractParser {
         return sortByPosition;
     }
 
-}
+	public static void main( String[] args ) {
+		try {
+			FileInputStream input = new FileInputStream( new File( "src/test/resources/jap_91055688_japredcross_ss_ue_fnl_12212011.pdf"));//simple-PDFA-1a.pdf" ) );
+			OutputStream output = System.out; //new FileOutputStream( new File( "Z:/part-00001.xml" ) );
+
+			Metadata metadata = new Metadata();
+			PDFParser parser = new PDFParser();
+			parser.parse(input, new DefaultHandler() , metadata, new ParseContext() );
+			input.close();
+			
+			for( String key : metadata.names() ) {
+				output.write( (key+" : "+metadata.get(key)+"\n").getBytes( "UTF-8" ) );
+			}
+			output.close();
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
+	}}

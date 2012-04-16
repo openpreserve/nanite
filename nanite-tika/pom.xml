@@ -1,8 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>eu.scape-project.nanite</groupId>
-  <artifactId>nanite-tika</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>eu.scape-project.nanite</groupId>
+    <artifactId>nanite-tika</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<licenses>
+		<license>
+			<name>Apache 2</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+			<comments>A business-friendly OSS license</comments>
+		</license>
+	</licenses>
 	<build>
 		<plugins>
 			<plugin>
@@ -14,6 +22,17 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
+        <plugin>
+            <groupId>com.mycila.maven-license-plugin</groupId>
+            <artifactId>maven-license-plugin</artifactId>
+            <configuration>
+                <header>src/etc/header.txt</header>
+                <year>2012</year>
+                <user.name>Andrew Jackson</user.name>
+                <email>Andrew.Jackson@bl.uk</email>
+                <strictCheck>true</strictCheck>
+            </configuration>
+        </plugin>
 		</plugins>
 	</build>
 	<dependencies>
