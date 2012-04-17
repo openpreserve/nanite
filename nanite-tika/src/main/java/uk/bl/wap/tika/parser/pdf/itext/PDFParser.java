@@ -50,6 +50,8 @@ import com.itextpdf.text.pdf.parser.PdfTextExtractor;
  * This parser can process also encrypted PDF documents if the required password is given as a part of the input metadata associated with a document. If no password is given, then this parser will try decrypting the document using the empty
  * password that's often used with PDFs.
  * 
+ * FIXME Note that 'creator' as in 'author' overwrites the 'pdf:creator' (as in sofware app) somehow. 
+ * 
  * @author Roger Coram, Andrew Jackson <Andrew.Jackson@bl.uk>
  */
 public class PDFParser extends AbstractParser {

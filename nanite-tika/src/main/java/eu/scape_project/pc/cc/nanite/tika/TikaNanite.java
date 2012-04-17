@@ -34,17 +34,12 @@ public class TikaNanite {
 
 	public static void main(String[] args) throws Exception {
 		
-		CompositeParser autoDetectParser = new AutoDetectParser();
+		CompositeParser parser = new PreservationParser();
 		// Wrap it in a recursive parser, to access the metadata.
-		Parser parser = new RecursiveMetadataParser(autoDetectParser);
-		// Override the built-in PDF parser (based on PDFBox) with our own (based in iText):
-		MediaType pdf = MediaType.parse("application/pdf");
-		Map<MediaType, Parser> parsers = autoDetectParser.getParsers();
-		parsers.put( pdf, new PDFParser() );
-		autoDetectParser.setParsers(parsers);
+		Parser recursiveReportingParser = new RecursiveMetadataParser(parser);
 		// Set up the context:
 		ParseContext context = new ParseContext();
-		context.set(Parser.class, parser);
+		context.set(Parser.class, recursiveReportingParser);
 
 		// Basic handler (ignores/pass-through-in-silence):
 		//ContentHandler handler = new DefaultHandler();
@@ -54,7 +49,7 @@ public class TikaNanite {
 		Metadata metadata = new Metadata();
 		InputStream stream = TikaInputStream.get(new File(args[0]));
 		try {
-			parser.parse(stream, handler, metadata, context);
+			recursiveReportingParser.parse(stream, handler, metadata, context);
 		} finally {
 			stream.close();
 		}

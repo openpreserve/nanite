@@ -11,7 +11,12 @@
 
   <root> 
     <priority value="warn" /> 
-    <appender-ref ref="console" /> 
+    <appender-ref ref="console" />
   </root>
   
+  <!--  Reduce logging from PDFBox  -->
+  <logger name="org.apache.pdfbox">
+    <level value="error"/> 
+  </logger>
+	
 </log4j:configuration>

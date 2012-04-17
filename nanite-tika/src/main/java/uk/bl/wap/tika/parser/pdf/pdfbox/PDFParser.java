@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
@@ -29,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.jempbox.xmp.XMPMetadata;
+import org.apache.jempbox.xmp.XMPSchemaPDF;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -195,7 +197,10 @@ public class PDFParser extends AbstractParser {
         	addMetadata(metadata, name, info.getDictionary().getDictionaryObject(key));
             }
         }
-		// Add other data of interest:
+        // ANJ Extensions:
+		//
+        //
+        // Add other data of interest:
 		metadata.set("pdf:version", ""+document.getDocument().getVersion());
 		metadata.set("pdf:numPages", ""+document.getNumberOfPages());
 		//metadata.set("pdf:cryptoMode", ""+getCryptoModeAsString(reader));
@@ -208,7 +213,7 @@ public class PDFParser extends AbstractParser {
 			XMPMetadata xmp = document.getDocumentCatalog().getMetadata().exportXMPMetadata();
 			// There is a special class for grabbing data in the PDF schema - not sure it will add much here:
 			// Could parse xmp:CreatorTool and pdf:Producer etc. etc. out of here.
-			//XMPSchemaPDF pdfxmp = xmp.getPDFSchema();
+			XMPSchemaPDF pdfxmp = xmp.getPDFSchema();
 			// Added a PDF/A schema class:
 			xmp.addXMLNSMapping(XMPSchemaPDFA.NAMESPACE, XMPSchemaPDFA.class);
 			XMPSchemaPDFA pdfaxmp = (XMPSchemaPDFA) xmp.getSchemaByClass(XMPSchemaPDFA.class);
@@ -221,8 +226,7 @@ public class PDFParser extends AbstractParser {
 			}
 			// TODO WARN if this XMP version is inconsistent with document header version?
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			metadata.set("pdf:metadata-xmp-parse-failed", ""+e);
 		}
 		
 		// Attempt to determine Adobe extension level, if present:
@@ -243,7 +247,7 @@ public class PDFParser extends AbstractParser {
 				}
 			}
 		}
-
+		// End Of ANJ Extensions.
     }
 
     private void addMetadata(Metadata metadata, String name, String value) {

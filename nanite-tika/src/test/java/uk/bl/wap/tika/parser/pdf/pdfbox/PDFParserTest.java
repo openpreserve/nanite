@@ -14,6 +14,8 @@ import org.apache.tika.parser.ParseContext;
 import org.junit.Test;
 import org.xml.sax.helpers.DefaultHandler;
 
+import eu.scape_project.pc.cc.nanite.tika.PreservationParser;
+
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
@@ -38,6 +40,7 @@ public class PDFParserTest {
 			for( String key : metadata.names() ) {
 				output.write( (key+" : "+metadata.get(key)+"\n").getBytes( "UTF-8" ) );
 			}
+			
 			output.close();
 		} catch( Exception e ) {
 			e.printStackTrace();
