@@ -60,11 +60,20 @@ public class PreservationParser extends AutoDetectParser {
 		// Build the extended MIME Type, incorporating version and creator software:
 		ExtendedMimeType tikaType = null;
 		try {
-			tikaType = new ExtendedMimeType(metadata.get( Metadata.CONTENT_TYPE ));
+			tikaType = new ExtendedMimeType( metadata.get( Metadata.CONTENT_TYPE ) );
 		} catch (MimeTypeParseException e) {
 			// Stop here and return if this failed:
 			e.printStackTrace();
 			return;
+		}
+		// Content encoding, if any:
+		String encoding = metadata.get( Metadata.CONTENT_ENCODING );
+		if( encoding != null ) {
+			if ( "text".equals( tikaType.getPrimaryType() ) ) {
+				tikaType.setParameter( "charset", encoding.toLowerCase() );
+			} else {
+				tikaType.setParameter( "encoding", encoding );
+			}
 		}
 		// PDF Version, if any:
 		if( metadata.get("pdf:version") != null ) tikaType.setVersion( metadata.get("pdf:version") );
@@ -98,6 +107,7 @@ comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
 		// Also, if there is any trace of any hardware, record it here:
 		if( metadata.get( Metadata.EQUIPMENT_MODEL ) != null )
 			tikaType.setHardware( metadata.get( Metadata.EQUIPMENT_MODEL));
+		
 		// Return extended MIME Type:
 		metadata.set(EXT_MIME_TYPE, tikaType.toString());
 		

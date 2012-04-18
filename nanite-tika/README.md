@@ -33,6 +33,12 @@ whereas for a ODF document, we have forms like this:
 
 Although this is rather clumsy, collecting this initial data will help us find a way forward. Finding new mappings, like whether 'pdf:producer' can be mapped to 'software', can be explored using this data and decided upon later.
 
+Ideas
+-----
+
+* Should normalise/limit the extended MIME type work, and create a new job that spews out ALL the properties Tika reports in some suitable form.
+
+
 
 Notes on Tika and PDFBox
 ------------------------
