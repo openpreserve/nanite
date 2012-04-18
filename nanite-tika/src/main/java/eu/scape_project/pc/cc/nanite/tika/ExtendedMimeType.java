@@ -126,6 +126,11 @@ public class ExtendedMimeType extends MimeType {
 	 * In some foul cases, pdf:producer can have newlines at the end.
 	 * Therefore, we defensively strip whitespace.
 	 * 
+	 * Ideally, perhaps this would keep this data, even leading/trailing space, 
+	 * in some escaped form, as a possible signature of the source process.
+	 * 
+	 * FIXME Escape bad chars instead of removing them?
+	 * 
 	 * @param arg
 	 * @return
 	 */
@@ -134,6 +139,9 @@ public class ExtendedMimeType extends MimeType {
 			arg.replaceAll("\n", " ");
 			arg.replaceAll("\r", " ");
 			arg.replaceAll("\t", " ");
+			// Also strip all non-ASCII characters:
+			arg.replaceAll("[^\\x00-\\x7F]", "");
+			// Strip leading/lagging whitespace:
 			arg = arg.trim();
 		}
 		return arg;
