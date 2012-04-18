@@ -109,7 +109,10 @@ comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
 			tikaType.setHardware( metadata.get( Metadata.EQUIPMENT_MODEL));
 		
 		// Return extended MIME Type:
-		metadata.set(EXT_MIME_TYPE, tikaType.toString());
+		if( tikaType != null ) {
+			metadata.set(EXT_MIME_TYPE, tikaType.toString());
+	    // } else { \\ Set to application/octet-stream
+		}
 		
 		// Other sources of modification time?
 		//md.get(Metadata.LAST_MODIFIED); //might be useful, as would any embedded version
