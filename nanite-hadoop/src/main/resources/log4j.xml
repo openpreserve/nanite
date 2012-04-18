@@ -19,4 +19,9 @@
     <level value="error"/> 
   </logger>
 	
+  <!--  Increase logging from this code  -->
+  <logger name="uk.bl.wap">
+    <level value="info"/> 
+  </logger>
+	
 </log4j:configuration>

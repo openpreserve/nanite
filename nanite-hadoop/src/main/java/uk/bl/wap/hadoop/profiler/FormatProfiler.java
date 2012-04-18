@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,6 +35,7 @@ import uk.bl.wap.hadoop.util.Unpack;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfiler extends Configured implements Tool {
+	private static final String CONFIG = "/hadoop_utils.config";
 
 	public int run( String[] args ) throws IOException {
 		JobConf conf = new JobConf( getConf(), FormatProfiler.class );
@@ -46,13 +48,7 @@ public class FormatProfiler extends Configured implements Tool {
 		
 		FileOutputFormat.setOutputPath( conf, new Path( args[ 1 ] ) );
 		
-		// Add the ohcount binary to the distributed cache.
-		//File ohcount = Unpack.streamToTemp(FormatProfiler.class, "native/linux_x64/"+Ohcount.OH_300_STATIC_BIN, true);
-		//DistributedCache.addCacheFile( ohcount.toURI(), conf );
-		
-		// Run in local/debug mode: This requires that mapred.local.dir is a valid writeable folder.
-		//conf.set("mapred.job.tracker", "local");
-
+		//this.setProperties( conf );
 		conf.setJobName( args[ 0 ] + "_" + System.currentTimeMillis() );
 		conf.setInputFormat( ArchiveFileInputFormat.class );
 		conf.setMapperClass( FormatProfilerMapper.class );
@@ -69,7 +65,27 @@ public class FormatProfiler extends Configured implements Tool {
 		
 		JobClient.runJob( conf );
 		return 0;
+	}
 
+	private void setProperties( JobConf conf ) throws IOException {
+		Properties properties = new Properties();
+		properties.load( this.getClass().getResourceAsStream( ( CONFIG ) ) );
+		conf.set( "solr.default", properties.getProperty( "solr_default" ) );
+		conf.set( "solr.image", properties.getProperty( "solr_image" ) );
+		conf.set( "solr.media", properties.getProperty( "solr_media" ) );
+		conf.set( "solr.batch.size", properties.getProperty( "solr_batch_size" ) );
+		conf.set( "solr.threads", properties.getProperty( "solr_threads" ) );
+		conf.set( "solr.image.regex", properties.getProperty( "solr_image_regex" ) );
+		conf.set( "solr.media.regex", properties.getProperty( "solr_media_regex" ) );
+
+		conf.set( "record.exclude.mime", properties.getProperty( "mime_exclude" ) );
+		conf.set( "record.exclude.url", properties.getProperty( "url_exclude" ) );
+		conf.set( "record.size.max", properties.getProperty( "max_payload_size" ) );
+		conf.set( "record.include.response", properties.getProperty( "response_include" ) );
+		conf.set( "record.include.protocol", properties.getProperty( "protocol_include" ) );
+
+		conf.set( "tika.exclude.mime", properties.getProperty( "mime_exclude" ) );
+		conf.set( "tika.timeout", properties.getProperty( "tika_timeout" ) );
 	}
 
 	public static void main( String[] args ) throws Exception {

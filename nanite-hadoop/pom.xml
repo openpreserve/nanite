@@ -33,6 +33,18 @@
   		<version>0.0.1-SNAPSHOT</version>
   	</dependency>
   	<dependency>
+  			<groupId>org.archive.wayback</groupId>
+			<artifactId>wayback-core</artifactId>
+			<version>1.6.1</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/wayback-core-1.6.1.jar</systemPath>
+  	</dependency>
+	<dependency>
+		<groupId>org.archive.heritrix</groupId>
+		<artifactId>heritrix-commons</artifactId>
+		<version>3.1.0</version>
+	</dependency>
+  	<dependency>
   		<groupId>eu.scape-project.nanite</groupId>
   		<artifactId>nanite-droid</artifactId>
   		<version>0.0.1-SNAPSHOT</version>
@@ -59,4 +71,22 @@
   		<version>0.0.1-SNAPSHOT</version>
   	</dependency>
   </dependencies>
+	<repositories>
+		<repository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+				<checksumPolicy>warn</checksumPolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+				<checksumPolicy>fail</checksumPolicy>
+			</snapshots>
+			<id>internetarchive</id>
+			<name>Internet Archive Maven Repository</name>
+			<url>http://builds.archive.org:8080/maven2</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
 </project>
