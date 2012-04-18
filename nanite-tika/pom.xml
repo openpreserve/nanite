@@ -71,5 +71,12 @@
 			<artifactId>xmlgraphics-commons</artifactId>
 			<version>1.4</version>
 		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8</version>
+			<type>jar</type>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>

@@ -63,6 +63,7 @@
                     <descriptorRef>jar-with-dependencies</descriptorRef>
               </descriptorRefs>
             </configuration>
+            <!-- Disable this as we don't always need it.
         <executions>
           <execution>
             <id>make-my-jar-with-dependencies</id>
@@ -72,6 +73,7 @@
             </goals>
           </execution>
         </executions>
+              -->
             </plugin>
             <plugin>
         <groupId>org.apache.maven.plugins</groupId>

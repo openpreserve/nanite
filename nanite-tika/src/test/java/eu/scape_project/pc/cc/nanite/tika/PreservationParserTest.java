@@ -8,6 +8,7 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 
 import javax.activation.MimeTypeParseException;
@@ -47,21 +48,21 @@ public class PreservationParserTest {
 	@Test
 	public void testParseInputStreamContentHandlerMetadataParseContext() throws IOException, SAXException, TikaException, MimeTypeParseException {
 		// PDFs
-		this.testExtendedMIMEType( "src/test/resources/simple.pdf", 
+		this.testExtendedMIMEType( "/simple.pdf", 
 				"application/pdf; version=\"1.4\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
-		this.testExtendedMIMEType( "src/test/resources/simple-PDFA-1a.pdf", 
+		this.testExtendedMIMEType( "/simple-PDFA-1a.pdf", 
 				"application/pdf; version=\"A-1a\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
-		this.testExtendedMIMEType( "src/test/resources/simple-password-nocopy.pdf", 
+		this.testExtendedMIMEType( "/simple-password-nocopy.pdf", 
 				"application/pdf; version=\"1.4\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
 		// ODT
-		this.testExtendedMIMEType( "src/test/resources/simple.odt", 
+		this.testExtendedMIMEType( "/simple.odt", 
 				"application/vnd.oasis.opendocument.text; software=\"OpenOffice.org/3.2$Win32 OpenOffice.org_project/320m12$Build-9483\"");
 		// PNG
-		this.testExtendedMIMEType( "/Users/andy/Documents/workspace/nanite/nanite-tika/src/test/resources/variatio-ipsius/apple-pages-09-4.1-923/convert-6.7.5-7/test.png", 
-				"image/png; software=\"ImageMagick\"");
+		//this.testExtendedMIMEType( "/Users/andy/Documents/workspace/nanite/nanite-tika/src/test/resources/variatio-ipsius/apple-pages-09-4.1-923/convert-6.7.5-7/test.png", 
+		//		"image/png; software=\"ImageMagick\"");
 		// JPEG
-		this.testExtendedMIMEType( "/Users/andy/Documents/workspace/tika/tika-parsers/src/test/resources/test-documents/testJPEG_EXIF.jpg", 
-				"image/jpeg; software=\"Adobe Photoshop CS3 Macintosh\"; hardware=\"Canon EOS 40D\"");
+		//this.testExtendedMIMEType( "/Users/andy/Documents/workspace/tika/tika-parsers/src/test/resources/test-documents/testJPEG_EXIF.jpg", 
+		//		"image/jpeg; software=\"Adobe Photoshop CS3 Macintosh\"; hardware=\"Canon EOS 40D\"");
 		// TIFF?
 	}
 	
@@ -75,7 +76,8 @@ public class PreservationParserTest {
 	 * @throws MimeTypeParseException 
 	 */
 	private void testExtendedMIMEType(String filename, String expected ) throws IOException, SAXException, TikaException, MimeTypeParseException {
-		FileInputStream input = new FileInputStream( new File( filename ) );
+		// Get the source file off the TEST class path:
+		InputStream input = getClass().getResourceAsStream(filename);
 		
 		Metadata metadata = new Metadata();
 		parser.parse(input, new DefaultHandler() , metadata, new ParseContext() );

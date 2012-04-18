@@ -5,16 +5,14 @@ package uk.bl.wap.tika.parser.pdf.pdfbox;
 
 import static org.junit.Assert.*;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
 import org.junit.Test;
 import org.xml.sax.helpers.DefaultHandler;
-
-import eu.scape_project.pc.cc.nanite.tika.PreservationParser;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
@@ -29,12 +27,13 @@ public class PDFParserTest {
 	public void testParseInputStreamContentHandlerMetadataParseContext() {
 		try {
 			//FileInputStream input = new FileInputStream( new File( "src/test/resources/jap_91055688_japredcross_ss_ue_fnl_12212011.pdf"));//simple-PDFA-1a.pdf" ) );
-			FileInputStream input = new FileInputStream( new File( "src/test/resources/simple-PDFA-1a.pdf" ) );
+			InputStream input = getClass().getResourceAsStream("/simple-PDFA-1a.pdf");
+			
 			OutputStream output = System.out; //new FileOutputStream( new File( "Z:/part-00001.xml" ) );
 
 			Metadata metadata = new Metadata();
 			PDFParser parser = new PDFParser();
-			parser.parse(input, new DefaultHandler() , metadata, new ParseContext() );
+			parser.parse((input), new DefaultHandler() , metadata, new ParseContext() );
 			input.close();
 			
 			for( String key : metadata.names() ) {
