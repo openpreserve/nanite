@@ -7,9 +7,10 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.util.Arrays;
+
+import javax.activation.MimeTypeParseException;
 
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
@@ -19,8 +20,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
-import uk.bl.wap.tika.parser.pdf.pdfbox.PDFParser;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
@@ -43,25 +42,59 @@ public class PreservationParserTest {
 	 * @throws TikaException 
 	 * @throws SAXException 
 	 * @throws IOException 
+	 * @throws MimeTypeParseException 
 	 */
 	@Test
-	public void testParseInputStreamContentHandlerMetadataParseContext() throws IOException, SAXException, TikaException {
-		FileInputStream input = new FileInputStream( new File( "src/test/resources/simple-PDFA-1a.pdf" ) );
+	public void testParseInputStreamContentHandlerMetadataParseContext() throws IOException, SAXException, TikaException, MimeTypeParseException {
+		// PDFs
+		this.testExtendedMIMEType( "src/test/resources/simple.pdf", 
+				"application/pdf; version=\"1.4\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
+		this.testExtendedMIMEType( "src/test/resources/simple-PDFA-1a.pdf", 
+				"application/pdf; version=\"A-1a\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
+		this.testExtendedMIMEType( "src/test/resources/simple-password-nocopy.pdf", 
+				"application/pdf; version=\"1.4\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
+		// ODT
+		this.testExtendedMIMEType( "src/test/resources/simple.odt", 
+				"application/vnd.oasis.opendocument.text; software=\"OpenOffice.org/3.2$Win32 OpenOffice.org_project/320m12$Build-9483\"");
+		// PNG
+		this.testExtendedMIMEType( "/Users/andy/Documents/workspace/nanite/nanite-tika/src/test/resources/variatio-ipsius/apple-pages-09-4.1-923/convert-6.7.5-7/test.png", 
+				"image/png; software=\"ImageMagick\"");
+		// JPEG
+		this.testExtendedMIMEType( "/Users/andy/Documents/workspace/tika/tika-parsers/src/test/resources/test-documents/testJPEG_EXIF.jpg", 
+				"image/jpeg; software=\"Adobe Photoshop CS3 Macintosh\"; hardware=\"Canon EOS 40D\"");
+		// TIFF?
+	}
 	
+	/**
+	 * 
+	 * @param filename
+	 * @param expected
+	 * @throws TikaException 
+	 * @throws SAXException 
+	 * @throws IOException 
+	 * @throws MimeTypeParseException 
+	 */
+	private void testExtendedMIMEType(String filename, String expected ) throws IOException, SAXException, TikaException, MimeTypeParseException {
+		FileInputStream input = new FileInputStream( new File( filename ) );
+		
 		Metadata metadata = new Metadata();
 		parser.parse(input, new DefaultHandler() , metadata, new ParseContext() );
 		input.close();
 		
-		for( String key : metadata.names() ) {
-			System.out.write( (key+" : "+metadata.get(key)+"\n").getBytes( "UTF-8" ) );
+		// Report all metadata, for interest
+		System.out.println("Metadata for: "+filename);
+	    String[] names = metadata.names();
+	    Arrays.sort(names);
+		for( String key : names ) {
+			System.out.println( (key+" : "+metadata.get(key)) );
 		}
-		
-		//for( String name : md.names() ) {
-		//}
-		String tikaType = metadata.get(PreservationParser.EXT_MIME_TYPE);
-		assertEquals(tikaType, "application/pdf; version=\"A-1a\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
-	}
-	
-	
+		System.out.println("----");
+
+		// Recover the extended MIME Type:
+		ExtendedMimeType tikaType = new ExtendedMimeType(metadata.get(PreservationParser.EXT_MIME_TYPE) );
+		// Assert equality:
+		assertEquals( true, tikaType.match( new ExtendedMimeType( expected )) );
+
+}
 
 }

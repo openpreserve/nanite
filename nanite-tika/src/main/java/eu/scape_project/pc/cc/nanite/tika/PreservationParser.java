@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
+import javax.activation.MimeTypeParseException;
+
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
@@ -49,33 +51,39 @@ public class PreservationParser extends AutoDetectParser {
 			SAXException, TikaException {
 		// Override with custom parsers:
 		this.modifyParserConfig();
+		
 		// Parse:
 		super.parse(stream, handler, metadata, context);
 		
 		// Add extended metadata of preservation interest.
-		String tikaType = metadata.get( Metadata.CONTENT_TYPE );
+		//
+		// Build the extended MIME Type, incorporating version and creator software:
+		ExtendedMimeType tikaType = null;
+		try {
+			tikaType = new ExtendedMimeType(metadata.get( Metadata.CONTENT_TYPE ));
+		} catch (MimeTypeParseException e) {
+			// Stop here and return if this failed:
+			e.printStackTrace();
+			return;
+		}
 		// PDF Version, if any:
-		if( metadata.get("pdf:version") != null ) tikaType += "; version=\""+metadata.get("pdf:version")+"\"";
+		if( metadata.get("pdf:version") != null ) tikaType.setVersion( metadata.get("pdf:version") );
 		// For PDF, create separate tags:
-		if( tikaType.startsWith("application/pdf") ) {
+		if( "application/pdf".equals(tikaType.getBaseType()) ) {
 			// PDF has Creator and Producer application properties:
-			String creator = metadata.get("creator").replace("\"","'");
-			if( creator != null ) tikaType += "; creator=\""+creator+"\"";
-			String producer = metadata.get("producer").replace("\"","'");
-			if( producer != null) tikaType += "; producer=\""+producer+"\"";
+			String creator = metadata.get("pdf:creator");
+			if( creator != null ) tikaType.setParameter("creator", creator);
+			String producer = metadata.get("pdf:producer");
+			if( producer != null) tikaType.setParameter("producer", producer);
 		}
-		// Application ID, MS Office only AFAICT
-		String tikaAppId = "";
-		if( metadata.get( Metadata.APPLICATION_NAME ) != null ) tikaAppId += metadata.get( Metadata.APPLICATION_NAME );
-		if( metadata.get( Metadata.APPLICATION_VERSION ) != null ) tikaAppId += " "+metadata.get( Metadata.APPLICATION_VERSION);
-		// Append the appid
-		if( ! "".equals(tikaAppId) ) {
-			tikaType = tikaType+"; appid=\""+tikaAppId+"\"";
-		}
-		// Images, e.g. JPEG and TIFF, can have 'Software', 'tiff:Software',
+		// Application ID, MS Office only AFAICT, and the VERSION is only doc
 		String software = null;
+		if( metadata.get( Metadata.APPLICATION_NAME ) != null ) software = metadata.get( Metadata.APPLICATION_NAME );
+		if( metadata.get( Metadata.APPLICATION_VERSION ) != null ) software += " "+metadata.get( Metadata.APPLICATION_VERSION);
+		// Images, e.g. JPEG and TIFF, can have 'Software', 'tiff:Software',
 		if( metadata.get( "Software" ) != null ) software = metadata.get( "Software" );
 		if( metadata.get( Metadata.SOFTWARE ) != null ) software = metadata.get( Metadata.SOFTWARE );
+		if( metadata.get( "generator" ) != null ) software = metadata.get( "generator" );
 		// PNGs have a 'tEXt tEXtEntry: keyword=Software, value=GPL Ghostscript 8.71'
 		String png_textentry = metadata.get("tEXt tEXtEntry");
 		if( png_textentry != null && png_textentry.contains("keyword=Software, value=") )
@@ -85,10 +93,13 @@ Jpeg Comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
 comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
 		 */
 		if( software != null ) {
-			tikaType = tikaType+"; software=\""+software+"\"";
+			tikaType.setSoftware(software);
 		}
+		// Also, if there is any trace of any hardware, record it here:
+		if( metadata.get( Metadata.EQUIPMENT_MODEL ) != null )
+			tikaType.setHardware( metadata.get( Metadata.EQUIPMENT_MODEL));
 		// Return extended MIME Type:
-		metadata.set(EXT_MIME_TYPE, tikaType);
+		metadata.set(EXT_MIME_TYPE, tikaType.toString());
 		
 		// Other sources of modification time?
 		//md.get(Metadata.LAST_MODIFIED); //might be useful, as would any embedded version

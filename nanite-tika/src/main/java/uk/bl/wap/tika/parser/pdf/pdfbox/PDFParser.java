@@ -167,9 +167,9 @@ public class PDFParser extends AbstractParser {
         metadata.set(PagedText.N_PAGES, document.getNumberOfPages());
         addMetadata(metadata, Metadata.TITLE, info.getTitle());
         addMetadata(metadata, Metadata.AUTHOR, info.getAuthor());
-        addMetadata(metadata, Metadata.CREATOR, info.getCreator());
         addMetadata(metadata, Metadata.KEYWORDS, info.getKeywords());
-        addMetadata(metadata, "producer", info.getProducer());
+        addMetadata(metadata, "pdf:creator", info.getCreator());
+        addMetadata(metadata, "pdf:producer", info.getProducer());
         addMetadata(metadata, Metadata.SUBJECT, info.getSubject());
         addMetadata(metadata, "trapped", info.getTrapped());
         try {
@@ -210,21 +210,23 @@ public class PDFParser extends AbstractParser {
 		//metadata.set("pdf:128key", ""+reader.is128Key());
 		//metadata.set("pdf:tampered", ""+reader.isTampered());
         try {
-			XMPMetadata xmp = document.getDocumentCatalog().getMetadata().exportXMPMetadata();
-			// There is a special class for grabbing data in the PDF schema - not sure it will add much here:
-			// Could parse xmp:CreatorTool and pdf:Producer etc. etc. out of here.
-			XMPSchemaPDF pdfxmp = xmp.getPDFSchema();
-			// Added a PDF/A schema class:
-			xmp.addXMLNSMapping(XMPSchemaPDFA.NAMESPACE, XMPSchemaPDFA.class);
-			XMPSchemaPDFA pdfaxmp = (XMPSchemaPDFA) xmp.getSchemaByClass(XMPSchemaPDFA.class);
-			if( pdfaxmp != null ) {
-				metadata.set("pdfaid:part", pdfaxmp.getPart());
-				metadata.set("pdfaid:conformance", pdfaxmp.getConformance());
-				String version = "A-"+pdfaxmp.getPart()+pdfaxmp.getConformance().toLowerCase();
-				//metadata.set("pdfa:version", version );					
-				metadata.set("pdf:version", version );					
-			}
-			// TODO WARN if this XMP version is inconsistent with document header version?
+        	if( document.getDocumentCatalog().getMetadata() != null ) {
+        		XMPMetadata xmp = document.getDocumentCatalog().getMetadata().exportXMPMetadata();
+        		// There is a special class for grabbing data in the PDF schema - not sure it will add much here:
+        		// Could parse xmp:CreatorTool and pdf:Producer etc. etc. out of here.
+        		XMPSchemaPDF pdfxmp = xmp.getPDFSchema();
+        		// Added a PDF/A schema class:
+        		xmp.addXMLNSMapping(XMPSchemaPDFA.NAMESPACE, XMPSchemaPDFA.class);
+        		XMPSchemaPDFA pdfaxmp = (XMPSchemaPDFA) xmp.getSchemaByClass(XMPSchemaPDFA.class);
+        		if( pdfaxmp != null ) {
+        			metadata.set("pdfaid:part", pdfaxmp.getPart());
+        			metadata.set("pdfaid:conformance", pdfaxmp.getConformance());
+        			String version = "A-"+pdfaxmp.getPart()+pdfaxmp.getConformance().toLowerCase();
+        			//metadata.set("pdfa:version", version );					
+        			metadata.set("pdf:version", version );					
+        		}
+        		// TODO WARN if this XMP version is inconsistent with document header version?
+        	}
 		} catch (IOException e) {
 			metadata.set("pdf:metadata-xmp-parse-failed", ""+e);
 		}
