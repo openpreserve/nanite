@@ -114,4 +114,28 @@ public class ExtendedMimeType extends MimeType {
 		this.setParameter(HARDWARE, hardware);
 	}
 
+	/* (non-Javadoc)
+	 * @see javax.activation.MimeType#setParameter(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public void setParameter(String arg0, String arg1) {
+		super.setParameter(cleanup(arg0), cleanup(arg1));
+	}
+	
+	/**
+	 * In some foul cases, pdf:producer can have newlines at the end.
+	 * Therefore, we defensively strip whitespace.
+	 * 
+	 * @param arg
+	 * @return
+	 */
+	private String cleanup( String arg ) {
+		if( arg != null ) {
+			arg.replaceAll("\n", " ");
+			arg.replaceAll("\r", " ");
+			arg.replaceAll("\t", " ");
+			arg = arg.trim();
+		}
+		return arg;
+	}
 }
