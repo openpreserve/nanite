@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +23,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.util.Tool;
+import org.apache.log4j.Logger;
 
 import uk.bl.wap.hadoop.ArchiveFileInputFormat;
 import uk.bl.wap.hadoop.format.Ohcount;
@@ -35,16 +38,22 @@ import uk.bl.wap.hadoop.util.Unpack;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfiler extends Configured implements Tool {
+	private static Logger log = Logger.getLogger(FormatProfiler.class.getName());
 	private static final String CONFIG = "/hadoop_utils.config";
 
 	public int run( String[] args ) throws IOException {
 		JobConf conf = new JobConf( getConf(), FormatProfiler.class );
 
+		log.info("Loading paths...");
 		String line = null;
+		List<Path> paths = new ArrayList<Path>();
 		BufferedReader br = new BufferedReader( new FileReader( args[ 0 ] ) );
 		while( ( line = br.readLine() ) != null ) {
-			FileInputFormat.addInputPath( conf, new Path( line ) );
+			paths.add( new Path( line ) );
 		}
+		log.info("Setting paths...");
+		FileInputFormat.setInputPaths( conf, paths.toArray(new Path[] {}) );
+		log.info("Set "+paths.size()+" InputPaths");
 		
 		FileOutputFormat.setOutputPath( conf, new Path( args[ 1 ] ) );
 		

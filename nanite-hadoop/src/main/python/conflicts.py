@@ -29,17 +29,17 @@ def reduce(fmt):
 dst = {}
 for row in tsv_file:
     #print row
-    fmtS = row[0].lower()
-    fmtT = row[1].lower()
-    fmtD = row[2].lower()
-    year = row[3].lower()
-    count = row[4].lower()
+    fmtS = row[0]
+    fmtT = row[1]
+    fmtD = row[2]
+    year = row[3]
+    count = row[4]
 
     # Normalise, lower case and no space after the ;
     fmtDr = reduce(fmtD)
     #fmtSr = reduce(fmtS)
 
-    if fmtDr == fmtT:
-	print fmtD,fmtT
+    if fmtDr != reduce(fmtT):
+	  print fmtS,fmtT,fmtD
 
 

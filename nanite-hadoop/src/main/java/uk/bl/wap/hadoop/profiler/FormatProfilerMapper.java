@@ -161,10 +161,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			IdentificationResultCollection ircf = nanite.identify(
 					Nanite.createFileIdentificationRequest(tmpFile) );
 			*/
-			if( irc.getResults().size() > 0 ) {
-				IdentificationResult res = irc.getResults().get(0);
-				droidType = Nanite.getMimeTypeFromResult(res);
-			}
+			droidType = Nanite.getMimeTypeFromResults(irc.getResults()).toString();
 		} catch( Exception e ) {
 			log.error("Exception on DroidNanite invocation: "+e);
 			e.printStackTrace();
@@ -217,20 +214,5 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			tmpFile.delete();
 		}
 	}
-	
 
-	/**
-	 * A simple test class to check the classpath is set up ok.
-	 * 
-	 * @param args
-	 * @throws Exception 
-	 * @throws IOException 
-	 * @throws ConfigurationException 
-	 */
-	public static void  main( String[] args ) throws Exception {
-		File file = new File(args[0]);
-		Nanite nan = new Nanite();
-		System.out.println("Nanite using binary sig. file version "+nan.getBinarySigFileVersion());
-		nan.getMimeType(file);	
-	}
 }

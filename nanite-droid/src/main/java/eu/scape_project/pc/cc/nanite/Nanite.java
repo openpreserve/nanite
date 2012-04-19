@@ -15,9 +15,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
+import javax.activation.MimeType;
+import javax.activation.MimeTypeParseException;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.IOUtils;
@@ -343,36 +347,50 @@ public class Nanite {
 	}
 	
 	/**
+	 * TODO Choose 'vnd' Vendor-style MIME types over other options when there are many in each Result.
+	 * TODO This does not cope ideally with multiple/degenerate Results. 
+	 * e.g. old TIFF or current RTF that cannot tell the difference so reports no versions.
+	 * If there are sigs that differ more than this, this will ignore the versions.
 	 * 
-	 * @param res
+	 * @param list
 	 * @return
+	 * @throws MimeTypeParseException 
 	 */
-	public static String getMimeTypeFromResult( IdentificationResult res ) {
-		String mimeType = res.getMimeType();
-		// Is there a mimeType?
+	public static MimeType getMimeTypeFromResults( List<IdentificationResult> results ) throws MimeTypeParseException {
+		MimeType mimeType = new MimeType("application/octet-stream");
+		if( results == null || results.size() == 0 ) return mimeType;
+		// Get the first result:
+		IdentificationResult r = results.get(0);
+		String mimeTypeString = r.getMimeType();
+		// This sometimes has ", " separated multiple types
+		String[] mimeTypeList = mimeTypeString.split(", ");
+		mimeType = new MimeType(mimeTypeList[0]);
+		// Is there a MIME Type?
 		if( mimeType != null && ! "".equals(mimeType) ) {
 			// Patch on a version parameter if there isn't one there already:
-			if( !mimeType.contains("version=") && 
-					res.getVersion() != null && ! "".equals(res.getVersion()) ) {
-				mimeType += "; version=\""+res.getVersion()+"\"";
+			if( mimeType.getParameter("version") == null && 
+					r.getVersion() != null && ! "".equals(r.getVersion()) &&
+					// But ONLY if there is ONLY one result.
+					results.size() == 1 ) {
+				mimeType.setParameter("version", r.getVersion());
 			}
 		} else {
 			// If there isn't a MIME type, make one up:
-			String id = "puid-"+res.getPuid().replace("/", "-");
-			String name = res.getName().replace("\"","'");
+			String id = "puid-"+r.getPuid().replace("/", "-");
+			String name = r.getName().replace("\"","'");
 			// Lead with the PUID:
-			mimeType = "application/x-"+id+"; name=\""+name+"\"";
+			mimeType = new MimeType("application/x-"+id);
+			mimeType.setParameter("name", name);
 			// Add the version, if set:
-			String version = res.getVersion();
+			String version = r.getVersion();
 			if( version != null && !"".equals(version) && !"null".equals(version) ) {
-				version = version.replace("\"","'");
-				mimeType += "; version=\""+version+"\"";
+				mimeType.setParameter("version", version);
 			}
 		}
 		return mimeType;
 	}
 	
-	public String getMimeType( File file ) throws FileNotFoundException, IOException, ConfigurationException, SignatureFileException {
+	private String getMimeType( File file ) throws FileNotFoundException, IOException, ConfigurationException, SignatureFileException, MimeTypeParseException {
 		//IdentificationRequest ir = createFileIdentificationRequest(file);
 		
 		//byte[] data =  org.apache.commons.io.FileUtils.readFileToByteArray(file);
@@ -388,9 +406,8 @@ public class Nanite {
 				mimeType += ";version="+result.getVersion();
 			}
 			System.out.println("MATCHING: "+result.getPuid()+", "+result.getName()+" "+result.getVersion());
-			System.out.println("Content-Type: "+Nanite.getMimeTypeFromResult(result));
 		}
-		return Nanite.getMimeTypeFromResult(resultCollection.getResults().get(0));		
+		return Nanite.getMimeTypeFromResults(resultCollection.getResults()).toString();		
 	}
 
 	/**
@@ -399,12 +416,13 @@ public class Nanite {
 	 * @throws SignatureManagerException 
 	 * @throws ConfigurationException 
 	 * @throws SignatureFileException 
+	 * @throws MimeTypeParseException 
 	 */
-	public static void main(String[] args) throws IOException, SignatureManagerException, ConfigurationException, SignatureFileException {
+	public static void main(String[] args) throws IOException, SignatureManagerException, ConfigurationException, SignatureFileException, MimeTypeParseException {
 		File file = new File(args[0]);
 		Nanite nan = new Nanite();
-		System.out.println("Nanite using binary sig. file version "+nan.getBinarySigFileVersion());
-		nan.getMimeType(file);
+		System.out.println("Nanite using DROID binary signature file version "+nan.getBinarySigFileVersion());
+		System.out.println("Result: " + nan.getMimeType(file));
 	}
 	
 
