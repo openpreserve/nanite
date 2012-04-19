@@ -3,6 +3,7 @@
  */
 package eu.scape_project.pc.cc.nanite.tika;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 
 import javax.activation.MimeType;
@@ -22,6 +23,22 @@ public class ExtendedMimeType extends MimeType {
 	
 	/** */
 	public static final String HARDWARE = "hardware";
+
+	/** */
+	public static ExtendedMimeType OCTET_STREAM = null;
+
+	/** */
+	public static ExtendedMimeType EMPTY = null;
+
+	/* Set up static format identifiers*/
+	static {
+		try {
+			OCTET_STREAM = new ExtendedMimeType("application/octet-stream");
+			EMPTY = new ExtendedMimeType("application/x-empty");
+		} catch (MimeTypeParseException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	/**
 	 * @param string
@@ -136,6 +153,8 @@ public class ExtendedMimeType extends MimeType {
 	 */
 	private String cleanup( String arg ) {
 		if( arg != null ) {
+			arg.replaceAll(";", ",");
+			arg.replaceAll("=", "");
 			arg.replaceAll("\n", " ");
 			arg.replaceAll("\r", " ");
 			arg.replaceAll("\t", " ");
@@ -143,6 +162,12 @@ public class ExtendedMimeType extends MimeType {
 			arg.replaceAll("[^\\x00-\\x7F]", "");
 			// Strip leading/lagging whitespace:
 			arg = arg.trim();
+			// Enforce UTF-8:
+			try {
+				arg = new String( arg.getBytes("UTF-8"), "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
 		}
 		return arg;
 	}

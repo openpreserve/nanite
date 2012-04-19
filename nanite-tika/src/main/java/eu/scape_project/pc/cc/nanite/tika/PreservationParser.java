@@ -64,7 +64,7 @@ public class PreservationParser extends AutoDetectParser {
 		} catch (MimeTypeParseException e) {
 			// Stop here and return if this failed:
 			e.printStackTrace();
-			return;
+			tikaType = ExtendedMimeType.OCTET_STREAM;
 		}
 		// Content encoding, if any:
 		String encoding = metadata.get( Metadata.CONTENT_ENCODING );
@@ -108,11 +108,13 @@ comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
 		if( metadata.get( Metadata.EQUIPMENT_MODEL ) != null )
 			tikaType.setHardware( metadata.get( Metadata.EQUIPMENT_MODEL));
 		
-		// Return extended MIME Type:
-		if( tikaType != null ) {
-			metadata.set(EXT_MIME_TYPE, tikaType.toString());
-	    // } else { \\ Set to application/octet-stream
+		// Fall back on special type for empty resources:
+		if( "0".equals(metadata.get(Metadata.CONTENT_LENGTH)) ) {
+			tikaType = ExtendedMimeType.EMPTY;
 		}
+		
+		// Return extended MIME Type:
+		metadata.set(EXT_MIME_TYPE, tikaType.toString());
 		
 		// Other sources of modification time?
 		//md.get(Metadata.LAST_MODIFIED); //might be useful, as would any embedded version
