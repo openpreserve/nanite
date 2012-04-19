@@ -49,11 +49,11 @@ public class PreservationParserTest {
 	public void testParseInputStreamContentHandlerMetadataParseContext() throws IOException, SAXException, TikaException, MimeTypeParseException {
 		// PDFs
 		this.testExtendedMIMEType( "/simple.pdf", 
-				"application/pdf; version=\"1.4\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
+				"application/pdf; version=\"1.4\"; software=\"OpenOffice.org 3.2\"; source=Writer");
 		this.testExtendedMIMEType( "/simple-PDFA-1a.pdf", 
-				"application/pdf; version=\"A-1a\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
+				"application/pdf; version=\"A-1a\"; software=\"OpenOffice.org 3.2\"; source=Writer");
 		this.testExtendedMIMEType( "/simple-password-nocopy.pdf", 
-				"application/pdf; version=\"1.4\"; creator=\"Writer\"; producer=\"OpenOffice.org 3.2\"");
+				"application/pdf; version=\"1.4\"; software=\"OpenOffice.org 3.2\"; source=Writer");
 		// ODT
 		this.testExtendedMIMEType( "/simple.odt", 
 				"application/vnd.oasis.opendocument.text; software=\"OpenOffice.org/3.2$Win32 OpenOffice.org_project/320m12$Build-9483\"");

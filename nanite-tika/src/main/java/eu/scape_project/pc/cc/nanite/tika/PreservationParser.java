@@ -10,6 +10,8 @@ import java.util.Map;
 import javax.activation.MimeTypeParseException;
 
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.extractor.EmbeddedDocumentExtractor;
+import org.apache.tika.extractor.ParsingEmbeddedDocumentExtractor;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
@@ -25,21 +27,59 @@ import org.xml.sax.SAXException;
 public class PreservationParser extends AutoDetectParser {
 	
 	public static final String EXT_MIME_TYPE = "Extended-MIME-Type";
-
+	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 6809061887891839162L;
+	
+	public class NonRecursiveEmbeddedDocumentExtractor extends ParsingEmbeddedDocumentExtractor {
+
+		/** Parse embedded documents? Defaults to TRUE */
+		private boolean parseEmbedded = true;
+
+		public NonRecursiveEmbeddedDocumentExtractor(ParseContext context) {
+			super(context);
+		}
+
+		/* (non-Javadoc)
+		 * @see org.apache.tika.extractor.ParsingEmbeddedDocumentExtractor#shouldParseEmbedded(org.apache.tika.metadata.Metadata)
+		 */
+		@Override
+		public boolean shouldParseEmbedded(Metadata metadata) {
+			return this.parseEmbedded;
+		}
+		
+		/**
+		 * @return the parseEmbedded
+		 */
+		public boolean isParseEmbedded() {
+			return parseEmbedded;
+		}
+
+		/**
+		 * @param parseEmbedded the parseEmbedded to set
+		 */
+		public void setParseEmbedded(boolean parseEmbedded) {
+			this.parseEmbedded = parseEmbedded;
+		}
+
+	}
 
 	/**
 	 * Modify the configuration as needed:
+	 * @param context 
 	 */
-	private void modifyParserConfig() {
+	private void modifyParserConfig(ParseContext context) {
 		// Override the built-in PDF parser (based on PDFBox) with our own (based in iText):
 		MediaType pdf = MediaType.parse("application/pdf");
 		Map<MediaType, Parser> parsers = getParsers();
 		parsers.put( pdf, new uk.bl.wap.tika.parser.pdf.pdfbox.PDFParser() );
 		setParsers(parsers);
+		// Override the recursive parsing:
+		NonRecursiveEmbeddedDocumentExtractor embedded = new NonRecursiveEmbeddedDocumentExtractor(context);
+		//embedded.setParseEmbedded(false);
+		context.set( EmbeddedDocumentExtractor.class, embedded );
 	}
 
 	/* (non-Javadoc)
@@ -50,7 +90,7 @@ public class PreservationParser extends AutoDetectParser {
 			Metadata metadata, ParseContext context) throws IOException,
 			SAXException, TikaException {
 		// Override with custom parsers:
-		this.modifyParserConfig();
+		this.modifyParserConfig(context);
 		
 		// Parse:
 		super.parse(stream, handler, metadata, context);
@@ -77,16 +117,17 @@ public class PreservationParser extends AutoDetectParser {
 		}
 		// PDF Version, if any:
 		if( metadata.get("pdf:version") != null ) tikaType.setVersion( metadata.get("pdf:version") );
+		// Also look to record the software:
+		String software = null;
 		// For PDF, create separate tags:
 		if( "application/pdf".equals(tikaType.getBaseType()) ) {
 			// PDF has Creator and Producer application properties:
 			String creator = metadata.get("pdf:creator");
-			if( creator != null ) tikaType.setParameter("creator", creator);
+			if( creator != null ) tikaType.setParameter("source", creator);
 			String producer = metadata.get("pdf:producer");
-			if( producer != null) tikaType.setParameter("producer", producer);
+			if( producer != null) tikaType.setParameter("software", producer);
 		}
 		// Application ID, MS Office only AFAICT, and the VERSION is only doc
-		String software = null;
 		if( metadata.get( Metadata.APPLICATION_NAME ) != null ) software = metadata.get( Metadata.APPLICATION_NAME );
 		if( metadata.get( Metadata.APPLICATION_VERSION ) != null ) software += " "+metadata.get( Metadata.APPLICATION_VERSION);
 		// Images, e.g. JPEG and TIFF, can have 'Software', 'tiff:Software',
@@ -124,7 +165,5 @@ comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
 		// 'tIME: year=2011, month=7, day=29, hour=15, minute=33, second=5'
 
 	}
-	
-	
 
 }

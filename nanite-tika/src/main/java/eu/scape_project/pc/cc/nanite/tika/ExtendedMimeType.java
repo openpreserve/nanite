@@ -153,13 +153,13 @@ public class ExtendedMimeType extends MimeType {
 	 */
 	private String cleanup( String arg ) {
 		if( arg != null ) {
-			arg.replaceAll(";", ",");
-			arg.replaceAll("=", "");
-			arg.replaceAll("\n", " ");
-			arg.replaceAll("\r", " ");
-			arg.replaceAll("\t", " ");
+			arg = arg.replaceAll(";", ",");
+			arg = arg.replaceAll("=", "");
+			arg = arg.replaceAll("\n", " ");
+			arg = arg.replaceAll("\r", " ");
+			arg = arg.replaceAll("\t", " ");
 			// Also strip all non-ASCII characters:
-			arg.replaceAll("[^\\x00-\\x7F]", "");
+			arg = arg.replaceAll("[^\\x00-\\x7F]", "");
 			// Strip leading/lagging whitespace:
 			arg = arg.trim();
 			// Enforce UTF-8:

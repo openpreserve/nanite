@@ -44,12 +44,14 @@ public class TikaNanite {
 		// Basic handler (ignores/pass-through-in-silence):
 		//ContentHandler handler = new DefaultHandler();
 		// Abort handler, limiting the output size, to avoid OOM:
-		ContentHandler handler = new WriteOutContentHandler(100*1024);
+		ContentHandler handler = new WriteOutContentHandler(1000*1024);
 		
 		Metadata metadata = new Metadata();
 		InputStream stream = TikaInputStream.get(new File(args[0]));
 		try {
 			recursiveReportingParser.parse(stream, handler, metadata, context);
+		} catch (Exception e ) {
+			System.out.println("---- Exception: "+e);			
 		} finally {
 			stream.close();
 		}
@@ -64,6 +66,9 @@ public class TikaNanite {
 	}
 
 	/**
+	 * For this to work reliably, we will need to modify PackageExtractor
+	 * so that the parent-child relationship is maintained. Otherwise, 
+	 * the identity of files gets confused when there are ZIPs in ZIPs etc.
 	 * 
 	 * @author AnJackson
 	 */
@@ -81,8 +86,13 @@ public class TikaNanite {
 				Metadata metadata, ParseContext context) throws IOException,
 				SAXException, TikaException {
 			
-			super.parse(stream, ignore, metadata, context);
-
+			try {
+				super.parse(stream, ignore, metadata, context);
+			} catch (Exception e ) {
+				System.out.println("---- Exception: "+e);
+				e.printStackTrace();
+			}
+			
 			System.out.println("----");
 			System.out.println("resourceName = "+metadata.get(Metadata.RESOURCE_NAME_KEY));
 			System.out.println("----");
@@ -93,8 +103,8 @@ public class TikaNanite {
 			}
 			System.out.println("----");
 			String text = ignore.toString();
-			if( text.length() > 100 ) text = text.substring(0,200);
-			System.out.println(text);
+			if( text.length() > 200 ) text = text.substring(0,200);
+			//System.out.println(text);
 		}
 	}
 

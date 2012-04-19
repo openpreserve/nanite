@@ -36,6 +36,8 @@ Although this is rather clumsy, collecting this initial data will help us find a
 Ideas
 -----
 
+* IMPORTANT I think that, as used now, the FormatProfiler examines all embedded bitstreams and indeed text but only reports the top-level/outer MIME type.
+* For this to work reliably, we will need to modify PackageExtractor so that the parent-child relationship is maintained. Otherwise, the identity of files gets confused when there are ZIPs in ZIPs etc.
 * PreservationParser returns NULL sometimes. Should really be octet-stream? DONE I believe.
 * Return x-empty for zero-length items. DONE
 * Need to create MimeTypes consistently, so values are "enquoted" consisently. DONE.
@@ -67,7 +69,6 @@ Ideas
 	ERROR: Could not parse: text/html; software="mozilla/4.0 (compatible; xhtml-cms; windows nt 5.0) mshtml->xhtml-cms/2.3.0.0"; charset=us-ascii
 	ERROR: Could not parse: application/pdf; producer="itext by lowagie.com (r1.02b;p128)"; version=1.4
 	ERROR: Could not parse: application/xhtml+xml; software="mozilla/4.0 (compatible; www.precedent.co.uk|webpilot v2.3.0.5; windows nt 5.0)"; encoding=iso-8859-1; charset=iso-8859-1
-
 
 
 Notes on Tika and PDFBox
