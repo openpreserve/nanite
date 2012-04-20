@@ -1,45 +1,33 @@
 import sys, re
 import csv
 import mimeparse
+from utils import *
 
-class CommentedFile:
-    def __init__(self, f, commentstring="LOG:"):
-        self.f = f
-        self.commentstring = commentstring
-    def next(self):
-        line = self.f.next()
-        while line.startswith(self.commentstring) or not line.strip():
-            line = self.f.next()
-        return line
-    def __iter__(self):
-        return self
 
-tsv_file = csv.reader(CommentedFile(open("results-nanite-hadoop-0.0.1-warc-big-manually-cleaned.tsv", "rb")),
-                      delimiter='\t')
-
-def reduce(fmt):
-    if fmt.find("/") == -1:
-	return
-    fmt = fmt.lower()
-    fmt = fmt.strip();
-    fmt = fmt.rstrip(";");
-    (type, subtype, params) = mimeparse.parse_mime_type(fmt)
-    return type+"/"+subtype
+tsv_file = csv.reader(CommentedFile(open(sys.argv[1], "rb")), delimiter='\t')
     	
 dst = {}
 for row in tsv_file:
     #print row
-    fmtS = row[0]
-    fmtT = row[1]
-    fmtD = row[2]
-    year = row[3]
-    count = row[4]
+    (fmtS, fmtT, fmtD, year, count) = row
+    
+    # Include the version info when comparing
+    version = False    
 
     # Normalise, lower case and no space after the ;
-    fmtDr = reduce(fmtD)
-    #fmtSr = reduce(fmtS)
+    fmtDr = reduceType(fmtD,version)
+    fmtSr = reduceType(fmtS,version)
+    fmtTr = reduceType(fmtT,version)
 
-    if fmtDr != reduce(fmtT):
-	  print fmtS,fmtT,fmtD
+    # Only report when the base type disagrees, ignore parameters:
+    if fmtDr != fmtTr:
+        #print fmtS,fmtT,fmtD
+        combo = "{}\t{}\t{}".format(fmtSr,fmtTr,fmtDr)
+        if not combo in dst:
+            dst[combo] = 0
+        dst[combo] += int(count)
 
+print "Server Type\tTika Type\tDROID Type\tCount"
+for fmt in sorted(dst):
+    print "{}\t{}".format(fmt,dst[fmt])
 

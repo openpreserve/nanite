@@ -1,38 +1,39 @@
 import sys, re
 import csv
+from utils import *
 
-class CommentedFile:
-    def __init__(self, f, commentstring="LOG:"):
-        self.f = f
-        self.commentstring = commentstring
-    def next(self):
-        line = self.f.next()
-        while line.startswith(self.commentstring) or not line.strip():
-            line = self.f.next()
-        return line
-    def __iter__(self):
-        return self
-
-tsv_file = csv.reader(CommentedFile(open("results-nanite-hadoop-0.0.1-warc-big-manually-cleaned.tsv", "rb")),
-                      delimiter='\t')
+tsv_file = csv.reader(CommentedFile(open(sys.argv[1], "rb")), delimiter='\t')
+dst = {}
 byy = {}
+minYear = -1
+maxYear = -1
 for row in tsv_file:
     #print row
-    fmtS = row[0]
-    fmtT = row[1]
-    fmtD = row[2]
-    year = row[3]
-    count = row[4]
-    if not fmtD in byy:
-        byy[fmtD] = {}
-    if not year in byy[fmtD]:
-        byy[fmtD]["2004"] = 0
-        byy[fmtD]["2005"] = 0
-        byy[fmtD]["2006"] = 0
-        byy[fmtD]["2007"] = 0
-        byy[fmtD]["2008"] = 0
-    byy[fmtD][year] += int(count)
+    (fmtS, fmtT, fmtD, year, count) = row
+    fmt = bestType(fmtS,fmtT,fmtD)
+    fmt = reduceType(fmt,True)
 
-print "format,2004,2005,2006,2007,2008"
-for fmtD in sorted(byy):
-    print fmtD,",",byy[fmtD]["2004"],",",byy[fmtD]["2005"],",",byy[fmtD]["2006"],",",byy[fmtD]["2007"],",",byy[fmtD]["2008"]
+    if not fmt in byy:
+        byy[fmt] = {}
+    year = int(year)
+    if minYear == -1 or year < minYear:
+        minYear = year
+    if maxYear == -1 or year > maxYear:
+        maxYear = year
+    if not year in byy[fmt]:
+        byy[fmt][year] = 0
+    byy[fmt][year] += int(count)
+
+out = "Format"
+for year in range(minYear,maxYear+1):
+    out = "{}\t{}".format(out,year)
+print out
+
+for fmt in sorted(byy):
+    out = fmt
+    for year in range(minYear,maxYear+1):
+        if byy[fmt].has_key(year):
+            out = "{}\t{}".format(out,byy[fmt][year])
+        else:
+            out = "{}\t{}".format(out,0)
+    print out
