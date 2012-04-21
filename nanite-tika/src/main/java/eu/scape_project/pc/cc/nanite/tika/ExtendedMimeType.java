@@ -15,6 +15,8 @@ import javax.activation.MimeTypeParseException;
  */
 public class ExtendedMimeType extends MimeType {
 	
+	// Parameters:
+	
 	/** */
 	public static final String VERSION = "version";
 	
@@ -24,17 +26,23 @@ public class ExtendedMimeType extends MimeType {
 	/** */
 	public static final String HARDWARE = "hardware";
 
+	// MIME Types:
+	
 	/** */
 	public static ExtendedMimeType OCTET_STREAM = null;
 
 	/** */
 	public static ExtendedMimeType EMPTY = null;
 
+	/** */
+	public static ExtendedMimeType UNKNOWN = null;
+
 	/* Set up static format identifiers*/
 	static {
 		try {
 			OCTET_STREAM = new ExtendedMimeType("application/octet-stream");
 			EMPTY = new ExtendedMimeType("application/x-empty");
+			UNKNOWN = new ExtendedMimeType("application/x-unknown");
 		} catch (MimeTypeParseException e) {
 			e.printStackTrace();
 		}

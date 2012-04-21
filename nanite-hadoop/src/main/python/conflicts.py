@@ -20,9 +20,9 @@ for row in tsv_file:
     fmtTr = reduceType(fmtT,version)
 
     # Only report when the base type disagrees, ignore parameters:
-    #if fmtDr != fmtTr:
+    if fmtDr != fmtTr:
     #if fmtTr == "application/octet-stream":
-    if True:
+    #if True:
         #print fmtS,fmtT,fmtD
         #combo = "{}\t{}".format(fmtSr,fmtTr)
         combo = "{}\t{}".format(fmtSr,fmtTr)

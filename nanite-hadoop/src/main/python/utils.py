@@ -24,7 +24,7 @@ def appendParameter(fmt, params, param):
 
 def reduceType(fmt,version=False):
     if( fmt == "null" ):
-        fmt = "application/octet-stream"
+        fmt = "application/x-unknown"
     if( fmt == "text" ):
         fmt = "text/plain"
     if fmt.find("/") == -1:
