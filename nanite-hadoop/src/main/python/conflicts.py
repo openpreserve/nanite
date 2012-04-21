@@ -20,9 +20,12 @@ for row in tsv_file:
     fmtTr = reduceType(fmtT,version)
 
     # Only report when the base type disagrees, ignore parameters:
-    if fmtDr != fmtTr:
+    #if fmtDr != fmtTr:
+    #if fmtTr == "application/octet-stream":
+    if True:
         #print fmtS,fmtT,fmtD
-        combo = "{}\t{}\t{}".format(fmtSr,fmtTr,fmtDr)
+        #combo = "{}\t{}".format(fmtSr,fmtTr)
+        combo = "{}\t{}".format(fmtSr,fmtTr)
         if not combo in dst:
             dst[combo] = 0
         dst[combo] += int(count)

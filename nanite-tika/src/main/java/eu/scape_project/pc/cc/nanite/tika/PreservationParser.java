@@ -89,6 +89,7 @@ public class PreservationParser extends AutoDetectParser {
 	public void parse(InputStream stream, ContentHandler handler,
 			Metadata metadata, ParseContext context) throws IOException,
 			SAXException, TikaException {
+		
 		// Override with custom parsers:
 		this.modifyParserConfig(context);
 		

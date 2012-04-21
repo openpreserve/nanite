@@ -5,13 +5,12 @@ from utils import *
 tsv_file = csv.reader(CommentedFile(open(sys.argv[1], "rb")), delimiter='\t')
 dst = {}
 byy = {}
+tot = {}
 minYear = -1
 maxYear = -1
 for row in tsv_file:
     #print row
     (fmtS, fmtT, fmtD, year, count) = row
-    fmt = bestType(fmtS,fmtT,fmtD)
-    fmt = reduceType(fmt,True)
     
     # This is a temporary override that looks at other stuff:
     # ---
@@ -23,14 +22,18 @@ for row in tsv_file:
         exit
     key = 'producer'
     if params.has_key(key):
-        fmt = params[key]
-        fmt = re.sub(r"(\d+)\.\d.*",r"\1",fmt)
+        fmt = params[key].lower()
+        fmt = re.sub(r"([^\d])(\d+)\.\d.*",r"\1\2.x",fmt)
+        #fmt = re.sub(r"[^\d](\d+)\.\d.*",r"",fmt)
     else:
         fmt = None 
-    #if params.has_key("version"):
-    #    fmt = "{} {}".format(fmt,params["version"])
+    if params.has_key("version"):
+        fmt = "{}\t{}".format(fmt,params["version"])
     # ---
     # 
+    
+    fmt = bestType(fmtS,fmtT,fmtD)
+    fmt = reduceType(fmt,False)
 
     if not fmt in byy:
         byy[fmt] = {}
@@ -42,6 +45,10 @@ for row in tsv_file:
     if not year in byy[fmt]:
         byy[fmt][year] = 0
     byy[fmt][year] += int(count)
+    # And a total:
+    if not year in tot:
+        tot[year] = 0
+    tot[year] += int(count)
 
 out = "Format"
 for year in range(minYear,maxYear+1):
@@ -50,17 +57,14 @@ print out
 
 for fmt in sorted(byy):
     out = fmt
+    total = 0
     for year in range(minYear,maxYear+1):
-        
-        # Calculate total:
-        total = 0
-        for fmt2 in byy:
-            if byy[fmt2].has_key(year):
-                total += byy[fmt2][year]
                 
         # Output the values:
         if byy[fmt].has_key(year):
-            out = "{}\t{}".format(out,100.0*float(byy[fmt][year])/float(total))
+            out = "{}\t{}".format(out, 100.0*byy[fmt][year]/tot[year])
+            total += byy[fmt][year]
         else:
             out = "{}\t{}".format(out,0)
-    print out
+            
+    print "{}\t{}".format(out,total)

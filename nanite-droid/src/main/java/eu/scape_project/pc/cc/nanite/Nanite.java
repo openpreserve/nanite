@@ -25,6 +25,7 @@ import javax.activation.MimeTypeParseException;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -99,7 +100,9 @@ import uk.gov.nationalarchives.pronom.PronomService;
  *
  */
 public class Nanite {
-	
+	private static Logger log = Logger.getLogger(Nanite.class.getName());
+	private File tmpFile = null;
+
 	
 	private BinarySignatureIdentifier bsi;
 	//private SignatureManager sm;
@@ -167,6 +170,10 @@ public class Nanite {
 
 
 	public Nanite() throws IOException, SignatureFileException, ConfigurationException {
+		tmpFile = File.createTempFile("Nanite", "tmp");
+		tmpFile.deleteOnExit();
+		
+		// Now set up DROID
 		System.setProperty("consoleLogThreshold","INFO");
 		System.setProperty("logFile", "./nanite.log");
 		PropertyConfigurator.configure(this.getClass().getClassLoader().getResource("log4j.properties"));
@@ -289,6 +296,28 @@ public class Nanite {
 
 	/**
 	 * 
+	 * @param payload
+	 * @return
+	 */
+	public String identify(byte[] payload) {
+		String droidType = "application/octet-stream";
+		try {
+			IdentificationResultCollection irc = this.identify(
+					Nanite.createByteArrayIdentificationRequest(tmpFile.toURI(), payload) );
+			/*
+			IdentificationResultCollection ircf = nanite.identify(
+					Nanite.createFileIdentificationRequest(tmpFile) );
+			*/
+			droidType = Nanite.getMimeTypeFromResults(irc.getResults()).toString();
+		} catch( Exception e ) {
+			log.error("Exception on DroidNanite invocation: "+e);
+			e.printStackTrace();
+		}
+		return droidType;
+	}
+	
+	/**
+	 * 
 	 * @param file
 	 * @return
 	 * @throws FileNotFoundException
@@ -408,6 +437,17 @@ public class Nanite {
 			System.out.println("MATCHING: "+result.getPuid()+", "+result.getName()+" "+result.getVersion());
 		}
 		return Nanite.getMimeTypeFromResults(resultCollection.getResults()).toString();		
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#finalize()
+	 */
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		if( tmpFile.exists() ) {
+			tmpFile.delete();
+		}
 	}
 
 	/**
