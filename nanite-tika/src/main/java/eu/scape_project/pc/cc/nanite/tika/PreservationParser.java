@@ -9,6 +9,7 @@ import java.util.Map;
 
 import javax.activation.MimeTypeParseException;
 
+import org.apache.log4j.Logger;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.extractor.EmbeddedDocumentExtractor;
 import org.apache.tika.extractor.ParsingEmbeddedDocumentExtractor;
@@ -20,13 +21,20 @@ import org.apache.tika.parser.Parser;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
+import uk.bl.wap.tika.parser.iso9660.ISO9660Parser;
+
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
  */
 public class PreservationParser extends AutoDetectParser {
+	private static Logger log = Logger.getLogger(PreservationParser.class.getName());
 	
 	public static final String EXT_MIME_TYPE = "Extended-MIME-Type";
+	
+	private boolean initialised = false;
+	
+	private NonRecursiveEmbeddedDocumentExtractor embedded = null;
 	
 	/**
 	 * 
@@ -70,16 +78,18 @@ public class PreservationParser extends AutoDetectParser {
 	 * Modify the configuration as needed:
 	 * @param context 
 	 */
-	private void modifyParserConfig(ParseContext context) {
+	private void init(ParseContext context) {
+		if( this.initialised ) return;
 		// Override the built-in PDF parser (based on PDFBox) with our own (based in iText):
 		MediaType pdf = MediaType.parse("application/pdf");
 		Map<MediaType, Parser> parsers = getParsers();
 		parsers.put( pdf, new uk.bl.wap.tika.parser.pdf.pdfbox.PDFParser() );
+		parsers.put( MediaType.parse("application/x-iso9660-image"), new ISO9660Parser() );
 		setParsers(parsers);
 		// Override the recursive parsing:
-		NonRecursiveEmbeddedDocumentExtractor embedded = new NonRecursiveEmbeddedDocumentExtractor(context);
-		//embedded.setParseEmbedded(false);
+		embedded = new NonRecursiveEmbeddedDocumentExtractor(context);
 		context.set( EmbeddedDocumentExtractor.class, embedded );
+		this.initialised = true;
 	}
 
 	/* (non-Javadoc)
@@ -90,8 +100,8 @@ public class PreservationParser extends AutoDetectParser {
 			Metadata metadata, ParseContext context) throws IOException,
 			SAXException, TikaException {
 		
-		// Override with custom parsers:
-		this.modifyParserConfig(context);
+		// Override with custom parsers, etc.:
+		if( !initialised ) init(context);
 		
 		// Parse:
 		super.parse(stream, handler, metadata, context);
@@ -104,7 +114,7 @@ public class PreservationParser extends AutoDetectParser {
 			tikaType = new ExtendedMimeType( metadata.get( Metadata.CONTENT_TYPE ) );
 		} catch (MimeTypeParseException e) {
 			// Stop here and return if this failed:
-			e.printStackTrace();
+			log.error("Could not parse MIME Type: "+metadata.get( Metadata.CONTENT_TYPE ));
 			tikaType = ExtendedMimeType.OCTET_STREAM;
 		}
 		// Content encoding, if any:
@@ -126,7 +136,7 @@ public class PreservationParser extends AutoDetectParser {
 			String creator = metadata.get("pdf:creator");
 			if( creator != null ) tikaType.setParameter("source", creator);
 			String producer = metadata.get("pdf:producer");
-			if( producer != null) tikaType.setParameter("software", producer);
+			if( producer != null) tikaType.setSoftware(producer);
 		}
 		// Application ID, MS Office only AFAICT, and the VERSION is only doc
 		if( metadata.get( Metadata.APPLICATION_NAME ) != null ) software = metadata.get( Metadata.APPLICATION_NAME );
@@ -165,6 +175,16 @@ comment: CREATOR: gd-jpeg v1.0 (using IJG JPEG v62), default quality
 		// 'Document ImageModificationTime: year=2011, month=7, day=29, hour=15, minute=33, second=5'
 		// 'tIME: year=2011, month=7, day=29, hour=15, minute=33, second=5'
 
+	}
+	
+	/**
+	 * 
+	 * @param context
+	 * @param recurse
+	 */
+	public void setRecursive( ParseContext context, boolean recurse ) {
+		init(context);
+		embedded.setParseEmbedded(recurse);
 	}
 
 }

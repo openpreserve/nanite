@@ -309,9 +309,8 @@ public class Nanite {
 					Nanite.createFileIdentificationRequest(tmpFile) );
 			*/
 			droidType = Nanite.getMimeTypeFromResults(irc.getResults()).toString();
-		} catch( Exception e ) {
+		} catch( Throwable e ) {
 			log.error("Exception on DroidNanite invocation: "+e);
-			e.printStackTrace();
 		}
 		return droidType;
 	}
@@ -391,30 +390,35 @@ public class Nanite {
 		// Get the first result:
 		IdentificationResult r = results.get(0);
 		String mimeTypeString = r.getMimeType();
-		// This sometimes has ", " separated multiple types
-		String[] mimeTypeList = mimeTypeString.split(", ");
-		mimeType = new MimeType(mimeTypeList[0]);
-		// Is there a MIME Type?
-		if( mimeType != null && ! "".equals(mimeType) ) {
-			// Patch on a version parameter if there isn't one there already:
-			if( mimeType.getParameter("version") == null && 
-					r.getVersion() != null && ! "".equals(r.getVersion()) &&
-					// But ONLY if there is ONLY one result.
-					results.size() == 1 ) {
-				mimeType.setParameter("version", r.getVersion());
+		try {
+			// This sometimes has ", " separated multiple types
+			String[] mimeTypeList = mimeTypeString.split(", ");
+			mimeType = new MimeType(mimeTypeList[0]);
+			// Is there a MIME Type?
+			if( mimeType != null && ! "".equals(mimeType) ) {
+				// Patch on a version parameter if there isn't one there already:
+				if( mimeType.getParameter("version") == null && 
+						r.getVersion() != null && ! "".equals(r.getVersion()) &&
+						// But ONLY if there is ONLY one result.
+						results.size() == 1 ) {
+					mimeType.setParameter("version", r.getVersion());
+				}
+			} else {
+				// If there isn't a MIME type, make one up:
+				String id = "puid-"+r.getPuid().replace("/", "-");
+				String name = r.getName().replace("\"","'");
+				// Lead with the PUID:
+				mimeType = new MimeType("application/x-"+id);
+				mimeType.setParameter("name", name);
+				// Add the version, if set:
+				String version = r.getVersion();
+				if( version != null && !"".equals(version) && !"null".equals(version) ) {
+					mimeType.setParameter("version", version);
+				}
 			}
-		} else {
-			// If there isn't a MIME type, make one up:
-			String id = "puid-"+r.getPuid().replace("/", "-");
-			String name = r.getName().replace("\"","'");
-			// Lead with the PUID:
-			mimeType = new MimeType("application/x-"+id);
-			mimeType.setParameter("name", name);
-			// Add the version, if set:
-			String version = r.getVersion();
-			if( version != null && !"".equals(version) && !"null".equals(version) ) {
-				mimeType.setParameter("version", version);
-			}
+		} catch( MimeTypeParseException e ) {
+			log.error("Could not parse MIME Type '"+mimeTypeString+"' : "+e.getMessage());
+			mimeType = new MimeType("application/octet-stream");
 		}
 		return mimeType;
 	}

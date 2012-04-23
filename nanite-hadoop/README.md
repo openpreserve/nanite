@@ -20,6 +20,13 @@ TODO
 ----
 
 * Mega bonus points: Add new tika detector for plain text that uses a Weka Baysian filter to spot scripts/code/markup.
+* Alternative text analysis by running against multiple parser/grammers - mildly forgiving yet, but then how to determine partial/full parse success?
+
+http://stackoverflow.com/questions/1513587/looking-for-a-css-parser-in-java
+http://stackoverflow.com/questions/6511556/javascript-parser-for-java
+http://stackoverflow.com/questions/3033202/robust-javascript-parser-in-java
+http://stackoverflow.com/questions/200609/can-you-recommend-a-java-library-for-reading-and-possibly-writing-csv-files
+
 * Extreme mega bonus points: Extend tika to run http://cmusphinx.sourceforge.net/ and extract text from audio/video.
 
 

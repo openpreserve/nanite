@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
@@ -34,20 +35,29 @@ public class TikaNanite {
 
 	public static void main(String[] args) throws Exception {
 		
-		CompositeParser parser = new PreservationParser();
+		PreservationParser parser = new PreservationParser();
 		// Wrap it in a recursive parser, to access the metadata.
 		Parser recursiveReportingParser = new RecursiveMetadataParser(parser);
 		// Set up the context:
 		ParseContext context = new ParseContext();
 		context.set(Parser.class, recursiveReportingParser);
+		// Control recursion:
+		//parser.setRecursive(context, false);
 
 		// Basic handler (ignores/pass-through-in-silence):
 		//ContentHandler handler = new DefaultHandler();
 		// Abort handler, limiting the output size, to avoid OOM:
 		ContentHandler handler = new WriteOutContentHandler(1000*1024);
 		
+		File inputFile = new File(args[0]);
 		Metadata metadata = new Metadata();
-		InputStream stream = TikaInputStream.get(new File(args[0]));
+		metadata.add( Metadata.RESOURCE_NAME_KEY, inputFile.toURI().toString());
+		// Instream
+		InputStream stream = TikaInputStream.get(inputFile);
+		// Detect
+		Tika tika = new Tika();
+		System.out.println("GOT: "+tika.detect(stream, metadata));
+		// Parse
 		try {
 			recursiveReportingParser.parse(stream, handler, metadata, context);
 		} catch (Exception e ) {
@@ -56,11 +66,11 @@ public class TikaNanite {
 			stream.close();
 		}
 		
-		System.out.println("--EOF--");
+		System.out.println("--EOF-- Top Level Metadata --");
 		String[] names = metadata.names();
 		Arrays.sort(names);
 		for( String name : names ) {
-			System.out.println("MD:"+name+": "+metadata.get(name));
+			System.out.println("MD: "+name+" = "+metadata.get(name));
 		}
 		System.out.println("----");		
 	}
@@ -99,7 +109,7 @@ public class TikaNanite {
 			String[] names = metadata.names();
 			Arrays.sort(names);
 			for( String name : names ) {
-				System.out.println("MD:"+name+": "+metadata.get(name));
+				System.out.println("MD : "+name+" = "+metadata.get(name));
 			}
 			System.out.println("----");
 			String text = ignore.toString();
