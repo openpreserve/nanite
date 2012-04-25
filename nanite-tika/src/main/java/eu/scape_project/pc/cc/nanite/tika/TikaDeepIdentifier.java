@@ -91,7 +91,7 @@ public class TikaDeepIdentifier {
 			if( extMimeType != null ) tikaType = extMimeType;
 			
 		} catch( Throwable e ) {
-			log.warn( "Tika Exception: " + e.getMessage() );
+			log.debug( "Tika Exception: " + e.getMessage() );
 			//e.printStackTrace();
 		}
 		// Return whichever value works:
