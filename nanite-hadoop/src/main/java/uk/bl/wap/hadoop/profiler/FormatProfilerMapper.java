@@ -73,9 +73,11 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 	@Override
 	public void map( Text key, WritableArchiveRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
-		// Get the ID:
+		// log the file we are processing:
+		log.debug("Processing record from: "+key);
+		
+		// Get the wctID, if any:
 		String wctID = this.getWctTi( key.toString() );
-		log.debug("Processing wcID: "+wctID);
 		
 		// Year and type from record:
 		String waybackYear = getWaybackYear(value);

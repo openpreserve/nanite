@@ -73,6 +73,10 @@ public class FormatProfiler extends Configured implements Tool {
 		// Actually, error indicates 20,000 seconds is the default here, which is 5.5 hrs!
 		//conf.set("mapred.task.timeout", "1800000");
 		
+		// Override the maxiumum JobConf size so very large lists of files can be processed:
+		// Default mapred.user.jobconf.limit=5242880 (5M), bump to 100 megabytes = 104857600 bytes.
+		conf.set("mapred.user.jobconf.limit", "104857600");
+		
 		// Manually set a large number of reducers:
 		conf.setNumReduceTasks(50);
 		
