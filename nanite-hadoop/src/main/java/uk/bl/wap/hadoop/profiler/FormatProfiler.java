@@ -69,6 +69,10 @@ public class FormatProfiler extends Configured implements Tool {
 		conf.setOutputValueClass( Text.class );
 		conf.setMapOutputValueClass( Text.class );
 		
+		// Override the task timeout to cope with behaviour when processing malformed archive files:
+		// 30 mins:
+		conf.set("mapred.task.timeout", "1800000");
+		
 		// Manually set a large number of reducers:
 		conf.setNumReduceTasks(50);
 		
