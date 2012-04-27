@@ -7,7 +7,11 @@ tsv_file = csv.reader(CommentedFile(open(sys.argv[1], "rb")), delimiter='\t')
 dst = {}
 for row in tsv_file:
     #print row
-    (fmtS, fmtT, fmtD, year, count) = row
+    try:
+        (fmtS, fmtT, fmtD, year, count) = row
+    except:
+        print "ERROR: Could not load ",row
+        continue
     fmt = bestType(fmtS,fmtT,fmtD)
     # Normalise, lower case and no space after the ;
     fmt = reduceType(fmt,True)

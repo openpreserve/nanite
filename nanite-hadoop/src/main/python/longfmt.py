@@ -10,7 +10,11 @@ minYear = -1
 maxYear = -1
 for row in tsv_file:
     #print row
-    (fmtS, fmtT, fmtD, year, count) = row
+    try:
+        (fmtS, fmtT, fmtD, year, count) = row
+    except:
+        print "ERROR: Could not load ",row
+        continue
     
     # This is a temporary override that looks at other stuff:
     # ---
@@ -33,7 +37,7 @@ for row in tsv_file:
     # 
     
     fmt = bestType(fmtS,fmtT,fmtD)
-    fmt = reduceType(fmt,False)
+    fmt = reduceType(fmt,True)
 
     if not fmt in byy:
         byy[fmt] = {}
@@ -62,7 +66,8 @@ for fmt in sorted(byy):
                 
         # Output the values:
         if byy[fmt].has_key(year):
-            out = "{}\t{}".format(out, 100.0*byy[fmt][year]/tot[year])
+            #out = "{}\t{}".format(out, 100.0*byy[fmt][year]/tot[year])
+            out = "{}\t{}".format(out, byy[fmt][year])
             total += byy[fmt][year]
         else:
             out = "{}\t{}".format(out,0)

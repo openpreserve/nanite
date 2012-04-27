@@ -35,7 +35,7 @@ def reduceType(fmt,version=False):
         (type, subtype, params) = mimeparse.parse_mime_type(fmt)
     except:
         print "ERROR: Could not parse: "+fmt
-        exit   
+        return fmt
     fmt = type+"/"+subtype
     # Add name, to keep PUIDs understandable
     fmt = appendParameter(fmt,params,"name")
