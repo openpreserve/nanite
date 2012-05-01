@@ -24,21 +24,36 @@ for row in tsv_file:
     except:
         print "ERROR: Could not parse: "+fmtT
         exit
-    key = 'producer'
+    
+    #if params.has_key("version"):
+    #    fmt = "{}\t{}".format(subtype,params["version"])
+    #else:
+    #    fmt = "{}\t{}".format(subtype,"-")
+    fmt = "{}".format(subtype)
+        
+    key = 'software'
+    #key = 'hardware'
     if params.has_key(key):
-        fmt = params[key].lower()
-        fmt = re.sub(r"([^\d])(\d+)\.\d.*",r"\1\2.x",fmt)
-        #fmt = re.sub(r"[^\d](\d+)\.\d.*",r"",fmt)
+        val = params[key]
+        # Include the major version, aggregate the rest:
+        val = re.sub(r"([^\d])(\d+)\.\d[^\"]*",r"\1\2.x",val)
+        # Just aggregate on the main name, ignoring what looks like version info:
+        #val = re.sub(r"[^\d](\d+)\.\d.*",r"",val)
+        fmt = "{}\t{}".format(fmt,val)
     else:
-        fmt = None 
-    if params.has_key("version"):
-        fmt = "{}\t{}".format(fmt,params["version"])
+        fmt = "{}\t{}".format(fmt,None)
+        
+    
     # ---
     # 
     
-    fmt = bestType(fmtS,fmtT,fmtD)
-    fmt = reduceType(fmt,True)
-
+    #fmt = bestType(fmtS,fmtT,fmtD)
+    #fmt = reduceType(fmt,True)
+    
+    #fmt = reduceType(fmt,False)
+    #fmt = "X"
+    
+    # Aggregate stats:
     if not fmt in byy:
         byy[fmt] = {}
     year = int(year)
@@ -49,7 +64,7 @@ for row in tsv_file:
     if not year in byy[fmt]:
         byy[fmt][year] = 0
     byy[fmt][year] += int(count)
-    # And a total:
+    # And a total summing over format:
     if not year in tot:
         tot[year] = 0
     tot[year] += int(count)
@@ -59,17 +74,34 @@ for year in range(minYear,maxYear+1):
     out = "{}\t{}".format(out,year)
 print out
 
+ftot = {}
 for fmt in sorted(byy):
     out = fmt
     total = 0
     for year in range(minYear,maxYear+1):
-                
+        # Set up formats counter
+        if not year in ftot:
+            ftot[year] = 0
+        
         # Output the values:
         if byy[fmt].has_key(year):
             #out = "{}\t{}".format(out, 100.0*byy[fmt][year]/tot[year])
             out = "{}\t{}".format(out, byy[fmt][year])
             total += byy[fmt][year]
+            # Count total formats:
+            if byy[fmt][year] > 100:
+                ftot[year] += 1
         else:
             out = "{}\t{}".format(out,0)
             
     print "{}\t{}".format(out,total)
+
+out = "Totals"
+for year in range(minYear,maxYear+1):
+    out = "{}\t{}".format(out,tot[year])
+print out
+
+out = "Total Formats"
+for year in range(minYear,maxYear+1):
+    out = "{}\t{}".format(out,ftot[year])
+print out

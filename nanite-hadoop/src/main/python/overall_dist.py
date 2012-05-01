@@ -14,13 +14,17 @@ for row in tsv_file:
         continue
     fmt = bestType(fmtS,fmtT,fmtD)
     # Normalise, lower case and no space after the ;
-    fmt = reduceType(fmt,True)
+    fmt = reduceType(fmt,False)
     
     if not fmt in dst:
         dst[fmt] = 0
     dst[fmt] += int(count)
 
 print "MIME Type\tCount"
+tot = 0
 for fmt in sorted(dst):
     print fmt,"\t",dst[fmt]
+    tot += dst[fmt]
+
+print "TOTAL\t{}".format(tot)
 

@@ -14,6 +14,30 @@ class CommentedFile:
     def __iter__(self):
         return self
 
+def parseType(fmt):
+    if( fmt == "null" ):
+        fmt = "application/x-unknown"
+    if( fmt == "text" ):
+        fmt = "text/plain"
+    if fmt.find("/") == -1:
+           return (fmt.lower(),'',{})
+    # Attept to parse:
+    try:
+        (type,subtype,params) = mimeparse.parse_mime_type(fmt)
+        return (type.lower(), subtype.lower(), params)
+    except:
+        print "ERROR: Could not fully parse: "+fmt
+        
+    try:        
+        fmt_matcher = re.compile( r'([a-z0-9\+\.]+)\/([a-z0-9\+\.]+)' )
+        fmt_match = fmt_matcher.match(fmt.lower())
+        (type,subtype) = fmt_match.groups()
+        return (type,subtype,{})
+    except:
+        print "ERROR: Could not partially parse: "+fmt
+    
+    return ("application",'x-malformed-mimetype', {} )
+
 def appendParameter(fmt, params, param):
     if params.has_key(param):
         v = params[param]
@@ -23,22 +47,11 @@ def appendParameter(fmt, params, param):
     return fmt
 
 def reduceType(fmt,version=False):
-    if( fmt == "null" ):
-        fmt = "application/x-unknown"
-    if( fmt == "text" ):
-        fmt = "text/plain"
-    if fmt.find("/") == -1:
-	       return fmt
-    fmt = fmt.rstrip(";");
-    #fmt = fmt.strip();
-    try:
-        (type, subtype, params) = mimeparse.parse_mime_type(fmt)
-    except:
-        print "ERROR: Could not parse: "+fmt
-        return fmt
+    (type, subtype, params) = parseType(fmt)
     fmt = type+"/"+subtype
     # Add name, to keep PUIDs understandable
-    fmt = appendParameter(fmt,params,"name")
+    if subtype.find("puid") != -1:
+        fmt = appendParameter(fmt,params,"name")
     # Add version, if required:
     if version:
         fmt = appendParameter(fmt,params,"version")
