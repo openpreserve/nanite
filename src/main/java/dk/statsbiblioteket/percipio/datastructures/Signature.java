@@ -12,9 +12,12 @@ import javax.xml.bind.annotation.XmlRootElement;
  * Time: 12:00:21 PM
  * To change this template use File | Settings | File Templates.
  */
-@XmlRootElement
+@XmlRootElement(name="TrID")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Signature {
+
+    @XmlElement(name = "Info")
+    private Info info = new Info();
 
     @XmlElement(name = "General")
     private General general = new General();
@@ -35,8 +38,15 @@ public class Signature {
     public Block getEndBlock() {
         return endBlock;
     }
+    
+    /**
+	 * @return the info
+	 */
+	public Info getInfo() {
+		return info;
+	}
 
-    public General getGeneral() {
+	public General getGeneral() {
         return general;
     }
 }

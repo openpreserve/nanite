@@ -35,6 +35,7 @@ public class Percipio {
 
         String command = args[0];
 
+        System.out.println("Command: "+command);
 
         String signatureArg = "";
         int numberOfMatchesArg = 5;
@@ -81,9 +82,11 @@ public class Percipio {
             System.out.println(writer.toString());
         }
         if (command.equals("sniff")){
+        	System.out.println("signatureArg: "+signatureArg);
             List<Signature> signatures = parseSignatures(unmarshaller, signatureArg);
 
             Map<File, Score> scores = brain.score(signatures,files);
+            System.out.println("size() = "+scores.size());
             for (File file : scores.keySet()) {
                 printScores(file,scores.get(file), numberOfMatchesArg);
             }
@@ -101,7 +104,7 @@ public class Percipio {
         }
         int prints = 0;
         for (Score.Pair<Integer, Signature> integerSignaturePair : score.getScoreboard()) {
-            String message = integerSignaturePair.getB().getGeneral().getName() + ": " +
+            String message = integerSignaturePair.getB().getInfo().getFileType() + ": " +
                              ((int)((integerSignaturePair.getA()+0.0)*10000 / total)+0.0)/100 + "%";
             System.out.println(message);
             prints++;
@@ -120,7 +123,7 @@ public class Percipio {
             File[] signatureFiles = signatureFolder.listFiles(new FilenameFilter() {
 
                 public boolean accept(File dir, String name) {
-                    if (name.endsWith(".sig")) {
+                    if (name.endsWith(".sig") || name.endsWith(".xml")) {
                         return true;
                     }
                     return false;

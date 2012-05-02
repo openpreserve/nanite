@@ -48,7 +48,7 @@ public class BrainTest {
 
     @Test
     public void testScore() throws Exception {
-        List<File> pdffiles = Arrays.asList(new File("test/resources/pdf").listFiles());
+        List<File> pdffiles = Arrays.asList(new File("src/test/resources/pdf").listFiles());
 
 
         ArrayList<File> arraylist = new ArrayList<File>();
@@ -67,7 +67,7 @@ public class BrainTest {
 
     @Test
     public void testRelearn() throws Exception {
-        List<File> pdffiles = Arrays.asList(new File("test/resources/pdf").listFiles());
+        List<File> pdffiles = Arrays.asList(new File("src/test/resources/pdf").listFiles());
 
 
         ArrayList<File> arraylist = new ArrayList<File>();
@@ -87,7 +87,7 @@ public class BrainTest {
 */
         Signature relearnedSig = brain.relearn(signature, secondPdf, thirdPdf);
         score = brain.score(Arrays.asList(new Signature[]{signature}), firstPdf);
-        assertTrue("Score to low, this should really be a pdf file", score.getScoreboard().first().getA() > 10);
+        assertTrue("Score to0 low, this should really be a pdf file", score.getScoreboard().first().getA() > 10);
 
         /*System.out.println("score for pdf file '"+firstPdf.getName()+"' is "+score.getScoreboard().first().getA());
         marshaller.marshal(signature,System.out);
@@ -99,7 +99,7 @@ public class BrainTest {
     public void testLearn() throws Exception {
 
         Brain brain = new Brain();
-        File[] pdffiles = new File("test/resources/pdf").listFiles();
+        File[] pdffiles = new File("src/test/resources/pdf").listFiles();
         Signature signature = brain.learn(pdffiles);
 
     }

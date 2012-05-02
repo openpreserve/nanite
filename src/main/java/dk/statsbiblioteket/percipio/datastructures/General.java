@@ -20,9 +20,6 @@ public class General {
     @XmlElement(name = "Date")
     private String date;
 
-    @XmlElement(name = "Name")
-    private String name = "Please provide a name for this signature";
-
     public General() {
     }
 
@@ -47,11 +44,4 @@ public class General {
         this.date = date;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 }
