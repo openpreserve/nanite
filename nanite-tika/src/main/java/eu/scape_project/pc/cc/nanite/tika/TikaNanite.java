@@ -110,7 +110,7 @@ public class TikaNanite {
 			String[] names = metadata.names();
 			Arrays.sort(names);
 			for( String name : names ) {
-				System.out.println("MD : "+name+" = "+metadata.get(name));
+				System.out.println("RMD : "+name+" = "+metadata.get(name));
 			}
 			System.out.println("----");
 			String text = ignore.toString();

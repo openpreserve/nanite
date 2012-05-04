@@ -5,6 +5,7 @@ package eu.scape_project.pc.cc.nanite.tika;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Map;
 
 import javax.activation.MimeTypeParseException;
@@ -108,21 +109,36 @@ public class PreservationParser extends AutoDetectParser {
 		if( !initialised ) init(context);
 
 		// Pick up the detected MIME Type passed in from above:
+		String providedType = metadata.get( Metadata.CONTENT_TYPE );
+		
+		String[] names = metadata.names();
+		Arrays.sort(names);
+		for( String name : names ) {
+			System.out.println("PPPPre : "+name+" = "+metadata.get(name));
+		}
+
+		// Parse:
+		super.parse(stream, handler, metadata, context);
+		
+		names = metadata.names();
+		Arrays.sort(names);
+		for( String name : names ) {
+			System.out.println("PPPPost : "+name+" = "+metadata.get(name));
+		}
+		// Build the extended MIME Type, incorporating version and creator software etc.
 		ExtendedMimeType tikaType = null;
 		try {
-			tikaType = new ExtendedMimeType( metadata.get( Metadata.CONTENT_TYPE ) );
+			if( providedType == null ) {
+				tikaType = new ExtendedMimeType( metadata.get( Metadata.CONTENT_TYPE ) );
+			} else {
+				tikaType = new ExtendedMimeType( providedType );
+			}
 		} catch ( Exception e) {
 			// Stop here and return if this failed:
 			log.error("Could not parse MIME Type: "+metadata.get( Metadata.CONTENT_TYPE ));
 			tikaType = ExtendedMimeType.OCTET_STREAM;
 			metadata.remove( Metadata.CONTENT_TYPE );
 		}
-		
-
-		// Parse:
-		super.parse(stream, handler, metadata, context);
-		
-		// Build the extended MIME Type, incorporating version and creator software etc.
 		
 		// Content encoding, if any:
 		String encoding = metadata.get( Metadata.CONTENT_ENCODING );

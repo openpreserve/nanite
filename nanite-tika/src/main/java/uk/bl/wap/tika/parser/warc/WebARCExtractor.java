@@ -90,11 +90,11 @@ public class WebARCExtractor {
 				}
 
 				String name = entry.getHeader().getUrl();
-				System.out.println("WebARC - Pre-scan found directory named: "+name);
+				name = entry.getHeader().getHeaderValue(WARCRecord.HEADER_KEY_TYPE)+":"+name;
 				// Now parse it...
 				// Setup
 				Metadata entrydata = new Metadata();
-				entrydata.set(Metadata.RESOURCE_NAME_KEY, entry.getHeader().getUrl());
+				entrydata.set(Metadata.RESOURCE_NAME_KEY, name );
 				// Use the delegate parser to parse the compressed document
 				if (extractor.shouldParseEmbedded(entrydata)) {
 					extractor.parseEmbedded(is, xhtml, entrydata, true);
