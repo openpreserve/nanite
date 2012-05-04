@@ -55,7 +55,7 @@ import org.xml.sax.SAXException;
  * 
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  */
-public class WebARCParser extends AbstractParser {
+public class ARCParser extends AbstractParser {
 
 	/**  */
 	private static final long serialVersionUID = 7346851876221749615L;
@@ -63,8 +63,7 @@ public class WebARCParser extends AbstractParser {
 	/** */
 	private static final Set<MediaType> SUPPORTED_TYPES =
 		Collections.unmodifiableSet(new HashSet<MediaType>(Arrays.asList(
-				MediaType.application("x-arc"),
-				MediaType.application("warc"))));
+				MediaType.application("x-arc"))));
 
 	@Override
 	public Set<MediaType> getSupportedTypes(ParseContext context) {
@@ -76,7 +75,7 @@ public class WebARCParser extends AbstractParser {
 	public void parse(InputStream stream, ContentHandler handler,
 			Metadata metadata, ParseContext context) throws IOException,
 			SAXException, TikaException {
-		new WebARCExtractor(handler, metadata, context).parse(stream);
+		new WebARCExtractor(handler, metadata, context, false).parse(stream);
 	}
 
 }

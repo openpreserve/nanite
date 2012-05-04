@@ -22,7 +22,8 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 import uk.bl.wap.tika.parser.iso9660.ISO9660Parser;
-import uk.bl.wap.tika.parser.warc.WebARCParser;
+import uk.bl.wap.tika.parser.warc.ARCParser;
+import uk.bl.wap.tika.parser.warc.WARCParser;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
@@ -86,8 +87,8 @@ public class PreservationParser extends AutoDetectParser {
 		Map<MediaType, Parser> parsers = getParsers();
 		parsers.put( pdf, new uk.bl.wap.tika.parser.pdf.pdfbox.PDFParser() );
 		parsers.put( MediaType.parse("application/x-iso9660-image"), new ISO9660Parser() );
-		parsers.put( MediaType.parse("application/x-arc"), new WebARCParser() );
-		parsers.put( MediaType.parse("application/warc"), new WebARCParser() );
+		parsers.put( MediaType.parse("application/x-arc"), new ARCParser() );
+		parsers.put( MediaType.parse("application/warc"), new WARCParser() );
 		setParsers(parsers);
 		// Override the recursive parsing:
 		embedded = new NonRecursiveEmbeddedDocumentExtractor(context);
