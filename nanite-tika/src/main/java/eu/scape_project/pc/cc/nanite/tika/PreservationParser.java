@@ -22,6 +22,7 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 import uk.bl.wap.tika.parser.iso9660.ISO9660Parser;
+import uk.bl.wap.tika.parser.warc.WebARCParser;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
@@ -78,13 +79,15 @@ public class PreservationParser extends AutoDetectParser {
 	 * Modify the configuration as needed:
 	 * @param context 
 	 */
-	private void init(ParseContext context) {
+	public void init(ParseContext context) {
 		if( this.initialised ) return;
 		// Override the built-in PDF parser (based on PDFBox) with our own (based in iText):
 		MediaType pdf = MediaType.parse("application/pdf");
 		Map<MediaType, Parser> parsers = getParsers();
 		parsers.put( pdf, new uk.bl.wap.tika.parser.pdf.pdfbox.PDFParser() );
 		parsers.put( MediaType.parse("application/x-iso9660-image"), new ISO9660Parser() );
+		parsers.put( MediaType.parse("application/x-arc"), new WebARCParser() );
+		parsers.put( MediaType.parse("application/warc"), new WebARCParser() );
 		setParsers(parsers);
 		// Override the recursive parsing:
 		embedded = new NonRecursiveEmbeddedDocumentExtractor(context);
@@ -102,21 +105,24 @@ public class PreservationParser extends AutoDetectParser {
 		
 		// Override with custom parsers, etc.:
 		if( !initialised ) init(context);
-		
-		// Parse:
-		super.parse(stream, handler, metadata, context);
-		
-		// Add extended metadata of preservation interest.
-		//
-		// Build the extended MIME Type, incorporating version and creator software:
+
+		// Pick up the detected MIME Type passed in from above:
 		ExtendedMimeType tikaType = null;
 		try {
 			tikaType = new ExtendedMimeType( metadata.get( Metadata.CONTENT_TYPE ) );
-		} catch (MimeTypeParseException e) {
+		} catch ( Exception e) {
 			// Stop here and return if this failed:
 			log.error("Could not parse MIME Type: "+metadata.get( Metadata.CONTENT_TYPE ));
 			tikaType = ExtendedMimeType.OCTET_STREAM;
+			metadata.remove( Metadata.CONTENT_TYPE );
 		}
+		
+
+		// Parse:
+		super.parse(stream, handler, metadata, context);
+		
+		// Build the extended MIME Type, incorporating version and creator software etc.
+		
 		// Content encoding, if any:
 		String encoding = metadata.get( Metadata.CONTENT_ENCODING );
 		if( encoding != null ) {

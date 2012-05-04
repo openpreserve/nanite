@@ -45,7 +45,9 @@ public class TikaDeepIdentifier {
 	ParseContext ctx = new ParseContext();
 	// Set up the parser:
 	PreservationParser parser = new PreservationParser();
-
+	// Perform overrides of default configuration:
+	//parser.init(ctx);
+	
 	/**
 	 * @param args
 	 */

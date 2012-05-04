@@ -56,7 +56,8 @@ public class TikaNanite {
 		InputStream stream = TikaInputStream.get(inputFile);
 		// Detect
 		Tika tika = new Tika();
-		System.out.println("GOT: "+tika.detect(stream, metadata));
+		String type = tika.detect(stream, metadata);
+		metadata.add( Metadata.CONTENT_TYPE, type);
 		// Parse
 		try {
 			recursiveReportingParser.parse(stream, handler, metadata, context);
