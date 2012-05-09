@@ -126,7 +126,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Get the server header data:
 		if( !header.getHeaderFields().isEmpty() ) {
 			// The crawl year:
-			String waybackDate = ( ( String ) value.getRecord().getHeader().getDate() ).replaceAll( "[^0-9]", "" );
+			String waybackDate = ( ( String ) header.getDate() ).replaceAll( "[^0-9]", "" );
 			if( waybackDate != null ) 
 				waybackYear = waybackDate.substring(0,4);
 
