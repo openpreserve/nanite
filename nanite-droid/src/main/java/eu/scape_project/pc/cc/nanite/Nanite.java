@@ -82,7 +82,7 @@ import uk.gov.nationalarchives.pronom.PronomService;
  * So, the profile stuff is hooked into the DB stuff which is hooked into the identifiers.
  * Everything is tightly coupled, so teasing it apart is hard work.
  * 
- * @see uk.gov.nationalarchives.droid.submitter.SubmissionGateway
+ * @see uk.gov.nationalarchives.droid.submitter.SubmissionGateway (in droid-results)
  * @see uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier
  * @see uk.gov.nationalarchives.droid.submitter.FileEventHandler.onEvent(File, ResourceId, ResourceId)
  * 
@@ -126,7 +126,7 @@ public class Nanite {
 	     */
 	    public NaniteGlobalConfig() throws IOException {
 			super();
-	        createResourceFile(getSignatureFileDir(), DROID_SIGNATURE_FILE, DROID_SIGNATURE_FILE);
+	        createResourceFile(getSignatureFileDir(), DROID_SIGNATURE_FILE, DROID_SIGNATURE_FILE, true);
 		}
 		
 		/**
@@ -134,7 +134,7 @@ public class Nanite {
 		 */
 		public void init() throws ConfigurationException {
 	        super.init();
-	        this.getProperties().setProperty("profile.defaultBinarySigFileVersion", "DROID_SignatureFile_V59");
+	        this.getProperties().setProperty("profile.defaultBinarySigFileVersion", DROID_SIGNATURE_FILE.replace(".xml", ""));
 		}
 		
 		/**
@@ -145,16 +145,19 @@ public class Nanite {
 		 * @param resourceName
 		 * @throws IOException
 		 */
-		private void createResourceFile(File resourceDir, String fileName, String resourceName) throws IOException {
+		private void createResourceFile(File resourceDir, String fileName, String resourceName, boolean overwrite ) throws IOException {
 	        InputStream in = getClass().getClassLoader().getResourceAsStream(resourceName);
 	        if (in == null) {
-	        	//log.warn("Resource not found: " + resourceName);
+	        	log.warn("Resource not found: " + resourceName);
 	        } else {
 	            File resourcefile = new File(resourceDir, fileName);
-	            if (resourcefile.createNewFile()) {
+	            if ( resourcefile.createNewFile() || overwrite ) {
 	                OutputStream out = new FileOutputStream(resourcefile);
 	                try {
+	    	        	//log.debug("Copying "+resourceName+" to "+resourcefile.getAbsolutePath());
 	                    IOUtils.copy(in, out);
+	                } catch (Exception e ) {
+	    	        	log.warn("Failed while copying "+resourceName+" to "+resourcefile.getAbsolutePath());
 	                } finally {
 	                    if (out != null) {
 	                        out.close();
@@ -181,7 +184,7 @@ public class Nanite {
 		// System.getProperty("java.io.tmpdir")
 		//String droidDirname = System.getProperty("user.home")+File.separator+".droid6";
 		String droidDirname = System.getProperty("java.io.tmpdir")+File.separator+"droid6";
-		//System.out.println("GOT: "+droidDirname);
+		//log.warn("GOT: "+droidDirname);
 		File droidDir = new File(droidDirname);
 		if( ! droidDir.isDirectory() ) {
 			if( ! droidDir.exists() ) {
@@ -270,7 +273,10 @@ public class Nanite {
 	 * @return
 	 */
 	public IdentificationResultCollection identify(IdentificationRequest ir) {
-		return bsi.matchBinarySignatures(ir);
+		IdentificationResultCollection results = bsi.matchBinarySignatures(ir);
+		// Strip out lower priority results
+		bsi.removeLowerPriorityHits(results);
+		return results;
 		/*
 		Future<IdentificationResultCollection> task = sg.submit(ir);
 		while( ! task.isDone() ) {
@@ -388,7 +394,12 @@ public class Nanite {
 		MimeType mimeType = new MimeType("application/octet-stream");
 		if( results == null || results.size() == 0 ) return mimeType;
 		// Get the first result:
+		// FIXME I have to implement the Priority mapping to get sensible results.
+		// e.g. RAW JPEG and JPEG 1.00 are returned, and I have to use Priority to walk the map.
+		// AS WELL as coping with degenerate results of 'equal priority' (?)
+		// So, have to find all formats at the same 'level' ?
 		IdentificationResult r = results.get(0);
+		// Sort out the MIME type mapping:
 		String mimeTypeString = r.getMimeType();
 		try {
 			// This sometimes has ", " separated multiple types
@@ -398,7 +409,7 @@ public class Nanite {
 			if( mimeType != null && ! "".equals(mimeType) ) {
 				// Patch on a version parameter if there isn't one there already:
 				if( mimeType.getParameter("version") == null && 
-						r.getVersion() != null && ! "".equals(r.getVersion()) &&
+						r.getVersion() != null && (! "".equals(r.getVersion())) &&
 						// But ONLY if there is ONLY one result.
 						results.size() == 1 ) {
 					mimeType.setParameter("version", r.getVersion());
@@ -438,7 +449,7 @@ public class Nanite {
 			if( result.getVersion() != null && ! "".equals(result.getVersion())) {
 				mimeType += ";version="+result.getVersion();
 			}
-			System.out.println("MATCHING: "+result.getPuid()+", "+result.getName()+" "+result.getVersion());
+			System.out.println("MATCHING: "+result.getPuid()+", "+result.getName()+" "+result.getVersion()+" :: "+result.getMimeType());
 		}
 		return Nanite.getMimeTypeFromResults(resultCollection.getResults()).toString();		
 	}
@@ -463,10 +474,13 @@ public class Nanite {
 	 * @throws MimeTypeParseException 
 	 */
 	public static void main(String[] args) throws IOException, SignatureManagerException, ConfigurationException, SignatureFileException, MimeTypeParseException {
-		File file = new File(args[0]);
 		Nanite nan = new Nanite();
-		System.out.println("Nanite using DROID binary signature file version "+nan.getBinarySigFileVersion());
-		System.out.println("Result: " + nan.getMimeType(file));
+		for( String fname : args ) {
+			File file = new File(fname);
+			System.out.println("Nanite using DROID binary signature file version "+nan.getBinarySigFileVersion());
+			System.out.println("Result: " + nan.getMimeType(file));
+			System.out.println("----");
+		}
 	}
 	
 
