@@ -63,7 +63,7 @@ public class ARCParser extends AbstractParser {
 	/** */
 	private static final Set<MediaType> SUPPORTED_TYPES =
 		Collections.unmodifiableSet(new HashSet<MediaType>(Arrays.asList(
-				MediaType.application("x-arc"))));
+				MediaType.application("x-internet-archive"))));
 
 	@Override
 	public Set<MediaType> getSupportedTypes(ParseContext context) {

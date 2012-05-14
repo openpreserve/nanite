@@ -74,7 +74,7 @@
   </mime-type>
   
   <!-- http://archive.org/web/researcher/ArcFileFormat.php  -->
-  <mime-type type="application/x-arc">
+  <mime-type type="application/x-internet-archive">
     <acronym>ARC</acronym>
     <_comment>ARC</_comment>
     <magic priority="90">

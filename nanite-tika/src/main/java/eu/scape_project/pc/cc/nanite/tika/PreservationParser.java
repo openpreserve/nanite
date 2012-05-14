@@ -88,7 +88,7 @@ public class PreservationParser extends AutoDetectParser {
 		Map<MediaType, Parser> parsers = getParsers();
 		parsers.put( pdf, new uk.bl.wap.tika.parser.pdf.pdfbox.PDFParser() );
 		parsers.put( MediaType.parse("application/x-iso9660-image"), new ISO9660Parser() );
-		parsers.put( MediaType.parse("application/x-arc"), new ARCParser() );
+		parsers.put( MediaType.parse("application/x-internet-archive"), new ARCParser() );
 		parsers.put( MediaType.parse("application/warc"), new WARCParser() );
 		setParsers(parsers);
 		// Override the recursive parsing:
