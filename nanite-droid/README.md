@@ -37,7 +37,7 @@ I've also found that the -with-dependencies jar can be deployed as part of an Ha
 
 TODO
 ----
-
+* NOTE that occasional bad matches are difficult to control due to pure Priority model. x-pict should be 'lower priority than' pretty much everything, because a couple of bytes at a fixed offset can collide with other formats, by chance.
 * Add an InputstreamIdentificationRequest class.
 * Make ByteArray and Inputstream Identification Request classes spool out to tmp files 
 so the contained-id can use getSourceFile and open up the data.

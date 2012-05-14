@@ -35,14 +35,9 @@ Although this is rather clumsy, collecting this initial data will help us find a
 
 Ideas
 -----
-* MOVE my JHOVE2 iso (and doc?) code into here.
 * IMPORTANT I think that, as used now, the FormatProfiler examines all embedded bitstreams and indeed text but only reports the top-level/outer MIME type.
 * For this to work reliably, we will need to modify PackageExtractor so that the parent-child relationship is maintained. Otherwise, the identity of files gets confused when there are ZIPs in ZIPs etc.
-* PreservationParser returns NULL sometimes. Should really be octet-stream? DONE I believe.
-* Return x-empty for zero-length items. DONE
-* Need to create MimeTypes consistently, so values are "enquoted" consisently. DONE.
 * Check allowed parameter/values characters and enforce.
-* Replace some ';' in parmeters with ',' and '=' with ''. DONE.
  
 * Should normalise/limit the extended MIME type work, and create a new job that spews out ALL the properties Tika reports in some suitable form.
 
