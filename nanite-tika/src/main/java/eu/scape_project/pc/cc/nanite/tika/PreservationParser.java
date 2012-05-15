@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.extractor.EmbeddedDocumentExtractor;
 import org.apache.tika.extractor.ParsingEmbeddedDocumentExtractor;
+import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
@@ -76,7 +77,7 @@ public class PreservationParser extends AutoDetectParser {
 		}
 
 	}
-
+	
 	/**
 	 * Modify the configuration as needed:
 	 * @param context 
@@ -111,20 +112,20 @@ public class PreservationParser extends AutoDetectParser {
 		// Pick up the detected MIME Type passed in from above:
 		String providedType = metadata.get( Metadata.CONTENT_TYPE );
 		
-		String[] names = metadata.names();
-		Arrays.sort(names);
-		for( String name : names ) {
-			System.out.println("PPPPre : "+name+" = "+metadata.get(name));
-		}
+		//String[] names = metadata.names();
+		//Arrays.sort(names);
+		//for( String name : names ) {
+		//	System.out.println("PPPPre : "+name+" = "+metadata.get(name));
+		//}
 
 		// Parse:
 		super.parse(stream, handler, metadata, context);
 		
-		names = metadata.names();
-		Arrays.sort(names);
-		for( String name : names ) {
-			System.out.println("PPPPost : "+name+" = "+metadata.get(name));
-		}
+		//names = metadata.names();
+		//Arrays.sort(names);
+		//for( String name : names ) {
+		//	System.out.println("PPPPost : "+name+" = "+metadata.get(name));
+		//}
 		// Build the extended MIME Type, incorporating version and creator software etc.
 		ExtendedMimeType tikaType = null;
 		try {
