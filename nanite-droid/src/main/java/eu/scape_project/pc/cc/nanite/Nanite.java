@@ -394,10 +394,6 @@ public class Nanite {
 		MimeType mimeType = new MimeType("application/octet-stream");
 		if( results == null || results.size() == 0 ) return mimeType;
 		// Get the first result:
-		// FIXME I have to implement the Priority mapping to get sensible results.
-		// e.g. RAW JPEG and JPEG 1.00 are returned, and I have to use Priority to walk the map.
-		// AS WELL as coping with degenerate results of 'equal priority' (?)
-		// So, have to find all formats at the same 'level' ?
 		IdentificationResult r = results.get(0);
 		// Sort out the MIME type mapping:
 		String mimeTypeString = r.getMimeType();
@@ -477,6 +473,7 @@ public class Nanite {
 		Nanite nan = new Nanite();
 		for( String fname : args ) {
 			File file = new File(fname);
+			System.out.println("File: "+fname);
 			System.out.println("Nanite using DROID binary signature file version "+nan.getBinarySigFileVersion());
 			System.out.println("Result: " + nan.getMimeType(file));
 			System.out.println("----");

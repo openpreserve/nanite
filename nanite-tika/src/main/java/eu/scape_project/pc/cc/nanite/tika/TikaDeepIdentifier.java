@@ -41,7 +41,8 @@ public class TikaDeepIdentifier {
 	
 	private static int MAX_BUF = 64*1024;
 
-	private final long parseTimeout = 300000L;
+	// Number of milliseconds before timing out. Defaults to 5 mins (5*60*1000 = 300,000 milliseconds).
+	private final long parseTimeout = 5*60*1000L;
 
 	// Abort handler, limiting the output size, to avoid OOM:
 	private static WriteOutContentHandler ch = new WriteOutContentHandler(MAX_BUF);

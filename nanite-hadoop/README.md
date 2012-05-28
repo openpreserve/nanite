@@ -19,10 +19,6 @@ main JAR file, e.g. 'target/nanite-hadoop-0.0.1-SNAPSHOT-job.jar'.
 TODO
 ----
 
-* Test that issue with Tika MIME type being overridden is fixed.
-* DROID has stopped returning jpeg1.02 etc - is that fix broken?
-
-
 * Mega bonus points: Add new tika detector for plain text that uses a Weka Baysian filter to spot scripts/code/markup.
 * Alternative text analysis by running against multiple parser/grammers - mildly forgiving yet, but then how to determine partial/full parse success?
 

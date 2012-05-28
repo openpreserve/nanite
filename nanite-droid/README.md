@@ -2,8 +2,22 @@ Nanite - a tiny droid
 =====================
 
 This small amount of code re-implements the DROID core workflow so that is better suited 
-to running from the CLI or as an Hadoop map-reduce JAR. Critically, this means being able to 
+to running from the CLI, or embedded, or as an Hadoop map-reduce JAR. Critically, this means being able to 
 identify byte arrays or input streams without assuming they are file-backed (as Droid does).
+
+As well as making it easier to re-use DROID, the hope was that signature creation could be made easier too.
+
+Unfortunately, it was not possible to make all DROID features work properly. The core identification code (DroidCore)
+mixed a complex, multi-thread process workflow with file and persistance management assumptions. It it also configured 
+using a complex two-stage Spring dependency injection setup procedure, which makes stripping out unnecessary functionality 
+rather difficult.
+
+These complications mean that it was only possible to extract the core binary internal signature engine
+into a re-usable form. The Container-aware detection (i.e. parsing ZIP and OLE2 files to determine if they
+are office documents) is not working at all in this version. However, this limitation only affects a handful of formats.
+
+Compilation
+-----------
 
 This code required that you have compiled the Droid code and installed it in your local Maven 
 repository. Contact the us via http://www.openplanetsfoundation.org/contact if you have 
