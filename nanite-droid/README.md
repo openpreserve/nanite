@@ -1,7 +1,7 @@
 Nanite - a tiny droid
 =====================
 
-This small amount of code wraps up the DROID engine in a simpler wrapper that is better suited 
+This small amount of code re-implements the DROID core workflow so that is better suited 
 to running from the CLI or as an Hadoop map-reduce JAR. Critically, this means being able to 
 identify byte arrays or input streams without assuming they are file-backed (as Droid does).
 
