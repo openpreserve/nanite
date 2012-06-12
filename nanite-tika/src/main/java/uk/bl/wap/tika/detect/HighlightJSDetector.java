@@ -127,7 +127,7 @@ public class HighlightJSDetector implements Detector {
         String encoding = "UTF-8";
         
         // Pick up the encoding, if set:
-        if( metadata != null && metadata.get( Metadata.CONTENT_ENCODING) != null ) {
+        if( metadata.get( Metadata.CONTENT_ENCODING) != null ) {
         	if( Charset.isSupported( metadata.get( Metadata.CONTENT_ENCODING) ) ) {
         		encoding = metadata.get( Metadata.CONTENT_ENCODING);
         	}
@@ -154,6 +154,7 @@ public class HighlightJSDetector implements Detector {
         	// Attempt to identify:
         	//System.out.println("GOT "+out.toString());
         	HljsResult result = this.identify( out.toString() );
+        	log.info("for "+metadata.get( Metadata.CONTENT_TYPE)+ " got "+result.getLanguage());
         	// Map to MIME type:
         	if ( mimeMap.containsKey(result.getLanguage()) ) {
         		return MediaType.parse(mimeMap.get(result.getLanguage()));
@@ -220,7 +221,7 @@ public class HighlightJSDetector implements Detector {
 	        
 	        return new HljsResult(language, relevance);
 	        
-		} catch( ClassCastException e ) {
+		} catch( Exception e ) {
 			return new HljsResult("unknown", 0);
 		}
 	}
@@ -243,8 +244,7 @@ public class HighlightJSDetector implements Detector {
         // Extract the second-best match:
         HljsResult second_best = this.getHljsResult("hlid.second_best");
         
-        log.info("Identified: "+best+", "+second_best);
-        
+        log.debug("Identified: "+best+", "+second_best);
         return best;
 	}
 	
@@ -254,7 +254,7 @@ public class HighlightJSDetector implements Detector {
 
 	        try {
 	        	HighlightJSDetector hljs = new HighlightJSDetector();
-	        	System.out.println("GOT: "+hljs.detect(new ByteArrayInputStream("<xml></xml>".getBytes()), null) );
+	        	System.out.println("GOT: "+hljs.detect(new ByteArrayInputStream("<xml></xml>".getBytes()), new Metadata()) );
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }

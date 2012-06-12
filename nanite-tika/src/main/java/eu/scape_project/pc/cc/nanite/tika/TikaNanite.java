@@ -41,6 +41,7 @@ public class TikaNanite {
 		// Set up the context:
 		ParseContext context = new ParseContext();
 		context.set(Parser.class, recursiveReportingParser);
+		parser.init(context);
 		// Control recursion:
 		//parser.setRecursive(context, false);
 
@@ -55,9 +56,10 @@ public class TikaNanite {
 		// Instream
 		InputStream stream = TikaInputStream.get(inputFile);
 		// Detect
-		Tika tika = new Tika();
-		String type = tika.detect(stream, metadata);
-		metadata.add( Metadata.CONTENT_TYPE, type);
+		//Tika tika = new Tika();
+		MediaType type = parser.getDetector().detect(stream, metadata);
+		System.out.println("Detector found: "+type);
+		metadata.add( Metadata.CONTENT_TYPE, type.toString());
 		// Parse
 		try {
 			recursiveReportingParser.parse(stream, handler, metadata, context);
@@ -114,7 +116,7 @@ public class TikaNanite {
 			}
 			System.out.println("----");
 			String text = ignore.toString();
-			if( text.length() > 200 ) text = text.substring(0,200);
+			if( text.length() > 10 ) text = text.substring(0,10);
 			//System.out.println(text);
 		}
 	}

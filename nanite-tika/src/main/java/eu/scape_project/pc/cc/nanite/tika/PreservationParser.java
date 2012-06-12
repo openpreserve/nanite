@@ -120,7 +120,7 @@ public class PreservationParser extends AutoDetectParser {
 
 		// Pick up the detected MIME Type passed in from above:
 		String providedType = metadata.get( Metadata.CONTENT_TYPE );
-		log.warn("providedType = " + providedType);
+		log.info("providedType = " + providedType);
 		
 		//String[] names = metadata.names();
 		//Arrays.sort(names);
