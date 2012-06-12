@@ -16,6 +16,9 @@ Ideas
 ** PDF/A-1a, which only allows 1.4? http://nationalarchives.gov.uk/PRONOM/Format/proFormatSearch.aspx?status=detailReport&id=770&strPageToDisplay=signatures
 ** PDF/A-1b, which allows PDF v1.3,4,5,6,7 http://nationalarchives.gov.uk/PRONOM/Format/proFormatSearch.aspx?status=detailReport&id=1100&strPageToDisplay=signatures
 
+* Added an experimental language detector based on highlight.js, but it seems to be overly white-space dependent.
+** e.g. compressed javascript is not highlighted at all, leading to bad guesses on format.
+
 * IMPORTANT I think that, as used now, the FormatProfiler examines all embedded bitstreams and indeed text but only reports the top-level/outer MIME type.
 * For this to work reliably, we will need to modify PackageExtractor so that the parent-child relationship is maintained. Otherwise, the identity of files gets confused when there are ZIPs in ZIPs etc.
 * Check allowed parameter/values characters and enforce.
