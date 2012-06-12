@@ -6,11 +6,14 @@ package eu.scape_project.pc.cc.nanite.tika;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import javax.activation.MimeTypeParseException;
 
 import org.apache.log4j.Logger;
+import org.apache.tika.detect.CompositeDetector;
+import org.apache.tika.detect.Detector;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.extractor.EmbeddedDocumentExtractor;
 import org.apache.tika.extractor.ParsingEmbeddedDocumentExtractor;
@@ -23,6 +26,7 @@ import org.apache.tika.parser.Parser;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
+import uk.bl.wap.tika.detect.HighlightJSDetector;
 import uk.bl.wap.tika.parser.iso9660.ISO9660Parser;
 import uk.bl.wap.tika.parser.warc.ARCParser;
 import uk.bl.wap.tika.parser.warc.WARCParser;
@@ -84,6 +88,11 @@ public class PreservationParser extends AutoDetectParser {
 	 */
 	public void init(ParseContext context) {
 		if( this.initialised ) return;
+		// Add the HighlightJS detector:
+		//CompositeDetector detect = (CompositeDetector) this.getDetector();
+		//List<Detector> detectors = detect.getDetectors();
+		//detectors.add( new HighlightJS() );
+		//this.setDetector( new CompositeDetector(detectors));
 		// Override the built-in PDF parser (based on PDFBox) with our own (based in iText):
 		MediaType pdf = MediaType.parse("application/pdf");
 		Map<MediaType, Parser> parsers = getParsers();

@@ -12,6 +12,7 @@ Ideas
 * BUG? Fails to identify lots of PDF/A, suspect some error is uncaught, in these cases, as Tika is just returning application/pdf with no version at all while DROID reports 1a.
 ** A-1b is better, with Tika returning lost of 1b, even when DROID misses them!
 ** Likely the Adobe Extension Level code is falling over.
+** 1a is stricter than 1b, requiring "Tagged PDF" amongst other things. Maybe extension levels?
 ** PDF/A-1a, which only allows 1.4? http://nationalarchives.gov.uk/PRONOM/Format/proFormatSearch.aspx?status=detailReport&id=770&strPageToDisplay=signatures
 ** PDF/A-1b, which allows PDF v1.3,4,5,6,7 http://nationalarchives.gov.uk/PRONOM/Format/proFormatSearch.aspx?status=detailReport&id=1100&strPageToDisplay=signatures
 
