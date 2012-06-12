@@ -89,10 +89,10 @@ public class PreservationParser extends AutoDetectParser {
 	public void init(ParseContext context) {
 		if( this.initialised ) return;
 		// Add the HighlightJS detector:
-		//CompositeDetector detect = (CompositeDetector) this.getDetector();
-		//List<Detector> detectors = detect.getDetectors();
-		//detectors.add( new HighlightJS() );
-		//this.setDetector( new CompositeDetector(detectors));
+		CompositeDetector detect = (CompositeDetector) this.getDetector();
+		List<Detector> detectors = detect.getDetectors();
+		detectors.add( new HighlightJSDetector() );
+		this.setDetector( new CompositeDetector(detectors));
 		// Override the built-in PDF parser (based on PDFBox) with our own (based in iText):
 		MediaType pdf = MediaType.parse("application/pdf");
 		Map<MediaType, Parser> parsers = getParsers();
@@ -120,6 +120,7 @@ public class PreservationParser extends AutoDetectParser {
 
 		// Pick up the detected MIME Type passed in from above:
 		String providedType = metadata.get( Metadata.CONTENT_TYPE );
+		log.warn("providedType = " + providedType);
 		
 		//String[] names = metadata.names();
 		//Arrays.sort(names);

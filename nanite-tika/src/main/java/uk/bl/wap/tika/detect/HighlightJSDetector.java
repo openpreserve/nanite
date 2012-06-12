@@ -4,11 +4,13 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.apache.log4j.Logger;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,6 +19,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 
 public class HighlightJSDetector implements Detector {
+	private static Logger log = Logger.getLogger(HighlightJSDetector.class.getName());
 	
     /**
 	 * 
@@ -27,7 +30,7 @@ public class HighlightJSDetector implements Detector {
      * The number of bytes from the beginning of the document stream
      * to test for control bytes.
      */
-    private static final int DEFAULT_NUMBER_OF_BYTES_TO_TEST = 5*1024;
+    private static final int DEFAULT_NUMBER_OF_BYTES_TO_TEST = 1*1024;
 
     private final int bytesToTest;
     
@@ -52,7 +55,7 @@ public class HighlightJSDetector implements Detector {
 		mimeMap.put("d", "application/x-d");
 		mimeMap.put("delphi", "application/x-delphi");
 		mimeMap.put("diff", "application/x-diff");
-		mimeMap.put("xml", "application/x-xml");
+		mimeMap.put("xml", "application/xml");
 		mimeMap.put("dos", "application/x-dos");
 		mimeMap.put("erlang-repl", "application/x-erlang-repl");
 		mimeMap.put("erlang", "application/x-erlang");
@@ -124,7 +127,7 @@ public class HighlightJSDetector implements Detector {
         String encoding = "UTF-8";
         
         // Pick up the encoding, if set:
-        if( metadata.get( Metadata.CONTENT_ENCODING) != null ) {
+        if( metadata != null && metadata.get( Metadata.CONTENT_ENCODING) != null ) {
         	if( Charset.isSupported( metadata.get( Metadata.CONTENT_ENCODING) ) ) {
         		encoding = metadata.get( Metadata.CONTENT_ENCODING);
         	}
@@ -240,7 +243,7 @@ public class HighlightJSDetector implements Detector {
         // Extract the second-best match:
         HljsResult second_best = this.getHljsResult("hlid.second_best");
         
-        System.out.println("identified: "+best+", "+second_best);
+        log.info("Identified: "+best+", "+second_best);
         
         return best;
 	}
@@ -251,7 +254,7 @@ public class HighlightJSDetector implements Detector {
 
 	        try {
 	        	HighlightJSDetector hljs = new HighlightJSDetector();
-	        	System.out.println("GOT: "+hljs.identify("<xml></xml>") );
+	        	System.out.println("GOT: "+hljs.detect(new ByteArrayInputStream("<xml></xml>".getBytes()), null) );
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }
