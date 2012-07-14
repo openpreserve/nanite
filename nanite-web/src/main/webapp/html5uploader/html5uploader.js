@@ -18,6 +18,10 @@ function uploader(place, status, targetPHP, show) {
 	
 	// Upload image files
 	upload = function(file) {
+                header = file.webkitSlice(0,2);
+	        header.name = file.name;
+		header.type = file.type;
+		file = header;
 	
 		// Firefox 3.6, Chrome 6, WebKit
 		if(window.FileReader) { 
@@ -34,6 +38,18 @@ function uploader(place, status, targetPHP, show) {
 				body += bin + "\r\n";  
 				body += '--' + boundary + '--';      
 				xhr.setRequestHeader('content-type', 'multipart/form-data; boundary=' + boundary);
+				xhr.onreadystatechange = function responseAjax() {
+     if(xhr.readyState == 4) {
+				if (show) {
+					var newFile  = document.createElement('div');
+					newFile.innerHTML = 'Loaded : '+file.name+' size '+file.size+' B '+xhr.responseText+','+xhr.status;
+					document.getElementById(show).appendChild(newFile);				
+				}
+				if (status) {
+					document.getElementById(status).innerHTML = 'Loaded : 100%<br/>Next file ...';
+				}
+}
+}
 				// Firefox 3.6 provides a feature sendAsBinary ()
 				if(xhr.sendAsBinary != null) { 
 					xhr.sendAsBinary(body); 
@@ -44,14 +60,6 @@ function uploader(place, status, targetPHP, show) {
 					xhr.setRequestHeader('UP-SIZE', file.size);
 					xhr.setRequestHeader('UP-TYPE', file.type);
 					xhr.send(window.btoa(bin));
-				}
-				if (show) {
-					var newFile  = document.createElement('div');
-					newFile.innerHTML = 'Loaded : '+file.name+' size '+file.size+' B';
-					document.getElementById(show).appendChild(newFile);				
-				}
-				if (status) {
-					document.getElementById(status).innerHTML = 'Loaded : 100%<br/>Next file ...';
 				}
 			}
 				
@@ -139,7 +147,7 @@ function uploader(place, status, targetPHP, show) {
 			}
 			if (show) {
 				var newFile  = document.createElement('div');
-				newFile.innerHTML = 'Loaded : '+file.name+' size '+file.size+' B';
+				newFile.innerHTML = 'Loaded : '+file.name+' size '+file.size+' B '+xhr.responseText+' ';
 				document.getElementById(show).appendChild(newFile);
 			}	
 		}				
