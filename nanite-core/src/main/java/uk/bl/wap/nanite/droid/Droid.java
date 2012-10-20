@@ -4,16 +4,29 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.xml.bind.JAXBException;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
+
+import uk.bl.wap.nanite.ExtendedMimeType;
+import uk.bl.wap.nanite.Identification;
+import uk.gov.nationalarchives.droid.command.ResultPrinter;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 import uk.gov.nationalarchives.droid.command.action.DroidCommand;
 import uk.gov.nationalarchives.droid.command.action.NoProfileRunCommand;
+import uk.gov.nationalarchives.droid.container.ContainerSignatureDefinitions;
+import uk.gov.nationalarchives.droid.container.ContainerSignatureSaxParser;
 import uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier;
+import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationMethod;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
@@ -31,32 +44,152 @@ import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
  *         >carlwilson-bl@SourceForge</a> <a
  *         href="https://github.com/carlwilson-bl">carlwilson-bl@github</a>
  */
-public final class Droid implements Serializable {
+public final class Droid extends Identification {
 	@SuppressWarnings("unused")
 	private static Logger LOG = Logger.getLogger(Droid.class.getName());
 
-	/** The ID for serialization */
-	private static final long serialVersionUID = -7116493742376868770L;
-	/** The name of the service */
-	static final String NAME = "Droid";
-	/** The version of the service */
-	static final String VERSION = "2.0";
-	
 	static final String DROID_SIG_FILE = "src/main/resources/DROID_SignatureFile_V45.xml";
 	
 	// Set up DROID binary handler:
-	private final NoProfileRunCommand droid;
+	private BinarySignatureIdentifier binarySignatureIdentifier;
+	private ContainerSignatureDefinitions containerSignatureDefinitions;
+	
+    private static final String FORWARD_SLASH = "/";
+    private static final String BACKWARD_SLASH = "\\";
+    private int maxBytesToScan = -1;
+    boolean archives = false;
 
-	public Droid() {
+	private ResultPrinter resultPrinter;
+
+
+
+	public Droid() throws CommandExecutionException {
+		String fileSignaturesFileName = DROID_SIG_FILE;
+		String containerSignaturesFileName = "";
+		
+        binarySignatureIdentifier = new BinarySignatureIdentifier();
+        File fileSignaturesFile = new File(fileSignaturesFileName);
+        if (!fileSignaturesFile.exists()) {
+            throw new CommandExecutionException("Signature file not found");
+        }
+
+        binarySignatureIdentifier.setSignatureFile(fileSignaturesFileName);
+        try {
+            binarySignatureIdentifier.init();
+        } catch (SignatureParseException e) {
+            throw new CommandExecutionException("Can't parse signature file");
+        }
+        binarySignatureIdentifier.setMaxBytesToScan(maxBytesToScan);
+        String path = fileSignaturesFile.getAbsolutePath();
+        String slash = path.contains(FORWARD_SLASH) ? FORWARD_SLASH : BACKWARD_SLASH;
+        String slash1 = slash;
+      
+        containerSignatureDefinitions = null;
+        if (containerSignaturesFileName != null) {
+            File containerSignaturesFile = new File(containerSignaturesFileName);
+            if (!containerSignaturesFile.exists()) {
+                throw new CommandExecutionException("Container signature file not found");
+            }
+            try {
+                final InputStream in = new FileInputStream(containerSignaturesFileName);
+                final ContainerSignatureSaxParser parser = new ContainerSignatureSaxParser();
+                containerSignatureDefinitions = parser.parse(in);
+            } catch (SignatureParseException e) {
+                throw new CommandExecutionException("Can't parse container signature file");
+            } catch (IOException ioe) {
+                throw new CommandExecutionException(ioe);
+            } catch (JAXBException jaxbe) {
+                throw new CommandExecutionException(jaxbe);
+            }
+        }
+        
+		resultPrinter =
+                new ResultPrinter(binarySignatureIdentifier, containerSignatureDefinitions,
+                    path, slash, slash1, archives);
+            
+
+        /*
 		droid = new NoProfileRunCommand();
 		droid.setArchives(false);
 		droid.setQuiet(false);
 		droid.setRecursive(false);
 		droid.setSignatureFile(DROID_SIG_FILE);
+		*/
 	}
 
 	private IdentificationMethod method;
 
+	private IOFileFilter extensions;
+
+	private IOFileFilter recursive;
+
+	@Override
+	public ExtendedMimeType identify(InputStream in) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	
+	@Override
+	public ExtendedMimeType identify(File inFile) {
+		String[] resources = new String[] { "" };		
+		File dirToSearch = new File(resources[0]);
+
+		try {
+
+			if (!dirToSearch.isDirectory()) {
+				throw new CommandExecutionException("Resources directory not found");
+			}
+
+			Collection<File> matchedFiles =
+					FileUtils.listFiles(dirToSearch, this.extensions, this.recursive);
+			String fileName = null;
+			for (File file : matchedFiles) {
+				try {
+					fileName = file.getCanonicalPath();
+				} catch (IOException e) {
+					throw new CommandExecutionException(e);
+				}
+				URI uri = file.toURI();
+				RequestMetaData metaData =
+						new RequestMetaData(file.length(), file.lastModified(), fileName);
+				RequestIdentifier identifier = new RequestIdentifier(uri);
+				identifier.setParentId(1L);
+
+				InputStream in = null;
+				IdentificationRequest request = new FileSystemIdentificationRequest(metaData, identifier);
+				try {
+					in = new FileInputStream(file);
+					request.open(in);
+					IdentificationResultCollection results =
+							binarySignatureIdentifier.matchBinarySignatures(request);
+					
+					// Also get container results:
+					// TODO Strip out the code from the resultPrinter to make a sensible result.
+					resultPrinter.print(results, request);
+					
+					
+				} catch (IOException e) {
+					throw new CommandExecutionException(e);
+				} finally {
+					if (in != null) {
+						try {
+							in.close();
+						} catch (IOException e) {
+							throw new CommandExecutionException(e);
+						}
+					}
+				}
+			}
+			return null;
+		} catch (CommandExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	
 	/**
 	 * Identify a file represented as a byte array using Droid.
 	 * 
@@ -82,16 +215,6 @@ public final class Droid implements Serializable {
 		}
 
 		// Get the results collection
-		try {
-			droid.setResources( new String[] { tempFile.getCanonicalPath() });
-			droid.execute();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (CommandExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		/*
 		IdentificationResultCollection resultSet = DROID
 				.matchBinarySignatures(request);
@@ -107,5 +230,6 @@ public final class Droid implements Serializable {
 		*/
 		return null;
 	}
+
 
 }
