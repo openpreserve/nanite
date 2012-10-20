@@ -1,4 +1,4 @@
-package eu.scape_project.pc.cc.nanite.droid;
+package uk.bl.wap.nanite.droid;
 
 import java.io.File;
 import java.io.FileInputStream;

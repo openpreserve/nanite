@@ -1,7 +1,7 @@
 /**
  * 
  */
-package eu.scape_project.pc.cc.nanite.droid;
+package uk.bl.wap.nanite.droid;
 
 import static uk.gov.nationalarchives.droid.core.interfaces.config.RuntimeConfig.DROID_USER;
 

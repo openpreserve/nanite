@@ -1,7 +1,7 @@
 /**
  * 
  */
-package eu.scape_project.pc.cc.nanite.tika;
+package uk.bl.wap.nanite;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
