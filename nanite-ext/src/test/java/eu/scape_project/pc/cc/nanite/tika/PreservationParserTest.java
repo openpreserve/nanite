@@ -22,6 +22,8 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import uk.bl.wap.tika.PreservationParser;
+
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
@@ -39,7 +41,7 @@ public class PreservationParserTest {
 	}
 
 	/**
-	 * Test method for {@link eu.scape_project.pc.cc.nanite.tika.PreservationParser#parse(java.io.InputStream, org.xml.sax.ContentHandler, org.apache.tika.metadata.Metadata, org.apache.tika.parser.ParseContext)}.
+	 * Test method for {@link uk.bl.wap.tika.PreservationParser#parse(java.io.InputStream, org.xml.sax.ContentHandler, org.apache.tika.metadata.Metadata, org.apache.tika.parser.ParseContext)}.
 	 * @throws TikaException 
 	 * @throws SAXException 
 	 * @throws IOException 

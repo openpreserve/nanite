@@ -1,7 +1,7 @@
 /**
  * 
  */
-package eu.scape_project.pc.cc.nanite.tika;
+package uk.bl.wap.tika;
 
 import java.io.File;
 import java.io.IOException;

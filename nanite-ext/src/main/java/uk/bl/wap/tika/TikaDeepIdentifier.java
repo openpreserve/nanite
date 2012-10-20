@@ -1,7 +1,7 @@
 /**
  * 
  */
-package eu.scape_project.pc.cc.nanite.tika;
+package uk.bl.wap.tika;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -30,6 +30,9 @@ import org.apache.tika.parser.CompositeParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.WriteOutContentHandler;
 import org.xml.sax.ContentHandler;
+
+import eu.scape_project.pc.cc.nanite.tika.ExtendedMimeType;
+
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
