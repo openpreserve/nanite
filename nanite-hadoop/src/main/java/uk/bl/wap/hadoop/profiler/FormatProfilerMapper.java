@@ -91,7 +91,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		String droidType = nanite.identify(value.getPayload());
 
 		// Return the output for collation:
-		output.collect( new Text( serverType+"\t"+tikaType+"\t"+droidType ), new Text( waybackYear ) );
+		output.collect( new Text( "\""+serverType+"\"\t\""+tikaType+"\"\t\""+droidType+"\"" ), new Text( waybackYear ) );
 	}
 	
 	/**

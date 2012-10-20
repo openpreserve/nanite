@@ -5,8 +5,8 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <modules>
-  	<module>nanite-droid</module>
+  	<module>nanite-core</module>
+  	<module>nanite-cli</module>
   	<module>nanite-hadoop</module>
-  	<module>nanite-tika</module>
   </modules>
 </project>
