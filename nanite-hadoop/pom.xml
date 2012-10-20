@@ -45,11 +45,6 @@
 		<version>3.1.0</version>
 	</dependency>
   	<dependency>
-  		<groupId>eu.scape-project.nanite</groupId>
-  		<artifactId>nanite-droid</artifactId>
-  		<version>0.0.1-SNAPSHOT</version>
-  	</dependency>
-  	<dependency>
   		<groupId>org.apache.hadoop</groupId>
   		<artifactId>hadoop-core</artifactId>
   		<version>0.20.2</version>
@@ -57,8 +52,13 @@
   	</dependency>
   	<dependency>
   		<groupId>eu.scape-project.nanite</groupId>
-  		<artifactId>nanite-tika</artifactId>
+  		<artifactId>nanite-core</artifactId>
   		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  	<dependency>
+  	 <groupId>eu.scape-project.nanite</groupId>
+  	 <artifactId>nanite-ext</artifactId>
+  	 <version>0.0.1-SNAPSHOT</version>
   	</dependency>
   </dependencies>
 	<repositories>

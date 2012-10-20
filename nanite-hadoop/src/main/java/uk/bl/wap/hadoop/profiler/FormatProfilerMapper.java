@@ -5,7 +5,6 @@ package uk.bl.wap.hadoop.profiler;
  * http://hadoop.apache.org/common/docs/r0.18.3/mapred_tutorial.html
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -21,11 +20,11 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
 import org.archive.io.ArchiveRecordHeader;
-import eu.scape_project.pc.cc.nanite.Nanite;
-import eu.scape_project.pc.cc.nanite.tika.TikaDeepIdentifier;
 
 import uk.bl.wap.hadoop.WritableArchiveRecord;
 import uk.bl.wap.hadoop.format.Ohcount;
+import uk.bl.wap.nanite.droid.Nanite;
+import uk.bl.wap.tika.TikaDeepIdentifier;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
