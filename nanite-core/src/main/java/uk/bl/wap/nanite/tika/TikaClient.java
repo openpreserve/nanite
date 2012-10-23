@@ -18,22 +18,19 @@ import java.util.List;
 
 import javax.activation.MimeTypeParseException;
 
-public class Tika extends Identification {
+public class TikaClient extends Identification {
 
 	private MimeTypes mimeTypes;
 
-    public Tika() throws MimeTypeException, IOException {
-    	mimeTypes = Tika.create(
+    public TikaClient() throws MimeTypeException, IOException {
+    	mimeTypes = TikaClient.create(
                 "tika-mimetypes.xml", "custom-mimetypes.xml");
-        for( MediaType type : mimeTypes.getMediaTypeRegistry().getTypes() ) {
-        	System.out.println("Type: "+type.toString());
-        }
     }
     
     public MimeTypes getMimeTypes() {
     	return this.mimeTypes;
     }
-
+    
 	@Override
 	public ExtendedMimeType identify(InputStream input) {
         Metadata metadata = new Metadata();
@@ -96,7 +93,7 @@ public class Tika extends Identification {
 
         List<Identity> identities = new ArrayList<Identity>();
 
-        Tika sw = new Tika();
+        TikaClient sw = new TikaClient();
 
         for (File file : datafiles) {
             if (!file.isFile()){
@@ -157,7 +154,7 @@ public class Tika extends Identification {
         if (args.length == 1) {
             govDocsData = args[0];
         }
-        Tika sw = new Tika();
+        TikaClient sw = new TikaClient();
         sw.identify(govDocsData);
 
     }

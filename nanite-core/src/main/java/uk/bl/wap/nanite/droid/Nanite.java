@@ -119,7 +119,7 @@ public class Nanite {
 	 * @author Andrew Jackson <Andrew.Jackson@bl.uk>
 	 */
 	public class NaniteGlobalConfig extends DroidGlobalConfig {
-	    private static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V59.xml";
+	    private static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V63.xml";
 
 	    /**
 	     * Extend the constructor to ensure we set add the desired sig file.
@@ -127,7 +127,7 @@ public class Nanite {
 	     */
 	    public NaniteGlobalConfig() throws IOException {
 			super();
-	        createResourceFile(getSignatureFileDir(), DROID_SIGNATURE_FILE, DROID_SIGNATURE_FILE, true);
+	        createResourceFile(getSignatureFileDir(), DROID_SIGNATURE_FILE, "droid/"+DROID_SIGNATURE_FILE, true);
 		}
 		
 		/**

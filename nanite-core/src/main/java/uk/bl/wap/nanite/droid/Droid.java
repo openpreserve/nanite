@@ -12,8 +12,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.activation.MimeTypeParseException;
 import javax.xml.bind.JAXBException;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 
@@ -34,6 +36,8 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollect
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.FileSystemIdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
+import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;
+import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManagerException;
 
 /**
  * Droid identification service.
@@ -48,7 +52,7 @@ public final class Droid extends Identification {
 	@SuppressWarnings("unused")
 	private static Logger LOG = Logger.getLogger(Droid.class.getName());
 
-	static final String DROID_SIG_FILE = "src/main/resources/DROID_SignatureFile_V45.xml";
+	static final String DROID_SIG_FILE = "src/main/resources/droid/DROID_SignatureFile_V63.xml";
 	
 	// Set up DROID binary handler:
 	private BinarySignatureIdentifier binarySignatureIdentifier;
@@ -61,11 +65,9 @@ public final class Droid extends Identification {
 
 	private ResultPrinter resultPrinter;
 
-
-
 	public Droid() throws CommandExecutionException {
 		String fileSignaturesFileName = DROID_SIG_FILE;
-		String containerSignaturesFileName = "";
+		String containerSignaturesFileName = "src/main/resources/droid/container-signature-20120828.xml";
 		
         binarySignatureIdentifier = new BinarySignatureIdentifier();
         File fileSignaturesFile = new File(fileSignaturesFileName);
@@ -129,10 +131,8 @@ public final class Droid extends Identification {
 		return null;
 	}
 	
-	
-	@Override
-	public ExtendedMimeType identify(File inFile) {
-		String[] resources = new String[] { "" };		
+	public String identifyFolder(File inFile) {
+		String[] resources = new String[] { "" };
 		File dirToSearch = new File(resources[0]);
 
 		try {
@@ -178,6 +178,53 @@ public final class Droid extends Identification {
 						} catch (IOException e) {
 							throw new CommandExecutionException(e);
 						}
+					}
+				}
+			}
+			return null;
+		} catch (CommandExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;		
+	}
+	
+	@Override
+	public ExtendedMimeType identify(File file) {
+		try {
+			String fileName;
+			try {
+				fileName = file.getCanonicalPath();
+			} catch (IOException e) {
+				throw new CommandExecutionException(e);
+			}
+			URI uri = file.toURI();
+			RequestMetaData metaData =
+					new RequestMetaData(file.length(), file.lastModified(), fileName);
+			RequestIdentifier identifier = new RequestIdentifier(uri);
+			identifier.setParentId(1L);
+
+			InputStream in = null;
+			IdentificationRequest request = new FileSystemIdentificationRequest(metaData, identifier);
+			try {
+				in = new FileInputStream(file);
+				request.open(in);
+				IdentificationResultCollection results =
+						binarySignatureIdentifier.matchBinarySignatures(request);
+
+				// Also get container results:
+				// TODO Strip out the code from the resultPrinter to make a sensible result.
+				resultPrinter.print(results, request);
+
+
+			} catch (IOException e) {
+				throw new CommandExecutionException(e);
+			} finally {
+				if (in != null) {
+					try {
+						in.close();
+					} catch (IOException e) {
+						throw new CommandExecutionException(e);
 					}
 				}
 			}
@@ -232,4 +279,14 @@ public final class Droid extends Identification {
 	}
 
 
+	public static void main(String[] args) throws CommandExecutionException {
+		Droid dr = new Droid();
+		for( String fname : args ) {
+			File file = new File(fname);
+			System.out.println("File: "+fname);
+			System.out.println("Droid using DROID binary signature file version: ?");
+			System.out.println("Result: " + dr.identify(file));
+			System.out.println("----");
+		}
+	}
 }
