@@ -87,7 +87,7 @@ public class BrainTest {
 */
         Signature relearnedSig = brain.relearn(signature, secondPdf, thirdPdf);
         score = brain.score(Arrays.asList(new Signature[]{signature}), firstPdf);
-        assertTrue("Score to0 low, this should really be a pdf file", score.getScoreboard().first().getA() > 10);
+        assertTrue("Score too low, this should really be a pdf file", score.getScoreboard().first().getA() > 10);
 
         /*System.out.println("score for pdf file '"+firstPdf.getName()+"' is "+score.getScoreboard().first().getA());
         marshaller.marshal(signature,System.out);

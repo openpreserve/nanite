@@ -31,25 +31,7 @@ public class BytePattern {
 
     public BytePattern() {
     }
-
-    @XmlElement(name = "Bytes")
-    public String getBytes(){
-        return Bytes.toHex(pattern).toUpperCase();
-    }
-
-    public void setBytes(String bytes){
-        pattern = Bytes.hexStringToByteArray(bytes);
-    }
-
-    @XmlTransient
-    public byte[] getPattern(){
-        return pattern;
-    }
-
-    public void setPattern(byte[] pattern) {
-        this.pattern = pattern;
-    }
-
+    
     @XmlElement(name = "Pos")
     public int getOffset() {
         return offset;
@@ -59,6 +41,16 @@ public class BytePattern {
         this.offset = offset;
     }
 
+
+    @XmlElement(name = "Bytes")
+    public String getBytes(){
+        return Bytes.toHex(pattern).toUpperCase();
+    }
+
+    public void setBytes(String bytes){
+        pattern = Bytes.hexStringToByteArray(bytes);
+    }
+    
     @XmlElement(name = "ASCII")
     public String getAscii(){
         return Bytes.stripNonValidXMLCharacters(new String(pattern, Charset.forName("US-ASCII")));
@@ -69,6 +61,13 @@ public class BytePattern {
         //do nothing
     }
 
+    @XmlTransient
+    public byte[] getPattern(){
+        return pattern;
+    }
 
-
+    public void setPattern(byte[] pattern) {
+        this.pattern = pattern;
+    }
+    
 }

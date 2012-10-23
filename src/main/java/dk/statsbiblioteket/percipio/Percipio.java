@@ -32,6 +32,11 @@ public class Percipio {
         Marshaller marshaller = context.createMarshaller();
         marshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
         Unmarshaller unmarshaller = context.createUnmarshaller();
+        
+        if( args.length == 0 || "-h".equals(args[0]) ){
+        	System.out.println("percipio (learn|relearn|sniff) [-s SigFileName] [-n NumberOfMatches] filenamess...");
+        	return;
+        }
 
         String command = args[0];
 
