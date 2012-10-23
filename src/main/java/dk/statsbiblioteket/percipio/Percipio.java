@@ -35,18 +35,16 @@ public class Percipio {
         Unmarshaller unmarshaller = context.createUnmarshaller();
         
         if( args.length == 0 || "-h".equals(args[0]) ){
-        	System.out.println("percipio (learn|relearn|sniff) [-s SigFileName] [-n NumberOfMatches] [-t] filenamess...");
+        	System.out.println("percipio (learn|relearn|sniff) [-s SigFileName] [-n NumberOfMatches] [-M] filenamess...");
         	return;
         }
 
         String command = args[0];
 
-        System.out.println("Command: "+command);
-
         String signatureArg = "";
         int numberOfMatchesArg = 5;
         ArrayList<File> files = new ArrayList<File>();
-        boolean useTikaFormat = false;
+        boolean useMimeInfoFormat = false;
 
         for (int i = 1; i < args.length; i++) {
             String arg = args[i];
@@ -60,8 +58,8 @@ public class Percipio {
                 numberOfMatchesArg = new Integer(args[i]);
                 continue;
             }
-            if (arg.equals("-t") ) {
-            	useTikaFormat = true;
+            if (arg.equals("-M") ) {
+            	useMimeInfoFormat = true;
             }
 
             File file = new File(arg);
@@ -78,8 +76,8 @@ public class Percipio {
             Signature signature = brain.learn(files);
             brain.test(files,signature);
             
-            if( useTikaFormat ) {
-            	Percipio.printTikaSignature(signature);
+            if( useMimeInfoFormat ) {
+            	Percipio.printMimeInfoSignature(signature);
             } else {
             	StringWriter writer = new StringWriter();
             	marshaller.marshal(signature,writer);
@@ -111,11 +109,12 @@ public class Percipio {
 
     }
 
-    private static void printTikaSignature(Signature signature) {
+    private static void printMimeInfoSignature(Signature signature) {
     	System.out.println("<?xml version=\"1.0\"?>");
-    	System.out.println("<mime-type type=\"???/???\">");
-    	System.out.println("  <acronym>???</acronym>");
-    	System.out.println("  <_comment>???</_comment>");
+    	System.out.println("<mime-info>");
+    	System.out.println(" <mime-type type=\"application/x-unknown\">");
+    	System.out.println("  <acronym></acronym>");
+    	System.out.println("  <_comment></_comment>");
     	System.out.println("  <magic priority=\"50\">");
     	String indent = "  ";
     	for( BytePattern p : signature.getFrontBlock().pattern) {
@@ -129,7 +128,8 @@ public class Percipio {
     	}
         System.out.println("  </magic>");
         System.out.println("  <glob pattern=\"*.???\"/>");
-        System.out.println("</mime-type>");
+        System.out.println(" </mime-type>");
+        System.out.println("</mime-info>");
 	}
 
 	private static void printScores(File file, Score score, int numberOfMatches) {
