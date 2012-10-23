@@ -1,6 +1,7 @@
 package dk.statsbiblioteket.percipio;
 
 import dk.statsbiblioteket.percipio.Brain;
+import dk.statsbiblioteket.percipio.datastructures.BytePattern;
 import dk.statsbiblioteket.percipio.datastructures.Score;
 import dk.statsbiblioteket.percipio.datastructures.Signature;
 
@@ -34,7 +35,7 @@ public class Percipio {
         Unmarshaller unmarshaller = context.createUnmarshaller();
         
         if( args.length == 0 || "-h".equals(args[0]) ){
-        	System.out.println("percipio (learn|relearn|sniff) [-s SigFileName] [-n NumberOfMatches] filenamess...");
+        	System.out.println("percipio (learn|relearn|sniff) [-s SigFileName] [-n NumberOfMatches] [-t] filenamess...");
         	return;
         }
 
@@ -45,6 +46,7 @@ public class Percipio {
         String signatureArg = "";
         int numberOfMatchesArg = 5;
         ArrayList<File> files = new ArrayList<File>();
+        boolean useTikaFormat = false;
 
         for (int i = 1; i < args.length; i++) {
             String arg = args[i];
@@ -57,6 +59,9 @@ public class Percipio {
                 i++;
                 numberOfMatchesArg = new Integer(args[i]);
                 continue;
+            }
+            if (arg.equals("-t") ) {
+            	useTikaFormat = true;
             }
 
             File file = new File(arg);
@@ -72,10 +77,14 @@ public class Percipio {
         if (command.equals("learn")){
             Signature signature = brain.learn(files);
             brain.test(files,signature);
-
-            StringWriter writer = new StringWriter();
-            marshaller.marshal(signature,writer);
-            System.out.println(writer.toString());
+            
+            if( useTikaFormat ) {
+            	Percipio.printTikaSignature(signature);
+            } else {
+            	StringWriter writer = new StringWriter();
+            	marshaller.marshal(signature,writer);
+            	System.out.println(writer.toString());
+            }
         }
         if (command.equals("relearn")){
             Signature signature = (Signature)unmarshaller.unmarshal(System.in);
@@ -102,7 +111,28 @@ public class Percipio {
 
     }
 
-    private static void printScores(File file, Score score, int numberOfMatches) {
+    private static void printTikaSignature(Signature signature) {
+    	System.out.println("<?xml version=\"1.0\"?>");
+    	System.out.println("<mime-type type=\"???/???\">");
+    	System.out.println("  <acronym>???</acronym>");
+    	System.out.println("  <_comment>???</_comment>");
+    	System.out.println("  <magic priority=\"50\">");
+    	String indent = "  ";
+    	for( BytePattern p : signature.getFrontBlock().pattern) {
+    		indent += "  ";
+    		System.out.println(indent+"<!-- ASCII: "+p.getAscii()+" @"+p.getOffset()+" -->");
+    		System.out.println(indent+"<match value=\"0x"+p.getBytes()+"\" type=\"string\" offset=\""+p.getOffset()+"\">");
+    	}
+    	for( BytePattern p : signature.getFrontBlock().pattern) {
+    		System.out.println(indent+"</match>");
+    		indent = indent.substring(2);
+    	}
+        System.out.println("  </magic>");
+        System.out.println("  <glob pattern=\"*.???\"/>");
+        System.out.println("</mime-type>");
+	}
+
+	private static void printScores(File file, Score score, int numberOfMatches) {
         int total = 0;
         for (Score.Pair<Integer, Signature> integerSignaturePair : score.getScoreboard()) {
             total += integerSignaturePair.getA();

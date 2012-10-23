@@ -10,6 +10,20 @@ import javax.xml.bind.annotation.XmlElement;
  * Date: Nov 17, 2010
  * Time: 9:53:22 AM
  * To change this template use File | Settings | File Templates.
+ * 
+ * Example of fields:
+		<Info>
+                <FileType>SAPCAR CAR archive</FileType>
+                <Ext>CAR</Ext>
+                <ExtraInfo>
+                        <Rem>ZIP like archiver for SAP.</Rem>
+                        <RefURL>http://www.easymarketplace.de/SAPCAR.php</RefURL>
+                </ExtraInfo>
+                <User>Marco Pontello</User>
+                <E-Mail>marcopon@gmail.com</E-Mail>
+                <Home>http://mark0.net</Home>
+        </Info>
+
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Info {
