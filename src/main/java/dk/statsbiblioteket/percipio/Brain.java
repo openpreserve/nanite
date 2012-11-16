@@ -40,10 +40,15 @@ public class Brain {
             }
             for (BytePattern bytePattern : signature.getEndBlock().pattern) {
                 byte[] fromFile = new byte[bytePattern.getPattern().length];
-                rfile.seek(rfile.length() - SIZE + bytePattern.getOffset());
-                rfile.read(fromFile);
-                if (!Arrays.equals(bytePattern.getPattern(), fromFile)) {
-                    valid = false;
+                long seekOffset = rfile.length() - SIZE + bytePattern.getOffset();
+                if( seekOffset >= 0 ) {
+                	rfile.seek(seekOffset);
+                	rfile.read(fromFile);
+                	if (!Arrays.equals(bytePattern.getPattern(), fromFile)) {
+                		valid = false;
+                	}
+                } else {
+                	valid = false;
                 }
             }
             if (valid) {
@@ -220,6 +225,7 @@ public class Brain {
                              File... files) throws IOException {
         //Scan the files, and find matches. Result and found is updated inline
         result = scanFile(found, files, result, header);
+        if( result == null ) return;
 
         //Scan for sequences, to properly write the signature
         boolean sequence = false;
