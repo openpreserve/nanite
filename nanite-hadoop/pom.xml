@@ -39,11 +39,6 @@
 			<scope>system</scope>
 			<systemPath>${basedir}/lib/wayback-core-1.6.1.jar</systemPath>
   	</dependency>
-	<dependency>
-		<groupId>org.archive.heritrix</groupId>
-		<artifactId>heritrix-commons</artifactId>
-		<version>3.1.0</version>
-	</dependency>
   	<dependency>
   		<groupId>org.apache.hadoop</groupId>
   		<artifactId>hadoop-core</artifactId>
