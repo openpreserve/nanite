@@ -184,7 +184,7 @@ public class DroidBinarySignatureDetector extends Object implements Detector {
 		tmpFile = File.createTempFile("Nanite", "tmp");
 		tmpFile.deleteOnExit();
 		
-		// Now set up DROID
+		// Now set up DROID, logging and temp, etc.
 		System.setProperty("consoleLogThreshold","INFO");
 		System.setProperty("logFile", "./nanite.log");
 		PropertyConfigurator.configure(this.getClass().getClassLoader().getResource("log4j.properties"));
