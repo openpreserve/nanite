@@ -1,3 +1,6 @@
+/**
+ * 
+ */
 package uk.bl.wap.nanite.droid;
 
 import java.io.File;
@@ -5,55 +8,50 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 
-import javax.activation.MimeTypeParseException;
 import javax.xml.bind.JAXBException;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
 
-import uk.bl.wap.nanite.ExtendedMimeType;
-import uk.bl.wap.nanite.Identification;
-import uk.gov.nationalarchives.droid.command.ResultPrinter;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
-import uk.gov.nationalarchives.droid.command.action.DroidCommand;
-import uk.gov.nationalarchives.droid.command.action.NoProfileRunCommand;
 import uk.gov.nationalarchives.droid.container.ContainerSignatureDefinitions;
 import uk.gov.nationalarchives.droid.container.ContainerSignatureSaxParser;
 import uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier;
+import uk.gov.nationalarchives.droid.core.CustomResultPrinter;
 import uk.gov.nationalarchives.droid.core.SignatureParseException;
-import uk.gov.nationalarchives.droid.core.interfaces.IdentificationMethod;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
-import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.FileSystemIdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
-import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;
-import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManagerException;
 
 /**
- * Droid identification service.
  * 
- * @author Fabian Steeg
- * @author <a href="mailto:carl.wilson@bl.uk">Carl Wilson</a> <a
- *         href="http://sourceforge.net/users/carlwilson-bl"
- *         >carlwilson-bl@SourceForge</a> <a
- *         href="https://github.com/carlwilson-bl">carlwilson-bl@github</a>
+ * Attempts to perform full Droid identification, container and binary signatures.
+ * 
+ * WARNING! Due to hardcoded references to the underlying file, this only works for File-based identification rather than streams.
+ * 
+ * @author Andrew Jackson <Andrew.Jackson@bl.uk>
+ *
  */
-public final class Droid extends Identification {
-	@SuppressWarnings("unused")
-	private static Logger LOG = Logger.getLogger(Droid.class.getName());
+public class DroidDetector implements Detector {
 
-	static final String DROID_SIG_FILE = "src/main/resources/droid/DROID_SignatureFile_V63.xml";
-	
+	private static Logger log = Logger.getLogger(DroidDetector.class.getName());
+
+    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V66.xml";
+    static final String DROID_SIG_RESOURCE = "droid/"+DROID_SIGNATURE_FILE;
+    
+	static final String DROID_SIG_FILE = "src/main/resources/droid/DROID_SignatureFile_V66.xml";
+	static final String containerSignaturesFileName = "src/main/resources/droid/container-signature-20120828.xml";
+
 	// Set up DROID binary handler:
 	private BinarySignatureIdentifier binarySignatureIdentifier;
 	private ContainerSignatureDefinitions containerSignatureDefinitions;
@@ -63,19 +61,22 @@ public final class Droid extends Identification {
     private int maxBytesToScan = -1;
     boolean archives = false;
 
-	private ResultPrinter resultPrinter;
+	private uk.gov.nationalarchives.droid.core.CustomResultPrinter resultPrinter;
+	
+	private IOFileFilter extensions;
 
-	public Droid() throws CommandExecutionException {
-		String fileSignaturesFileName = DROID_SIG_FILE;
-		String containerSignaturesFileName = "src/main/resources/droid/container-signature-20120828.xml";
+	private IOFileFilter recursive;
+
+
+	public DroidDetector() throws CommandExecutionException {
 		
         binarySignatureIdentifier = new BinarySignatureIdentifier();
-        File fileSignaturesFile = new File(fileSignaturesFileName);
+        File fileSignaturesFile = new File(DROID_SIG_FILE);
         if (!fileSignaturesFile.exists()) {
             throw new CommandExecutionException("Signature file not found");
         }
 
-        binarySignatureIdentifier.setSignatureFile(fileSignaturesFileName);
+        binarySignatureIdentifier.setSignatureFile(DROID_SIG_FILE);
         try {
             binarySignatureIdentifier.init();
         } catch (SignatureParseException e) {
@@ -85,7 +86,7 @@ public final class Droid extends Identification {
         String path = fileSignaturesFile.getAbsolutePath();
         String slash = path.contains(FORWARD_SLASH) ? FORWARD_SLASH : BACKWARD_SLASH;
         String slash1 = slash;
-      
+
         containerSignatureDefinitions = null;
         if (containerSignaturesFileName != null) {
             File containerSignaturesFile = new File(containerSignaturesFileName);
@@ -106,8 +107,8 @@ public final class Droid extends Identification {
         }
         
 		resultPrinter =
-                new ResultPrinter(binarySignatureIdentifier, containerSignatureDefinitions,
-                    path, slash, slash1, archives);
+                new CustomResultPrinter(binarySignatureIdentifier, containerSignatureDefinitions,
+                    "", slash, slash1, archives);
             
 
         /*
@@ -118,20 +119,16 @@ public final class Droid extends Identification {
 		droid.setSignatureFile(DROID_SIG_FILE);
 		*/
 	}
-
-	private IdentificationMethod method;
-
-	private IOFileFilter extensions;
-
-	private IOFileFilter recursive;
-
+	
 	@Override
-	public ExtendedMimeType identify(InputStream in) {
+	public MediaType detect(InputStream input, Metadata metadata)
+			throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
-	public String identifyFolder(File inFile) {
+
+	private String identifyFolder(File inFile) {
 		String[] resources = new String[] { "" };
 		File dirToSearch = new File(resources[0]);
 
@@ -189,8 +186,7 @@ public final class Droid extends Identification {
 		return null;		
 	}
 	
-	@Override
-	public ExtendedMimeType identify(File file) {
+	private MediaType identify(File file) {
 		try {
 			String fileName;
 			try {
@@ -213,9 +209,10 @@ public final class Droid extends Identification {
 						binarySignatureIdentifier.matchBinarySignatures(request);
 
 				// Also get container results:
-				// TODO Strip out the code from the resultPrinter to make a sensible result.
 				resultPrinter.print(results, request);
-
+				// Return as a MediaType:
+				return DroidBinarySignatureDetector.getMimeTypeFromResults( resultPrinter.getResult() );
+				
 
 			} catch (IOException e) {
 				throw new CommandExecutionException(e);
@@ -228,7 +225,6 @@ public final class Droid extends Identification {
 					}
 				}
 			}
-			return null;
 		} catch (CommandExecutionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -237,15 +233,7 @@ public final class Droid extends Identification {
 	}
 
 	
-	/**
-	 * Identify a file represented as a byte array using Droid.
-	 * 
-	 * @param tempFile
-	 *            The file to identify using Droid
-	 * @return Returns the Pronom IDs found for the file as URIs in a Types
-	 *         object
-	 */
-	public List<URI> identifyOneBinary(final File tempFile) {
+	private List<URI> identifyOneBinary(final File tempFile) {
 		// Set up the identification request
 		RequestMetaData metadata = new RequestMetaData(tempFile.length(),
 				tempFile.lastModified(), tempFile.getName());
@@ -278,15 +266,23 @@ public final class Droid extends Identification {
 		return null;
 	}
 
+	/**
+	 * @return
+	 */
+	private String getBinarySignatureFileVersion() {
+		return resultPrinter.getBinarySignatureFileVersion();
+	}
 
-	public static void main(String[] args) throws CommandExecutionException {
-		Droid dr = new Droid();
+
+	public static void main(String[] args) throws CommandExecutionException, FileNotFoundException {
+		DroidDetector dr = new DroidDetector();
 		for( String fname : args ) {
 			File file = new File(fname);
 			System.out.println("File: "+fname);
-			System.out.println("Droid using DROID binary signature file version: ?");
+			System.out.println("Droid using DROID binary signature file version: "+dr.getBinarySignatureFileVersion());
 			System.out.println("Result: " + dr.identify(file));
 			System.out.println("----");
 		}
 	}
+
 }
