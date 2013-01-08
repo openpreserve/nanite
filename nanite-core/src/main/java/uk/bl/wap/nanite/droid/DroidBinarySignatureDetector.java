@@ -310,7 +310,7 @@ public class DroidBinarySignatureDetector extends Object implements Detector {
 	 * @param payload
 	 * @return
 	 */
-	private String identify(byte[] payload) {
+	String identify(byte[] payload) {
 		String droidType = "application/octet-stream";
 		try {
 			IdentificationResultCollection irc = this.identify(

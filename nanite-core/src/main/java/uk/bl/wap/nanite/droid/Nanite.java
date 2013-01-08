@@ -18,6 +18,11 @@ import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManagerE
  */
 public class Nanite {
 
+	DroidBinarySignatureDetector nan = null;
+	
+	public Nanite() throws IOException, SignatureFileException, SignatureParseException, ConfigurationException {
+		nan = new DroidBinarySignatureDetector();
+	}
 
 	/**
 	 * @param args
@@ -37,6 +42,14 @@ public class Nanite {
 			System.out.println("Result: " + nan.getMimeType(file));
 			System.out.println("----");
 		}
+	}
+
+	/**
+	 * @param payload
+	 * @return
+	 */
+	public String identify(byte[] payload) {
+		return nan.identify(payload);
 	}	
 
 }
