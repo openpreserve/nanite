@@ -109,7 +109,11 @@ public class DroidBinarySignatureDetector extends Object implements Detector {
 	@Override
 	public MediaType detect(InputStream input, Metadata metadata)
 			throws IOException {
-		return null;
+		String uri = metadata.get(Metadata.RESOURCE_NAME_KEY);
+		IdentificationRequest ir = createInputStreamIdentificationRequest(URI.create(uri), input );		
+
+		IdentificationResultCollection resultCollection = this.identify(ir);
+		return getMimeTypeFromResults(resultCollection.getResults());
 	}
 
 	/**
@@ -260,16 +264,9 @@ public class DroidBinarySignatureDetector extends Object implements Detector {
 	 * @return The version of the binary signature file that is in use.
 	 */
 	public int getBinarySigFileVersion() {
-		return -1;
-		//return Integer.parseInt(bsi.getSigFile().getVersion());
-		/*
-		try {
-			return sm.getDefaultSignatures().get(SignatureType.BINARY).getVersion();
-		} catch (SignatureFileException e) {
-			e.printStackTrace();
-			return -1;
-		}
-		*/
+		String version = DroidDetector.DROID_SIGNATURE_FILE.replace("DROID_SignatureFile_V", "");
+		version = version.replace(".xml", "");
+		return Integer.parseInt(version);
 	}
 
 	/**
@@ -456,19 +453,9 @@ public class DroidBinarySignatureDetector extends Object implements Detector {
 		
 		//byte[] data =  org.apache.commons.io.FileUtils.readFileToByteArray(file);
 		//IdentificationRequest ir = createByteArrayIdentificationRequest(file.toURI(), data);		
-
-		IdentificationRequest ir = createInputStreamIdentificationRequest(file.toURI(), new FileInputStream(file) );		
-
-		IdentificationResultCollection resultCollection = this.identify(ir);
-		//System.out.println("MATCHING: "+resultCollection.getResults());
-		for( IdentificationResult result : resultCollection.getResults() ) {
-			String mimeType = result.getMimeType();
-			if( result.getVersion() != null && ! "".equals(result.getVersion())) {
-				mimeType += ";version="+result.getVersion();
-			}
-			System.out.println("MATCHING: "+result.getPuid()+", "+result.getName()+" "+result.getVersion()+" :: "+result.getMimeType());
-		}
-		return getMimeTypeFromResults(resultCollection.getResults()).toString();		
+		Metadata metadata = new Metadata();
+		metadata.set(Metadata.RESOURCE_NAME_KEY, file.toURI().toString());
+		return this.detect(new FileInputStream(file), metadata).toString();
 	}
 
 	/* (non-Javadoc)

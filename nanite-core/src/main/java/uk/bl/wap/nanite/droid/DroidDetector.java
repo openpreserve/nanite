@@ -39,10 +39,14 @@ import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
  * 
  * WARNING! Due to hardcoded references to the underlying file, this only works for File-based identification rather than streams.
  * 
+ * 
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
  */
 public class DroidDetector implements Detector {
+
+	/** */
+	private static final long serialVersionUID = -170173360485335112L;
 
 	private static Logger log = Logger.getLogger(DroidDetector.class.getName());
 
