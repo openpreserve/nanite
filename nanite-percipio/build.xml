@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<project default="all" name="sbutil" basedir=".">
+
+    <property file="build.properties"/>
+
+    <property name="release" value="${project.name}-${project.version}" />
+
+    <!-- Build deps -->
+    <property name="compiler.version" value="1.6"/>
+    <property name="ant.version" value="1.7.0"/>
+
+    <!-- Persistent files and directories -->
+    <property name="src.dir" value="${basedir}/src"/>
+    <property name="lib.dir" value="${basedir}/lib"/>
+    <property name="config.dir" value="${basedir}/config"/>
+    <property name="scripts.dir" value="${basedir}/scripts"/>
+    <property name="test.src.dir" value="${basedir}/test"/>
+    <property name="license.file" value="COPYING" />
+
+    <!-- Temporary files and directories-->
+    <property name="build.dir" value="${basedir}/classes"/>
+    <property name="test.build.dir" value="${basedir}/classes_test"/>
+    <property name="dist.dir" value="${basedir}/dist"/>
+    <property name="doc.dir" value="${basedir}/doc"/>
+    <property name="tmp.dir" value="${basedir}/tmp"/>
+    <property name="release.src.zip" value="${dist.dir}/${project.name}-${project.version}-src.zip"/>
+    <property name="release.apidocs.zip" value="${dist.dir}/${project.name}-${project.version}-apidocs.zip"/>
+
+    <!-- The libs are used for unit testing only -->
+    <property name="log4j.version" value="1.2.14" />
+    <property name="commons-logging.version" value="1.1.1" />
+    <property name="junit.version" value="4.1" />
+
+
+    <!-- Other properties -->
+    <property  name="main-class" value="dk.statsbiblioteket.percipio.Percipio"/>
+
+    <property name="compiler" value="modern"/>
+    <tstamp>
+        <format property="build.time" pattern="MM/dd/yyyy HH:mm"/>
+    </tstamp>
+
+    <path id="base.path">
+        <fileset dir="${lib.dir}">
+            <include name="**/*.jar"/>
+        </fileset>
+    </path>
+
+    <path id="test.base.path">
+        <path refid="base.path" />
+        <pathelement location="${build.dir}" />
+        <pathelement location="${test.build.dir}" />
+        <pathelement location="${test.src.dir}" />
+    </path>
+
+    <property name="base" refid="base.path"/>
+    <property name="test.base" refid="test.base.path"/>
+
+
+    <!--
+        TARGETS
+    -->
+
+    <!-- Ensure we have correct Java and Ant versions -->
+    <target name="depends">
+        <!--TODO-->
+    </target>
+
+    <target name="prepare" depends="depends">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${test.build.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${doc.dir}"/>
+        <mkdir dir="${src.dir}"/>
+        <mkdir dir="${lib.dir}"/>
+        <mkdir dir="${config.dir}"/>
+        <mkdir dir="${scripts.dir}"/>
+        <mkdir dir="${test.src.dir}"/>
+    </target>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${test.build.dir}"/>
+        <delete dir="${dist.dir}"/>
+        <delete dir="${doc.dir}"/>
+        <delete dir="${tmp.dir}"/>
+    </target>
+
+    <target name="compile" depends="prepare">
+        <javac srcdir="${src.dir}" destdir="${build.dir}" encoding="UTF-8"
+               compiler="${compiler}" optimize="on" debug="on" >
+            <compilerarg value="-Xlint:unchecked"/>
+            <classpath  refid="base.path" />
+        </javac>
+    </target>
+
+
+    <target name="jar" depends="compile">
+        <copy todir="${build.dir}">
+            <fileset dir="${src.dir}">
+                <include name="**/*.xslt"/>
+            </fileset>
+        </copy>
+        <jar basedir="${build.dir}" compress="true" jarfile="${dist.dir}/${release}.jar" >
+            <manifest>
+                <attribute name="Main-Class" value="${main-class}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="release" depends="clean, jar, .src.zip">
+        <!-- TODO: Insert build num and date like this:
+        <replaceregexp file="rep.test" match="\$Id[^\$]*\$" replace="Hello - ${build.time}"/>
+        -->
+        <property name="prefix" value="${release}"/>
+        <zip destfile="${dist.dir}/${release}.zip">
+            <zipfileset prefix="${prefix}" file="${release}.jar"/>
+            <zipfileset prefix="${prefix}" file="README"/>
+            <zipfileset prefix="${prefix}" file="MAINTAINERS"/>
+            <zipfileset prefix="${prefix}" file="POLICY"/>
+            <zipfileset prefix="${prefix}" file="COPYING"/>
+            <zipfileset prefix="${prefix}" file="ChangeLog"/>
+            <zipfileset prefix="${prefix}" file="NEWS"/>
+            <zipfileset prefix="${prefix}/doc" includes="**/*" dir="${doc.dir}"/>
+            <zipfileset prefix="${prefix}" file="${release.src.zip}"/>
+            <zipfileset prefix="${prefix}" file="${release.apidocs.zip}"/>
+        </zip>
+    </target>
+
+     <target name="test">
+        <property name="test.formatter" value="plain"/>
+        <property name="test.usefile" value="false"/>
+        <antcall target=".test.run"/>
+    </target>
+
+    <target name="test.xml">
+        <property name="test.formatter" value="xml"/>
+        <property name="test.usefile" value="true"/>
+        <antcall target=".test.run"/>
+    </target>
+
+
+    <!-- Only run this target indirectly via the test or test.xml targets
+         It needs the test.formatter and test.usefile properties to be set -->
+    <target name=".test.run" depends="compile-test">
+        <!-- We need to fork the JVM and set the java.class.path property
+             to be able to pick resources from the classpath up (like
+             resource bundles). JUnit will override the classpath. -->
+        <junit printsummary="withOutAndErr" haltonfailure="yes"
+               haltonerror="yes" fork="yes" maxmemory="512m">
+            <sysproperty key="java.class.path" value="${test.base}"/>
+            <classpath refid="test.base.path" />
+            <formatter type="${test.formatter}" usefile="${test.usefile}" />
+
+            <!-- add tests here -->
+            <test name="dk.statsbiblioteket.percipio.BrainTest"/>
+        </junit>
+    </target>
+    
+
+    <!-- Depends on the 'jar' target to make
+         sure that we copy over any needed XSLTs-->
+    <target name="compile-test" depends="jar">
+        <javac srcdir="${test.src.dir}" destdir="${test.build.dir}" encoding="UTF-8"
+               compiler="${compiler}" optimize="on" debug="on">
+            <compilerarg value="-Xlint:unchecked"/>
+            <classpath  refid="test.base.path" />
+        </javac>
+    </target>
+
+
+    <target name=".src.zip" depends="prepare">
+        <property name="prefix" value="${release}"/>
+        <zip destfile="${release.src.zip}">
+            <zipfileset prefix="${prefix}/src" dir="${src.dir}"/>
+            <zipfileset prefix="${prefix}/lib" dir="${lib.dir}"/>
+            <zipfileset prefix="${prefix}/test" dir="${test.src.dir}"/>
+            <zipfileset prefix="${prefix}/config" dir="${config.dir}"/>
+            <zipfileset prefix="${prefix}/scripts" dir="${scripts.dir}"/>
+            <zipfileset prefix="${prefix}" file="build.xml"/>
+            <zipfileset prefix="${prefix}" file="LOGGING"/>
+            <zipfileset prefix="${prefix}" file="README"/>
+            <zipfileset prefix="${prefix}" file="MAINTAINERS"/>
+            <zipfileset prefix="${prefix}" file="POLICY"/>
+            <zipfileset prefix="${prefix}" file="COPYING"/>
+            <zipfileset prefix="${prefix}" file="ChangeLog"/>
+            <zipfileset prefix="${prefix}" file="NEWS"/>
+            <zipfileset prefix="${prefix}" file="sbutil.iml"/>
+            <zipfileset prefix="${prefix}" file="sbutil.ipr"/>
+        </zip>
+    </target>
+
+
+    <target name="all" depends="release"/>
+</project>
