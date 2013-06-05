@@ -26,13 +26,6 @@
 	</build>
   <dependencies>
   	<dependency>
-  			<groupId>org.archive.wayback</groupId>
-			<artifactId>wayback-core</artifactId>
-			<version>1.6.1</version>
-			<scope>system</scope>
-			<systemPath>${basedir}/lib/wayback-core-1.6.1.jar</systemPath>
-  	</dependency>
-  	<dependency>
   		<groupId>org.apache.hadoop</groupId>
   		<artifactId>hadoop-core</artifactId>
   		<version>0.20.2</version>
