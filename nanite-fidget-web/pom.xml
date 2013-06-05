@@ -3,7 +3,7 @@
    <modelVersion>4.0.0</modelVersion>
    <groupId>org.opf-labs.fmt</groupId>
    <artifactId>fidget-web</artifactId>
-   <version>0.0.1-SNAPSHOT</version>
+   <version>1.0.0-SNAPSHOT</version>
    <name>Tika Sig Testing Web App</name>
    <description>Make testing and generating new format signatures easier.</description>
 	<properties>
