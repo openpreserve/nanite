@@ -21,10 +21,10 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
 import org.archive.io.ArchiveRecordHeader;
 
+import uk.bl.wa.tika.TikaDeepIdentifier;
 import uk.bl.wap.hadoop.WritableArchiveRecord;
 import uk.bl.wap.hadoop.format.Ohcount;
 import uk.bl.wap.nanite.droid.Nanite;
-import uk.bl.wap.tika.TikaDeepIdentifier;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
