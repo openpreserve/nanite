@@ -3,6 +3,7 @@
  */
 package uk.bl.wap.nanite.droid;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -318,6 +319,9 @@ public class DroidDetector implements Detector {
 			System.out.println("---- VIA InputStream ----");
 			Metadata metadata = new Metadata();
 			System.out.println("Result: " + dr.detect(new FileInputStream(file), metadata));
+			System.out.println("---- VIA byte array ----");
+			byte[] bytes = FileUtils.readFileToByteArray(file);
+			System.out.println("Result: " + dr.detect(new ByteArrayInputStream(bytes), metadata));
 			System.out.println("----\n");
 		}
 	}
