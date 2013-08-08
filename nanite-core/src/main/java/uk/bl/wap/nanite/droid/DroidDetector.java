@@ -124,14 +124,6 @@ public class DroidDetector implements Detector {
 		*/
 	}
 	
-	@Override
-	public MediaType detect(InputStream input, Metadata metadata)
-			throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-
 	private String identifyFolder(File inFile) {
 		String[] resources = new String[] { "" };
 		File dirToSearch = new File(resources[0]);
@@ -190,6 +182,10 @@ public class DroidDetector implements Detector {
 		return null;		
 	}
 	
+	/** 
+	 * Currently, this is the most complete DROID identifier code I have.
+	 * This uses a Custom Result Printer to get container results:
+	 */
 	private MediaType identify(File file) {
 		try {
 			String fileName;
@@ -236,6 +232,38 @@ public class DroidDetector implements Detector {
 		return null;
 	}
 
+	@Override
+	public MediaType detect(InputStream input, Metadata metadata)
+			throws IOException {
+		try {
+			String fileName = "";
+			RequestMetaData metaData =
+					new RequestMetaData((long) input.available(), null, fileName);
+			RequestIdentifier identifier = new RequestIdentifier(URI.create("file:///dummy"));
+			identifier.setParentId(1L);
+
+			IdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
+			try {
+				request.open(input);
+				IdentificationResultCollection results =
+						binarySignatureIdentifier.matchBinarySignatures(request);
+
+				// Also get container results:
+				resultPrinter.print(results, request);
+				// Return as a MediaType:
+				return DroidBinarySignatureDetector.getMimeTypeFromResults( resultPrinter.getResult() );
+				
+
+			} catch (IOException e) {
+				throw new CommandExecutionException(e);
+			}
+		} catch (CommandExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;	}
+	
+
 	
 	private List<URI> identifyOneBinary(final File tempFile) {
 		// Set up the identification request
@@ -278,14 +306,19 @@ public class DroidDetector implements Detector {
 	}
 
 
-	public static void main(String[] args) throws CommandExecutionException, FileNotFoundException {
+	public static void main(String[] args) throws CommandExecutionException, IOException {
 		DroidDetector dr = new DroidDetector();
 		for( String fname : args ) {
 			File file = new File(fname);
+			System.out.println("---- Identification Starts ---");
 			System.out.println("File: "+fname);
 			System.out.println("Droid using DROID binary signature file version: "+dr.getBinarySignatureFileVersion());
+			System.out.println("---- VIA File ----");
 			System.out.println("Result: " + dr.identify(file));
-			System.out.println("----");
+			System.out.println("---- VIA InputStream ----");
+			Metadata metadata = new Metadata();
+			System.out.println("Result: " + dr.detect(new FileInputStream(file), metadata));
+			System.out.println("----\n");
 		}
 	}
 

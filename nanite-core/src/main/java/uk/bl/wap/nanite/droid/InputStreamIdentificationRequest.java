@@ -19,7 +19,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
  */
 public class InputStreamIdentificationRequest extends ByteArrayIdentificationRequest {
 
-	private InputStream in;
+	private InputStream in = null;
 	private InputStreamByteReader isReader;
 	
 	public InputStreamIdentificationRequest(RequestMetaData metaData,
@@ -32,6 +32,7 @@ public class InputStreamIdentificationRequest extends ByteArrayIdentificationReq
 			e.printStackTrace();
 		}
 		this.isReader = new InputStreamByteReader(in);
+		this.in = in;
 	}
 
 	/* (non-Javadoc)
@@ -56,6 +57,7 @@ public class InputStreamIdentificationRequest extends ByteArrayIdentificationReq
 	@Override
 	public void close() throws IOException {
 		in.close();
+		new Exception("ACK").printStackTrace();
 	}
 
 	/* (non-Javadoc)
