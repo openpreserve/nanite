@@ -10,6 +10,8 @@ import java.io.InputStream;
 import net.domesdaybook.reader.ByteReader;
 
 /**
+ * A ByteReader wrapped around an InputStream, using a large buffer to simulate random access.
+ * 
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
  */
@@ -17,13 +19,14 @@ public class InputStreamByteReader implements ByteReader {
 	
 	private BufferedInputStream in;
 	private long nextpos = 0;
+	private static int BUFFER_SIZE = 10*1024*1024; //Integer.MAX_VALUE;
 
 	public InputStreamByteReader( InputStream in ) {
-		this.in = new BufferedInputStream(in);
+		// Set up a large buffer for the input stream, allowing random access:
+		this.in = new BufferedInputStream(in, BUFFER_SIZE);
 		this.nextpos = 0;
-		// The 'reset' logic will fail if this is not big enough.
-		// Not sure this very large readLimit is a good idea!
-		this.in.mark(Integer.MAX_VALUE);
+		// The 'reset' logic will fail if the buffer is not big enough.
+		this.in.mark(BUFFER_SIZE);
 	}
 
 	@Override

@@ -3,13 +3,10 @@
  */
 package uk.bl.wap.nanite.droid;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
 import net.domesdaybook.reader.ByteReader;
-import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
 
@@ -31,8 +28,8 @@ public class InputStreamIdentificationRequest extends ByteArrayIdentificationReq
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		this.isReader = new InputStreamByteReader(in);
 		this.in = in;
+		this.isReader = new InputStreamByteReader(in);
 	}
 
 	/* (non-Javadoc)
@@ -57,7 +54,6 @@ public class InputStreamIdentificationRequest extends ByteArrayIdentificationReq
 	@Override
 	public void close() throws IOException {
 		in.close();
-		new Exception("ACK").printStackTrace();
 	}
 
 	/* (non-Javadoc)
