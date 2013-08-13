@@ -10,8 +10,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBException;
@@ -31,6 +34,7 @@ import uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier;
 import uk.gov.nationalarchives.droid.core.CustomResultPrinter;
 import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
+import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.FileSystemIdentificationRequest;
@@ -40,10 +44,53 @@ import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
  * 
  * Attempts to perform full Droid identification, container and binary signatures.
  * 
- * WARNING! Due to hardcoded references to the underlying file, this only works for File-based identification rather than streams.
+ * Finding the actual droid-core invocation was tricky
+ * From droid command line
+ * - ReportCommand which launches a profileWalker,
+ * - which fires a FileEventHandler when it hits a file,
+ * - which submits an Identification request to the AsyncDroid subtype SubmissionGateway, 
+ * - which calls DroidCore,
+ * - which calls uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier
+ * - Following which, SubmissionGateway does some handleContainer stuff, 
+ * executes the container matching engine and does some complex logic to resolve the result.
  * 
+ * This is all further complicated by the way a mix of Spring and Java is used to initialize
+ * things, which makes partial or fast initialization rather difficult.
+ * 
+ * For droid-command-line, the stringing together starts with:
+ * /droid-command-line/src/main/resources/META-INF/ui-spring.xml
+ * this sets up the ProfileContextLocator and the SpringProfileInstanceFactory.
+ * Other parts of the code set up Profiles and eventually call:
+ * uk.gov.nationalarchives.droid.profile.ProfileContextLocator.openProfileInstanceManager(ProfileInstance)
+ * which calls
+ * uk.gov.nationalarchives.droid.profile.SpringProfileInstanceFactory.getProfileInstanceManager(ProfileInstance, Properties)
+ * which then injects more xml, including:
+ * @see /droid-results/src/main/resources/META-INF/spring-results.xml
+ * which sets up most of the SubmissionGateway and identification stuff
+ * (including the BinarySignatureIdentifier and the Container identifiers).
+ * 
+ * The ui-spring.xml file also includes
+ * /droid-results/src/main/resources/META-INF/spring-signature.xml
+ * which sets up the pronomClient for downloading binary and container signatures.
+ * 
+ * So, the profile stuff is hooked into the DB stuff which is hooked into the identifiers.
+ * Everything is tightly coupled, so teasing it apart is hard work.
+ * 
+ * @see uk.gov.nationalarchives.droid.submitter.SubmissionGateway (in droid-results)
+ * @see uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier
+ * @see uk.gov.nationalarchives.droid.submitter.FileEventHandler.onEvent(File, ResourceId, ResourceId)
+ * 
+ * Also found 
+ * @see uk.gov.nationalarchives.droid.command.action.DownloadSignatureUpdateCommand
+ * which indicates how to download the latest sig file, 
+ * but perhaps the SignatureManagerImpl does all that is needed?
  * 
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
+ * @author Fabian Steeg
+ * @author <a href="mailto:carl.wilson@bl.uk">Carl Wilson</a> <a
+ *         href="http://sourceforge.net/users/carlwilson-bl"
+ *         >carlwilson-bl@SourceForge</a> <a
+ *         href="https://github.com/carlwilson-bl">carlwilson-bl@github</a>
  *
  */
 public class DroidDetector implements Detector {
@@ -70,11 +117,17 @@ public class DroidDetector implements Detector {
 
 	private uk.gov.nationalarchives.droid.core.CustomResultPrinter resultPrinter;
 	
-	private IOFileFilter extensions;
+	// Options:
+	
+	/** Set binarySignaturesOnly to disable container-based identification */
+	private boolean binarySignaturesOnly = false;
+	/** Disable this flag to prevent the file extension being used as a format hint */
+	private boolean passFilenameWithInputStream = true;
 
-	private IOFileFilter recursive;
 
-
+	/** 
+	 * Set up DROID resources
+	 */
 	public DroidDetector() throws CommandExecutionException {
 		
         binarySignatureIdentifier = new BinarySignatureIdentifier();
@@ -116,80 +169,18 @@ public class DroidDetector implements Detector {
 		resultPrinter =
                 new CustomResultPrinter(binarySignatureIdentifier, containerSignatureDefinitions,
                     "", slash, slash1, archives);
-            
-
-        /*
-		droid = new NoProfileRunCommand();
-		droid.setArchives(false);
-		droid.setQuiet(false);
-		droid.setRecursive(false);
-		droid.setSignatureFile(DROID_SIG_FILE);
-		*/
 	}
 	
-	private String identifyFolder(File inFile) {
-		String[] resources = new String[] { "" };
-		File dirToSearch = new File(resources[0]);
 
-		try {
-
-			if (!dirToSearch.isDirectory()) {
-				throw new CommandExecutionException("Resources directory not found");
-			}
-
-			Collection<File> matchedFiles =
-					FileUtils.listFiles(dirToSearch, this.extensions, this.recursive);
-			String fileName = null;
-			for (File file : matchedFiles) {
-				try {
-					fileName = file.getCanonicalPath();
-				} catch (IOException e) {
-					throw new CommandExecutionException(e);
-				}
-				URI uri = file.toURI();
-				RequestMetaData metaData =
-						new RequestMetaData(file.length(), file.lastModified(), fileName);
-				RequestIdentifier identifier = new RequestIdentifier(uri);
-				identifier.setParentId(1L);
-
-				InputStream in = null;
-				IdentificationRequest request = new FileSystemIdentificationRequest(metaData, identifier);
-				try {
-					in = new FileInputStream(file);
-					request.open(in);
-					IdentificationResultCollection results =
-							binarySignatureIdentifier.matchBinarySignatures(request);
-					
-					// Also get container results:
-					// TODO Strip out the code from the resultPrinter to make a sensible result.
-					resultPrinter.print(results, request);
-					
-					
-				} catch (IOException e) {
-					throw new CommandExecutionException(e);
-				} finally {
-					if (in != null) {
-						try {
-							in.close();
-						} catch (IOException e) {
-							throw new CommandExecutionException(e);
-						}
-					}
-				}
-			}
-			return null;
-		} catch (CommandExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;		
-	}
-	
-	/** 
-	 * Currently, this is the most complete DROID identifier code I have.
+	/**
+	 * Currently, this is the most complete DROID identifier code, that only uses DROID code.
+	 * 
 	 * This uses a Custom Result Printer to get container results:
+	 * 
+	 * @param file
+	 * @return
 	 */
-	private MediaType identify(File file) {
+	protected MediaType detect(File file) {
 		try {
 			String fileName;
 			try {
@@ -206,17 +197,7 @@ public class DroidDetector implements Detector {
 			InputStream in = null;
 			IdentificationRequest request = new FileSystemIdentificationRequest(metaData, identifier);
 			try {
-				in = new FileInputStream(file);
-				request.open(in);
-				IdentificationResultCollection results =
-						binarySignatureIdentifier.matchBinarySignatures(request);
-
-				// Also get container results:
-				resultPrinter.print(results, request);
-				// Return as a MediaType:
-				return DroidBinarySignatureDetector.getMimeTypeFromResults( resultPrinter.getResult() );
-				
-
+				return determineMediaType(request, new FileInputStream(file));
 			} catch (IOException e) {
 				throw new CommandExecutionException(e);
 			} finally {
@@ -234,30 +215,30 @@ public class DroidDetector implements Detector {
 		}
 		return null;
 	}
-
+	
+	
+	/**
+	 * 
+	 */
 	@Override
 	public MediaType detect(InputStream input, Metadata metadata)
 			throws IOException {
 		try {
+			// Optionally, get filename and identifiers from metadata: 
 			String fileName = "";
+			if( passFilenameWithInputStream ) {
+				if( metadata.get(Metadata.RESOURCE_NAME_KEY) != null ) {
+					fileName = metadata.get(Metadata.RESOURCE_NAME_KEY);
+				}
+ 			}
 			RequestMetaData metaData =
 					new RequestMetaData((long) input.available(), null, fileName);
-			RequestIdentifier identifier = new RequestIdentifier(URI.create("file:///dummy"));
+			RequestIdentifier identifier = new RequestIdentifier(URI.create("file:///./"+fileName));
 			identifier.setParentId(1L);
 
 			IdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
 			try {
-				request.open(input);
-				IdentificationResultCollection results =
-						binarySignatureIdentifier.matchBinarySignatures(request);
-
-				// Also get container results:
-				resultPrinter.print(results, request);
-				
-				// Return as a MediaType:
-				return DroidBinarySignatureDetector.getMimeTypeFromResults( resultPrinter.getResult() );
-				
-
+				return determineMediaType(request, input);
 			} catch (IOException e) {
 				throw new CommandExecutionException(e);
 			}
@@ -265,43 +246,102 @@ public class DroidDetector implements Detector {
 			e.printStackTrace();
 		}
 		return null;
-		}
+	}
 	
+	/**
+	 * 
+	 * @param request
+	 * @param input
+	 * @return
+	 * @throws IOException
+	 * @throws CommandExecutionException
+	 */
+	private MediaType determineMediaType( IdentificationRequest request, InputStream input ) throws IOException, CommandExecutionException {
+		request.open(input);
+		IdentificationResultCollection results =
+				binarySignatureIdentifier.matchBinarySignatures(request);
+		
+		// Optionally, return top results from binary signature match only:
+		if( this.binarySignaturesOnly ) {
+			if( results.getResults().size() > 0 ) {
+				return getMimeTypeFromResults( results.getResults() );
+			} else {
+				return MediaType.OCTET_STREAM;
+			}
+		}
 
+		// Also get container results:
+		resultPrinter.print(results, request);
+		
+		// Return as a MediaType:
+		return getMimeTypeFromResult( resultPrinter.getResult() );		
+	}
 	
-	private List<URI> identifyOneBinary(final File tempFile) {
-		// Set up the identification request
-		RequestMetaData metadata = new RequestMetaData(tempFile.length(),
-				tempFile.lastModified(), tempFile.getName());
-		RequestIdentifier identifier = new RequestIdentifier(tempFile.toURI());
-		identifier.setParentId(1L);
-		IdentificationRequest request = new FileSystemIdentificationRequest(
-				metadata, identifier);
-		try {
-			request.open(new FileInputStream(tempFile));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		// Get the results collection
-		/*
-		IdentificationResultCollection resultSet = DROID
-				.matchBinarySignatures(request);
-		List<IdentificationResult> results = resultSet.getResults();
-
-		List<URI> formatHits = new ArrayList<URI>(results.size());
-		// Now iterate through the collection and create the format URIs
-		for (IdentificationResult result : results) {
-			formatHits.add(URI.create("info:pronom/" + result.getPuid()));
-			this.method = result.getMethod();
-		}
-		return formatHits;
-		*/
-		return null;
+	/**
+	 * 
+	 * @param result
+	 * @return
+	 */
+	public static MediaType getMimeTypeFromResult(IdentificationResult result) {
+		List<IdentificationResult> list = new ArrayList<IdentificationResult>();
+		list.add(result);
+		return getMimeTypeFromResults(list);
 	}
 
+	/**
+	 * TODO Choose 'vnd' Vendor-style MIME types over other options when there are many in each Result.
+	 * TODO This does not cope ideally with multiple/degenerate Results. 
+	 * e.g. old TIFF or current RTF that cannot tell the difference so reports no versions.
+	 * If there are sigs that differ more than this, this will ignore the versions.
+	 * 
+	 * @param list
+	 * @return
+	 * @throws MimeTypeParseException 
+	 */
+	protected static MediaType getMimeTypeFromResults( List<IdentificationResult> results ) {
+		if( results == null || results.size() == 0 ) return MediaType.OCTET_STREAM;
+		// Get the first result:
+		IdentificationResult r = results.get(0);
+		// Sort out the MIME type mapping:
+		String mimeType = null;
+		String mimeTypeString = r.getMimeType();
+		if( mimeTypeString != null ) {
+			// This sometimes has ", " separated multiple types
+			String[] mimeTypeList = mimeTypeString.split(", ");
+			// Taking first (highest priority) MIME type:
+			mimeType = mimeTypeList[0];
+		}
+		// Build a MediaType
+		MediaType mediaType = MediaType.parse(mimeType);
+		Map<String,String> parameters = null;
+		// Is there a MIME Type?
+		if( mimeType != null && ! "".equals(mimeType) ) {
+			parameters = new HashMap<String,String>(mediaType.getParameters());
+			// Patch on a version parameter if there isn't one there already:
+			if( parameters.get("version") == null && 
+					r.getVersion() != null && (! "".equals(r.getVersion())) &&
+					// But ONLY if there is ONLY one result.
+					results.size() == 1 ) {
+				parameters.put("version", r.getVersion());
+			}
+		} else {
+			parameters = new HashMap<String,String>();
+			// If there isn't a MIME type, make one up:
+			String id = "puid-"+r.getPuid().replace("/", "-");
+			String name = r.getName().replace("\"","'");
+			// Lead with the PUID:
+			mediaType = MediaType.parse("application/x-"+id);
+			parameters.put("name", name);
+			// Add the version, if set:
+			String version = r.getVersion();
+			if( version != null && !"".equals(version) && !"null".equals(version) ) {
+				parameters.put("version", version);
+			}
+		}
+		
+		return new MediaType(mediaType,parameters);
+	}
+	
 	/**
 	 * @return
 	 */
@@ -309,6 +349,14 @@ public class DroidDetector implements Detector {
 		return resultPrinter.getBinarySignatureFileVersion();
 	}
 	
+	/* ----- ----- ----- ----- */
+	
+	/**
+	 * 
+	 * @param args
+	 * @throws CommandExecutionException
+	 * @throws IOException
+	 */
 	public static void main(String[] args) throws CommandExecutionException, IOException {
 		DroidDetector dr = new DroidDetector();
 		for( String fname : args ) {
@@ -317,9 +365,10 @@ public class DroidDetector implements Detector {
 			System.out.println("File: "+fname);
 			System.out.println("Droid using DROID binary signature file version: "+dr.getBinarySignatureFileVersion());
 			System.out.println("---- VIA File ----");
-			System.out.println("Result: " + dr.identify(file));
+			System.out.println("Result: " + dr.detect(file));
 			System.out.println("---- VIA InputStream ----");
 			Metadata metadata = new Metadata();
+			metadata.set(Metadata.RESOURCE_NAME_KEY, file.toURI().toString());
 			System.out.println("Result: " + dr.detect(new FileInputStream(file), metadata));
 			System.out.println("---- VIA byte array ----");
 			byte[] bytes = FileUtils.readFileToByteArray(file);

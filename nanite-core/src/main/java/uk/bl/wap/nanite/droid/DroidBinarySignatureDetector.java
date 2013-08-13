@@ -41,7 +41,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureType;
 import uk.gov.nationalarchives.droid.signature.SignatureManagerImpl;
 
 /**
-* Finding the actual droid-core invocation was tricky
+ * Finding the actual droid-core invocation was tricky
  * From droid command line
  * - ReportCommand which launches a profileWalker,
  * - which fires a FileEventHandler when it hits a file,
@@ -113,7 +113,7 @@ public class DroidBinarySignatureDetector extends Object implements Detector {
 		IdentificationRequest ir = createInputStreamIdentificationRequest(URI.create(uri), input );		
 
 		IdentificationResultCollection resultCollection = this.identify(ir);
-		return getMimeTypeFromResults(resultCollection.getResults());
+		return DroidDetector.getMimeTypeFromResults(resultCollection.getResults());
 	}
 
 	/**
@@ -316,7 +316,7 @@ public class DroidBinarySignatureDetector extends Object implements Detector {
 			IdentificationResultCollection ircf = nanite.identify(
 					Nanite.createFileIdentificationRequest(tmpFile) );
 			*/
-			droidType = DroidBinarySignatureDetector.getMimeTypeFromResults(irc.getResults()).toString();
+			droidType = DroidDetector.getMimeTypeFromResults(irc.getResults()).toString();
 		} catch( Throwable e ) {
 			log.error("Exception on DroidNanite invocation: "+e);
 		}
@@ -382,70 +382,7 @@ public class DroidBinarySignatureDetector extends Object implements Detector {
 		return ir;
 	}
 	
-	/**
-	 * TODO Choose 'vnd' Vendor-style MIME types over other options when there are many in each Result.
-	 * TODO This does not cope ideally with multiple/degenerate Results. 
-	 * e.g. old TIFF or current RTF that cannot tell the difference so reports no versions.
-	 * If there are sigs that differ more than this, this will ignore the versions.
-	 * 
-	 * @param list
-	 * @return
-	 * @throws MimeTypeParseException 
-	 */
-	protected static MediaType getMimeTypeFromResults( List<IdentificationResult> results ) {
-		if( results == null || results.size() == 0 ) return MediaType.OCTET_STREAM;
-		// Get the first result:
-		IdentificationResult r = results.get(0);
-		// Sort out the MIME type mapping:
-		String mimeType = null;
-		String mimeTypeString = r.getMimeType();
-		if( mimeTypeString != null ) {
-			// This sometimes has ", " separated multiple types
-			String[] mimeTypeList = mimeTypeString.split(", ");
-			// Taking first (highest priority) MIME type:
-			mimeType = mimeTypeList[0];
-		}
-		// Build a MediaType
-		MediaType mediaType = MediaType.parse(mimeType);
-		Map<String,String> parameters = null;
-		// Is there a MIME Type?
-		if( mimeType != null && ! "".equals(mimeType) ) {
-			parameters = new HashMap<String,String>(mediaType.getParameters());
-			// Patch on a version parameter if there isn't one there already:
-			if( parameters.get("version") == null && 
-					r.getVersion() != null && (! "".equals(r.getVersion())) &&
-					// But ONLY if there is ONLY one result.
-					results.size() == 1 ) {
-				parameters.put("version", r.getVersion());
-			}
-		} else {
-			parameters = new HashMap<String,String>();
-			// If there isn't a MIME type, make one up:
-			String id = "puid-"+r.getPuid().replace("/", "-");
-			String name = r.getName().replace("\"","'");
-			// Lead with the PUID:
-			mediaType = MediaType.parse("application/x-"+id);
-			parameters.put("name", name);
-			// Add the version, if set:
-			String version = r.getVersion();
-			if( version != null && !"".equals(version) && !"null".equals(version) ) {
-				parameters.put("version", version);
-			}
-		}
-		
-		return new MediaType(mediaType,parameters);
-	}
-	
-	/**
-	 * 
-	 * @param result
-	 * @return
-	 */
-	public static MediaType getMimeTypeFromResults(IdentificationResult result) {
-		List<IdentificationResult> list = new ArrayList<IdentificationResult>();
-		list.add(result);
-		return getMimeTypeFromResults(list);
-	}
+
 	
 	
 	String getMimeType( File file ) throws FileNotFoundException, IOException, ConfigurationException, SignatureFileException {
