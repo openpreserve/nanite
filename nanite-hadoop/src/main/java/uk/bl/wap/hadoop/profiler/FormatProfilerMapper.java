@@ -24,7 +24,7 @@ import org.archive.io.ArchiveRecordHeader;
 import uk.bl.wa.tika.TikaDeepIdentifier;
 import uk.bl.wap.hadoop.WritableArchiveRecord;
 import uk.bl.wap.hadoop.format.Ohcount;
-import uk.bl.wap.nanite.droid.Nanite;
+import uk.bl.wap.nanite.Nanite;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
@@ -87,7 +87,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		String tikaType = tda.identify(value.getPayload());
 		
 		// Type according to Droid/Nanite:
-		String droidType = nanite.identify(value.getPayload());
+		String droidType = nanite.identify(value.getPayload()).toString();
 
 		// Return the output for collation:
 		output.collect( new Text( "\""+serverType+"\"\t\""+tikaType+"\"\t\""+droidType+"\"" ), new Text( waybackYear ) );

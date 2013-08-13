@@ -282,7 +282,7 @@ public class DroidDetector implements Detector {
 	 * @param result
 	 * @return
 	 */
-	public static MediaType getMimeTypeFromResult(IdentificationResult result) {
+	protected static MediaType getMimeTypeFromResult(IdentificationResult result) {
 		List<IdentificationResult> list = new ArrayList<IdentificationResult>();
 		list.add(result);
 		return getMimeTypeFromResults(list);
@@ -345,7 +345,7 @@ public class DroidDetector implements Detector {
 	/**
 	 * @return
 	 */
-	private String getBinarySignatureFileVersion() {
+	public String getBinarySignatureFileVersion() {
 		return resultPrinter.getBinarySignatureFileVersion();
 	}
 	
