@@ -311,6 +311,9 @@ public class DroidDetector implements Detector {
 			// Taking first (highest priority) MIME type:
 			mimeType = mimeTypeList[0];
 		}
+		// Fix case where no base type is supplied (e.g. "vnd.wordperfect"):
+		if( mimeType.indexOf('/') == -1 ) 
+			mimeType = "application/"+mimeType;
 		// Build a MediaType
 		MediaType mediaType = MediaType.parse(mimeType);
 		Map<String,String> parameters = null;

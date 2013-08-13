@@ -13,6 +13,12 @@
   <logger name="org.apache.pdfbox">
     <level value="warn"/> 
   </logger>
+  
+  <!-- Reduce logging from DROID -->
+  <logger name="uk.gov.nationalarchives.droid">
+    <!-- Specifically  uk.gov.nationalarchives.droid.core.signature.droid6.InternalSignature -->
+    <level value="error"/> 
+  </logger>
 	
   <!--  Increase logging from this code  -->
   <logger name="uk.bl.wap">
