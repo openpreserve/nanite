@@ -19,6 +19,8 @@ import javax.xml.bind.JAXBException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.tika.detect.Detector;
+import org.apache.tika.io.CloseShieldInputStream;
+import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 
@@ -51,10 +53,10 @@ public class DroidDetector implements Detector {
 
 	private static Logger log = Logger.getLogger(DroidDetector.class.getName());
 
-    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V66.xml";
+    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V69.xml";
     static final String DROID_SIG_RESOURCE = "droid/"+DROID_SIGNATURE_FILE;
     
-	static final String DROID_SIG_FILE = "src/main/resources/droid/DROID_SignatureFile_V66.xml";
+	static final String DROID_SIG_FILE = "src/main/resources/droid/DROID_SignatureFile_V69.xml";
 	static final String containerSignaturesFileName = "src/main/resources/droid/container-signature-20120828.xml";
 
 	// Set up DROID binary handler:
@@ -251,6 +253,7 @@ public class DroidDetector implements Detector {
 
 				// Also get container results:
 				resultPrinter.print(results, request);
+				
 				// Return as a MediaType:
 				return DroidBinarySignatureDetector.getMimeTypeFromResults( resultPrinter.getResult() );
 				
@@ -259,10 +262,10 @@ public class DroidDetector implements Detector {
 				throw new CommandExecutionException(e);
 			}
 		} catch (CommandExecutionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return null;	}
+		return null;
+		}
 	
 
 	
@@ -305,8 +308,7 @@ public class DroidDetector implements Detector {
 	private String getBinarySignatureFileVersion() {
 		return resultPrinter.getBinarySignatureFileVersion();
 	}
-
-
+	
 	public static void main(String[] args) throws CommandExecutionException, IOException {
 		DroidDetector dr = new DroidDetector();
 		for( String fname : args ) {

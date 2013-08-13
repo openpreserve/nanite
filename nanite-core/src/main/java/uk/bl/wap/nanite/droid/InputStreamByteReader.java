@@ -17,35 +17,43 @@ import net.domesdaybook.reader.ByteReader;
  */
 public class InputStreamByteReader implements ByteReader {
 	
-	private BufferedInputStream in;
 	private long nextpos = 0;
-	private static int BUFFER_SIZE = 10*1024*1024; //Integer.MAX_VALUE;
+	private BufferedInputStream in = null;
+	static int BUFFER_SIZE = 10*1024*1024; //Integer.MAX_VALUE;
 
 	public InputStreamByteReader( InputStream in ) {
 		// Set up a large buffer for the input stream, allowing random access:
 		this.in = new BufferedInputStream(in, BUFFER_SIZE);
-		this.nextpos = 0;
 		// The 'reset' logic will fail if the buffer is not big enough.
 		this.in.mark(BUFFER_SIZE);
+		this.nextpos = 0;
 	}
 
 	@Override
 	public byte readByte(long position) {
 		//System.out.println("Reading "+position);
 		try {
-			// If skipping back, skip back.
+			// If skipping back, reset then skip forward:
 			if( position < this.nextpos ) {
 				in.reset();
 				in.skip(position);
 			} else if( position > this.nextpos ) {
 				in.skip( position - this.nextpos );
 			}
+			byte b = (byte)in.read();
+			// Increment the internal position, unless EOF:
 			this.nextpos = position+1;
-			return (byte)in.read();
+			if( b == -1 ) this.nextpos = position;
+			// Return the byte:
+			return b;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		return 0;
+	}
+
+	InputStream getInputStream() {
+		return this.in;
 	}
 
 }

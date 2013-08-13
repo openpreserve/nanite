@@ -34,6 +34,8 @@ package uk.gov.nationalarchives.droid.core;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.io.input.CloseShieldInputStream;
+
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 import uk.gov.nationalarchives.droid.command.archive.GZipArchiveContentIdentifier;
 import uk.gov.nationalarchives.droid.command.archive.TarArchiveContentIdentifier;
@@ -124,7 +126,7 @@ public class CustomResultPrinter {
     public void print(final IdentificationResultCollection results,
             final IdentificationRequest request) throws CommandExecutionException {
         
-        final String fileName = (path + request.getFileName()).replace(wrongSlash, slash);
+        final String fileName = (path + request.getFileName()).replace(wrongSlash, slash);        
         final IdentificationResultCollection containerResults =
                 getContainerResults(results, request, fileName);
 
@@ -196,6 +198,8 @@ public class CustomResultPrinter {
                             
                         requestFactory = new ContainerFileIdentificationRequestFactory();
                         String containerType = containerPuid.getContainerType();
+                        
+                        ///System.err.println("PROCESSING... "+identResult.getPuid()+ " "+identResult.getMimeType()+" "+containerType);
 
                         if (OLE2_CONTAINER.equals(containerType)) {
                             try {
@@ -206,9 +210,10 @@ public class CustomResultPrinter {
                                 ole2IdentifierEngine.setRequestFactory(requestFactory);
                                 ole2Identifier.setIdentifierEngine(ole2IdentifierEngine);
                                 containerResults = ole2Identifier.process(
-                                    request.getSourceInputStream(), containerResults);
+                                		new CloseShieldInputStream(request.getSourceInputStream()), containerResults);
                             } catch (IOException e) {   // carry on after container i/o problems
                                 System.err.println(e + SPACE + L_BRACKET + fileName + R_BRACKET);
+                                e.printStackTrace();
                             }
                         } else if (ZIP_CONTAINER.equals(containerType)) {
                             try {
@@ -219,9 +224,10 @@ public class CustomResultPrinter {
                                 zipIdentifierEngine.setRequestFactory(requestFactory);
                                 zipIdentifier.setIdentifierEngine(zipIdentifierEngine);
                                 containerResults = zipIdentifier.process(
-                                    request.getSourceInputStream(), containerResults);
+                                    new CloseShieldInputStream(request.getSourceInputStream()), containerResults);
                             } catch (IOException e) {   // carry on after container i/o problems
                                 System.err.println(e + SPACE + L_BRACKET + fileName + R_BRACKET);
+                                e.printStackTrace();
                             }
                         } else {
                             throw new CommandExecutionException("Unknown container type: " + containerPuid);
