@@ -6,12 +6,10 @@ package uk.bl.wap.nanite.droid;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +18,7 @@ import java.util.logging.Logger;
 import javax.xml.bind.JAXBException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.tika.detect.Detector;
-import org.apache.tika.io.CloseShieldInputStream;
-import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 
@@ -100,11 +95,11 @@ public class DroidDetector implements Detector {
 
 	private static Logger log = Logger.getLogger(DroidDetector.class.getName());
 
-    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V69.xml";
-    static final String DROID_SIG_RESOURCE = "droid/"+DROID_SIGNATURE_FILE;
+    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V100069.xml";
+    static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
     
-	static final String DROID_SIG_FILE = "src/main/resources/droid/DROID_SignatureFile_V69.xml";
-	static final String containerSignaturesFileName = "src/main/resources/droid/container-signature-20120828.xml";
+	static final String DROID_SIG_FILE = "src/main/resources/" + DROID_SIG_RESOURCE;
+	static final String CONTAINER_SIG_FILE = "src/main/resources/droid/container-signature-20130501.xml";
 
 	// Set up DROID binary handler:
 	private BinarySignatureIdentifier binarySignatureIdentifier;
@@ -148,13 +143,13 @@ public class DroidDetector implements Detector {
         String slash1 = slash;
 
         containerSignatureDefinitions = null;
-        if (containerSignaturesFileName != null) {
-            File containerSignaturesFile = new File(containerSignaturesFileName);
+        if (CONTAINER_SIG_FILE != null) {
+            File containerSignaturesFile = new File(CONTAINER_SIG_FILE);
             if (!containerSignaturesFile.exists()) {
                 throw new CommandExecutionException("Container signature file not found");
             }
             try {
-                final InputStream in = new FileInputStream(containerSignaturesFileName);
+                final InputStream in = new FileInputStream(CONTAINER_SIG_FILE);
                 final ContainerSignatureSaxParser parser = new ContainerSignatureSaxParser();
                 containerSignatureDefinitions = parser.parse(in);
             } catch (SignatureParseException e) {
@@ -171,6 +166,22 @@ public class DroidDetector implements Detector {
                     "", slash, slash1, archives);
 	}
 	
+
+	/**
+	 * @return the binarySignaturesOnly
+	 */
+	public boolean isBinarySignaturesOnly() {
+		return binarySignaturesOnly;
+	}
+
+
+	/**
+	 * @param binarySignaturesOnly the binarySignaturesOnly to set
+	 */
+	public void setBinarySignaturesOnly(boolean binarySignaturesOnly) {
+		this.binarySignaturesOnly = binarySignaturesOnly;
+	}
+
 
 	/**
 	 * Currently, this is the most complete DROID identifier code, that only uses DROID code.
@@ -260,9 +271,10 @@ public class DroidDetector implements Detector {
 		request.open(input);
 		IdentificationResultCollection results =
 				binarySignatureIdentifier.matchBinarySignatures(request);
+		//log.info("Got "+results.getResults().size() +" matches.");
 		
 		// Optionally, return top results from binary signature match only:
-		if( this.binarySignaturesOnly ) {
+		if( this.isBinarySignaturesOnly() ) {
 			if( results.getResults().size() > 0 ) {
 				return getMimeTypeFromResults( results.getResults() );
 			} else {
@@ -284,7 +296,8 @@ public class DroidDetector implements Detector {
 	 */
 	protected static MediaType getMimeTypeFromResult(IdentificationResult result) {
 		List<IdentificationResult> list = new ArrayList<IdentificationResult>();
-		list.add(result);
+		if( result != null )
+			list.add(result);
 		return getMimeTypeFromResults(list);
 	}
 
@@ -305,15 +318,15 @@ public class DroidDetector implements Detector {
 		// Sort out the MIME type mapping:
 		String mimeType = null;
 		String mimeTypeString = r.getMimeType();
-		if( mimeTypeString != null ) {
+		if( mimeTypeString != null && ! "".equals(mimeTypeString.trim()) ) {
 			// This sometimes has ", " separated multiple types
 			String[] mimeTypeList = mimeTypeString.split(", ");
 			// Taking first (highest priority) MIME type:
 			mimeType = mimeTypeList[0];
+			// Fix case where no base type is supplied (e.g. "vnd.wordperfect"):
+			if( mimeType.indexOf('/') == -1 ) 
+				mimeType = "application/" + mimeType;
 		}
-		// Fix case where no base type is supplied (e.g. "vnd.wordperfect"):
-		if( mimeType.indexOf('/') == -1 ) 
-			mimeType = "application/"+mimeType;
 		// Build a MediaType
 		MediaType mediaType = MediaType.parse(mimeType);
 		Map<String,String> parameters = null;

@@ -31,21 +31,25 @@ public class InputStreamByteReader implements ByteReader {
 
 	@Override
 	public byte readByte(long position) {
-		//System.out.println("Reading "+position);
+		//System.out.println("@"+nextpos+" Reading "+position);
 		try {
 			// If skipping back, reset then skip forward:
 			if( position < this.nextpos ) {
+				//System.out.println("@"+nextpos+"Reset and skip to "+position);
 				in.reset();
 				in.skip(position);
 			} else if( position > this.nextpos ) {
+				//System.out.println("@"+nextpos+"Skipping to "+position);
 				in.skip( position - this.nextpos );
 			}
-			byte b = (byte)in.read();
-			// Increment the internal position, unless EOF:
+			int b = in.read();
+			//System.out.println("Got byte: "+ Integer.toHexString(0xFF & b) );
+			// Increment the internal position, unless EOF?:
 			this.nextpos = position+1;
 			if( b == -1 ) this.nextpos = position;
+			//System.out.println("NOW @"+nextpos+"\n");
 			// Return the byte:
-			return b;
+			return (byte)b;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
