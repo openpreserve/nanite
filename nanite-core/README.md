@@ -10,23 +10,23 @@ This is an extension to the Apache Tika toolkit, wrapping and augmenting in orde
 CLI
 ---
 
-$ cd nanite-core
-$ mvn install
-$ java -jar target/nanite-core-1.0.0-SNAPSHOT-jar-with-dependencies.jar <input file(s)>
+    $ cd nanite-core
+    $ mvn install
+    $ java -jar target/nanite-core-1.0.0-SNAPSHOT-jar-with-dependencies.jar <input file(s)>
 
 NOTE that this will only work from the nanite-core folder right now, due to hard-coded relative paths to the signature files.
 
 Ideas
 -----
 * BUG? Fails to identify lots of PDF/A, suspect some error is uncaught, in these cases, as Tika is just returning application/pdf with no version at all while DROID reports 1a.
-** A-1b is better, with Tika returning lost of 1b, even when DROID misses them!
-** Likely the Adobe Extension Level code is falling over.
-** 1a is stricter than 1b, requiring "Tagged PDF" amongst other things. Maybe extension levels?
-** PDF/A-1a, which only allows 1.4? http://nationalarchives.gov.uk/PRONOM/Format/proFormatSearch.aspx?status=detailReport&id=770&strPageToDisplay=signatures
-** PDF/A-1b, which allows PDF v1.3,4,5,6,7 http://nationalarchives.gov.uk/PRONOM/Format/proFormatSearch.aspx?status=detailReport&id=1100&strPageToDisplay=signatures
+    * A-1b is better, with Tika returning lost of 1b, even when DROID misses them!
+    * Likely the Adobe Extension Level code is falling over.
+    * 1a is stricter than 1b, requiring "Tagged PDF" amongst other things. Maybe extension levels?
+    * PDF/A-1a, which only allows 1.4? http://nationalarchives.gov.uk/PRONOM/Format/proFormatSearch.aspx?status=detailReport&id=770&strPageToDisplay=signatures
+    * PDF/A-1b, which allows PDF v1.3,4,5,6,7 http://nationalarchives.gov.uk/PRONOM/Format/proFormatSearch.aspx?status=detailReport&id=1100&strPageToDisplay=signatures
 
 * Added an experimental language detector based on highlight.js, but it seems to be overly white-space dependent.
-** e.g. compressed javascript is not highlighted at all, leading to bad guesses on format.
+    * e.g. compressed javascript is not highlighted at all, leading to bad guesses on format.
 
 * IMPORTANT I think that, as used now, the FormatProfiler examines all embedded bitstreams and indeed text but only reports the top-level/outer MIME type.
 * For this to work reliably, we will need to modify PackageExtractor so that the parent-child relationship is maintained. Otherwise, the identity of files gets confused when there are ZIPs in ZIPs etc.
