@@ -7,6 +7,15 @@ This is an extension to the Apache Tika toolkit, wrapping and augmenting in orde
 * It uses 'extended MIME Types' to capture format definitions that more closely link back to the software.
 * It has a recursive metadata handler, so metadata from child resources can be extracted more easily.
 
+CLI
+---
+
+$ cd nanite-core
+$ mvn install
+$ java -jar target/nanite-core-1.0.0-SNAPSHOT-jar-with-dependencies.jar <input file(s)>
+
+NOTE that this will only work from the nanite-core folder right now, due to hard-coded relative paths to the signature files.
+
 Ideas
 -----
 * BUG? Fails to identify lots of PDF/A, suspect some error is uncaught, in these cases, as Tika is just returning application/pdf with no version at all while DROID reports 1a.
