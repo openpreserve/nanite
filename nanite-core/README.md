@@ -11,7 +11,7 @@ CLI
 ---
 
     $ cd nanite-core
-    $ mvn install
+    $ mvn clean compile package
     $ java -jar target/nanite-core-1.0.0-SNAPSHOT-jar-with-dependencies.jar <input file(s)>
 
 NOTE that this will only work from the nanite-core folder right now, due to hard-coded relative paths to the signature files.
