@@ -192,7 +192,7 @@ public class DroidDetector implements Detector {
 	 * @param file
 	 * @return
 	 */
-	protected MediaType detect(File file) {
+	public MediaType detect(File file) {
 		try {
 			String fileName;
 			try {

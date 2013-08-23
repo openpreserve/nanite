@@ -47,6 +47,7 @@ public class Nanite {
 			File file = new File(fname);
 			System.out.println("File: "+fname);
 			System.out.println("Nanite using DROID binary signature file version "+nan.getBinarySignatureFileVersion());
+			System.out.println("Result: " + nan.detect(file));
 			System.out.println("Result: " + nan.detect(new FileInputStream(file),new Metadata()) );
 			System.out.println("----");
 		}
