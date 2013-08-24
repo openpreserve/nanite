@@ -48,7 +48,8 @@ public class Nanite {
 			System.out.println("File: "+fname);
 			System.out.println("Nanite using DROID binary signature file version "+nan.getBinarySignatureFileVersion());
 			System.out.println("Result: " + nan.detect(file));
-			System.out.println("Result: " + nan.detect(new FileInputStream(file),new Metadata()) );
+			// Disable stream-based ID as this copes poorly with large files and is not needed in this context.
+			//System.out.println("Result: " + nan.detect(new FileInputStream(file),new Metadata()) );
 			System.out.println("----");
 		}
 	}
