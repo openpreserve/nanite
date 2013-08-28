@@ -226,4 +226,91 @@ sl:generator="ibauthor"
      -->
     <glob pattern="*.iba" />
   </mime-type>
+  
+  
+  <!--  
+  ZX Spectrum tape format .tap 
+  Based on /usr/share/file/magic/spectrum 
+  $File: spectrum,v 1.6 2009/09/19 16:28:12 christos Exp $
+  -->
+  <mime-type type="application/x-spectrum-tap">
+    <acronym>TAP</acronym>
+    <_comment>ZX Spectrum .TAP tape image format</_comment>
+    <magic priority="50">
+      <match value="0x130000" type="string" offset="0">
+        <match value="0x00" type="string" offset="3"/>
+        <match value="0x01" type="string" offset="3"/>
+        <match value="0x02" type="string" offset="3"/>
+        <match value="0x03" type="string" offset="3"/>
+      </match>
+    </magic>
+    <glob pattern="*.tap"/>
+  </mime-type>
+  
+  <mime-type type="application/x-spectrum-tap; version=basic">
+    <sub-class-of type="iapplication/x-spectrum-tap" />
+    <_comment>ZX Spectrum .TAP tape image format - BASIC program</_comment>
+    <magic priority="50">
+      <match value="0x130000" type="string" offset="0">
+        <match value="0x00" type="string" offset="3"/>
+      </match>
+    </magic>
+  </mime-type>
+
+  <mime-type type="application/x-spectrum-tap; version='number array'">
+    <sub-class-of type="iapplication/x-spectrum-tap" />
+    <_comment>ZX Spectrum .TAP tape image format - number array</_comment>
+    <magic priority="50">
+      <match value="0x130000" type="string" offset="0">
+        <match value="0x01" type="string" offset="3"/>
+      </match>
+    </magic>
+  </mime-type>
+
+  <mime-type type="application/x-spectrum-tap; version='character array'">
+    <sub-class-of type="iapplication/x-spectrum-tap" />
+    <_comment>ZX Spectrum .TAP tape image format - character program</_comment>
+    <magic priority="50">
+      <match value="0x130000" type="string" offset="0">
+        <match value="0x02" type="string" offset="3"/>
+      </match>
+    </magic>
+  </mime-type>
+
+  <mime-type type="application/x-spectrum-tap; version='memory array'">
+    <sub-class-of type="iapplication/x-spectrum-tap" />
+    <_comment>ZX Spectrum .TAP tape image format - memory block</_comment>
+    <magic priority="50">
+      <match value="0x130000" type="string" offset="0">
+        <match value="0x02" type="string" offset="3"/>
+      </match>
+    </magic>
+  </mime-type>
+
+  <mime-type type="application/x-spectrum-tap; version='screen'">
+    <sub-class-of type="iapplication/x-spectrum-tap" />
+    <_comment>ZX Spectrum .TAP tape image format - memory block - screen</_comment>
+    <magic priority="50">
+      <match value="0x130000" type="string" offset="0">
+        <match value="0x02" type="string" offset="3">
+          <match value="0x001B0040" type="string" offset="14"/>
+        </match>
+      </match>
+    </magic>
+  </mime-type>
+  
+  <!--  
+  ZX Spectrum tape format .tzx
+  Based on /usr/share/file/magic/spectrum 
+  $File: spectrum,v 1.6 2009/09/19 16:28:12 christos Exp $
+  -->
+  <mime-type type="application/x-spectrum-tzx">
+    <acronym>TZX</acronym>
+    <_comment>ZX Spectrum .TZX tape image format</_comment>
+    <magic priority="50">
+      <match value="ZXTape!\x1a" type="string" offset="0"/>
+    </magic>
+    <glob pattern="*.tzx"/>
+  </mime-type>
+
 </mime-info>
