@@ -1,19 +1,20 @@
 /**
  * 
  */
-package uk.bl.wap.nanite;
+package uk.bl.wa.nanite;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+
 import javax.activation.MimeTypeParseException;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 
-import uk.bl.wap.nanite.droid.DroidDetector;
+import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;

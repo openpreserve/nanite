@@ -35,7 +35,7 @@
             <configuration>
                <archive>
                   <manifest>
-                     <mainClass>uk.bl.wap.nanite.Nanite</mainClass>
+                     <mainClass>uk.bl.wa.nanite.Nanite</mainClass>
                   </manifest>
                </archive>
                <descriptorRefs>
@@ -76,7 +76,7 @@
       <dependency>
          <groupId>uk.gov.nationalarchives</groupId>
          <artifactId>droid-command-line</artifactId>
-         <version>6.1.2</version>
+         <version>6.1.3</version>
       </dependency>
    </dependencies>
 </project>

@@ -16,6 +16,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import uk.bl.wa.nanite.droid.DroidDetector;
+
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
@@ -40,7 +42,7 @@ public class DroidDetectorTest {
 	}
 
 	/**
-	 * Test method for {@link uk.bl.wap.nanite.droid.DroidDetector#detect(java.io.InputStream, org.apache.tika.metadata.Metadata)}.
+	 * Test method for {@link uk.bl.wa.nanite.droid.DroidDetector#detect(java.io.InputStream, org.apache.tika.metadata.Metadata)}.
 	 * @throws IOException 
 	 * @throws FileNotFoundException 
 	 */

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.bl.wap.nanite.droid;
+package uk.bl.wa.nanite.droid;
 
 import java.io.IOException;
 import java.io.InputStream;
