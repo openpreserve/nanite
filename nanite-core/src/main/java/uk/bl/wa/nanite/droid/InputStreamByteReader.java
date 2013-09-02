@@ -13,6 +13,8 @@ import net.domesdaybook.reader.ByteReader;
 /**
  * A ByteReader wrapped around an InputStream, using a large buffer to simulate random access.
  * 
+ * TODO Shift to some kind of file-backed stream buffer, {@see CachedSeekableStream} or {@see FileCacheSeekableStream}.
+ * 
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
  */
