@@ -1,4 +1,4 @@
-package uk.bl.wap.nanite.tika;
+package uk.bl.wa.nanite.tika;
 
 import static org.junit.Assert.*;
 
