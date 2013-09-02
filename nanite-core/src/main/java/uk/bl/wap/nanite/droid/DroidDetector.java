@@ -37,6 +37,12 @@ import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
 
 /**
  * 
+ * Currently, this is the most complete DROID identifier code, that only uses DROID code.
+ * 
+ * This uses a Custom Result Printer to get container results.
+ * 
+ * --- This needs review ---
+ * 
  * Attempts to perform full Droid identification, container and binary signatures.
  * 
  * Finding the actual droid-core invocation was tricky
@@ -108,7 +114,7 @@ public class DroidDetector implements Detector {
 	
     private static final String FORWARD_SLASH = "/";
     private static final String BACKWARD_SLASH = "\\";
-    private int maxBytesToScan = -1;
+    private static long maxBytesToScan = -1;
     boolean archives = false;
 
 	private uk.gov.nationalarchives.droid.core.CustomResultPrinter resultPrinter;
@@ -125,7 +131,7 @@ public class DroidDetector implements Detector {
 	 * Set up DROID resources
 	 */
 	public DroidDetector() throws CommandExecutionException {
-		
+		// Set up the binary sig file.
         binarySignatureIdentifier = new BinarySignatureIdentifier();
         File fileSignaturesFile = new File(DROID_SIG_FILE);
         if (!fileSignaturesFile.exists()) {
@@ -142,7 +148,8 @@ public class DroidDetector implements Detector {
         String path = fileSignaturesFile.getAbsolutePath();
         String slash = path.contains(FORWARD_SLASH) ? FORWARD_SLASH : BACKWARD_SLASH;
         String slash1 = slash;
-
+        
+        // Set up container sig file:
         containerSignatureDefinitions = null;
         if (CONTAINER_SIG_FILE != null) {
             File containerSignaturesFile = new File(CONTAINER_SIG_FILE);
@@ -185,14 +192,14 @@ public class DroidDetector implements Detector {
 
 
 	/**
-	 * Currently, this is the most complete DROID identifier code, that only uses DROID code.
-	 * 
-	 * This uses a Custom Result Printer to get container results:
 	 * 
 	 * @param file
 	 * @return
 	 */
 	public MediaType detect(File file) {
+		// As this is a file, use the default number of bytes to inspect
+		this.binarySignatureIdentifier.setMaxBytesToScan(DroidDetector.maxBytesToScan);
+		// And identify:
 		try {
 			String fileName;
 			try {
@@ -235,6 +242,9 @@ public class DroidDetector implements Detector {
 	@Override
 	public MediaType detect(InputStream input, Metadata metadata)
 			throws IOException {
+		// As this is an inputstream, restrict the number of bytes to inspect
+		this.binarySignatureIdentifier.setMaxBytesToScan(InputStreamByteReader.BUFFER_SIZE);
+		// And identify:
 		try {
 			// Optionally, get filename and identifiers from metadata: 
 			String fileName = "";
