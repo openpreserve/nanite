@@ -9,6 +9,7 @@ import java.io.InputStream;
 
 import net.domesdaybook.reader.ByteReader;
 
+
 /**
  * A ByteReader wrapped around an InputStream, using a large buffer to simulate random access.
  * 

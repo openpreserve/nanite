@@ -54,11 +54,11 @@ public class DroidDetectorTest {
 		// Via File:
 		MediaType type = dd.detect(f);
 		System.out.println("Got via File: "+type);
-		assertEquals("application/x-puid-x-fmt-44",type.getBaseType().toString());
+		assertEquals("application/vnd.wordperfect",type.getBaseType().toString());
 		// Via InputStream:
 		type = dd.detect(new FileInputStream(f), metadata);
 		System.out.println("Got via InputStream: "+type);
-		assertEquals("application/x-puid-x-fmt-44",type.getBaseType().toString());
+		assertEquals("application/vnd.wordperfect",type.getBaseType().toString());
 	}
 
 }
