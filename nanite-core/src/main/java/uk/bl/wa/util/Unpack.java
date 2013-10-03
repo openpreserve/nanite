@@ -1,4 +1,4 @@
-package uk.bl.wap.hadoop.util;
+package uk.bl.wa.util;
 
 import java.io.Closeable;
 import java.io.File;

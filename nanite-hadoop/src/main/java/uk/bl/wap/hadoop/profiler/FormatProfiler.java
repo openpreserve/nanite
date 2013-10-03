@@ -25,9 +25,9 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.util.Tool;
 import org.apache.log4j.Logger;
 
+import uk.bl.wa.util.Unpack;
 import uk.bl.wap.hadoop.ArchiveFileInputFormat;
 import uk.bl.wap.hadoop.format.Ohcount;
-import uk.bl.wap.hadoop.util.Unpack;
 
 /**
  * WARCTikExtractor

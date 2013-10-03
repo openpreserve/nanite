@@ -7,10 +7,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.activation.MimeTypeParseException;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 
@@ -22,7 +24,6 @@ import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManagerE
 
 /**
  * 
- 
  */
 public class Nanite {
 
@@ -48,9 +49,9 @@ public class Nanite {
 			File file = new File(fname);
 			System.out.println("File: "+fname);
 			System.out.println("Nanite using DROID binary signature file version "+nan.getBinarySignatureFileVersion());
-			System.out.println("Result: " + nan.detect(file));
+			System.out.println("Result via File: " + nan.detect(file));
 			// Disable stream-based ID as this copes poorly with large files and is not needed in this context.
-			//System.out.println("Result: " + nan.detect(new FileInputStream(file),new Metadata()) );
+			System.out.println("Result via InputStream: " + nan.detect(new FileInputStream(file),new Metadata()) );
 			System.out.println("----");
 		}
 	}
@@ -63,5 +64,18 @@ public class Nanite {
 	public MediaType identify(byte[] payload) throws IOException {
 		return nan.detect( new ByteArrayInputStream(payload), new Metadata());
 	}	
+	
+	/**
+	 * 
+	 * TODO How best to do this? Is this the right place to do the wrapping?
+	 * 
+	 * @param in
+	 * @param metadata
+	 * @return
+	 * @throws IOException
+	 */
+	public MediaType identify( InputStream in, Metadata metadata ) throws IOException {
+		return nan.detect(TikaInputStream.get(in), metadata);
+	}
 
 }

@@ -22,6 +22,7 @@ import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 
+import uk.bl.wa.util.Unpack;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 import uk.gov.nationalarchives.droid.container.ContainerSignatureDefinitions;
 import uk.gov.nationalarchives.droid.container.ContainerSignatureSaxParser;
@@ -105,8 +106,8 @@ public class DroidDetector implements Detector {
     static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V70.xml";
     static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
     
-	static final String DROID_SIG_FILE = "src/main/resources/" + DROID_SIG_RESOURCE;
-	static final String CONTAINER_SIG_FILE = "src/main/resources/droid/container-signature-20130501.xml";
+	static final String DROID_SIG_FILE = "" + DROID_SIG_RESOURCE;
+	static final String CONTAINER_SIG_FILE = "droid/container-signature-20130501.xml";
 
 	// Set up DROID binary handler:
 	private BinarySignatureIdentifier binarySignatureIdentifier;
@@ -133,12 +134,17 @@ public class DroidDetector implements Detector {
 	public DroidDetector() throws CommandExecutionException {
 		// Set up the binary sig file.
         binarySignatureIdentifier = new BinarySignatureIdentifier();
-        File fileSignaturesFile = new File(DROID_SIG_FILE);
+        File fileSignaturesFile;
+		try {
+			fileSignaturesFile = Unpack.streamToTemp(DroidDetector.class, DROID_SIG_FILE, false);
+		} catch (IOException e1) {
+            throw new CommandExecutionException("Signature file could not be extracted! "+e1);
+		}
         if (!fileSignaturesFile.exists()) {
             throw new CommandExecutionException("Signature file not found");
         }
 
-        binarySignatureIdentifier.setSignatureFile(DROID_SIG_FILE);
+        binarySignatureIdentifier.setSignatureFile(fileSignaturesFile.getAbsolutePath());
         try {
             binarySignatureIdentifier.init();
         } catch (SignatureParseException e) {
@@ -152,12 +158,17 @@ public class DroidDetector implements Detector {
         // Set up container sig file:
         containerSignatureDefinitions = null;
         if (CONTAINER_SIG_FILE != null) {
-            File containerSignaturesFile = new File(CONTAINER_SIG_FILE);
+            File containerSignaturesFile = null;
+    		try {
+    			containerSignaturesFile = Unpack.streamToTemp(DroidDetector.class, CONTAINER_SIG_FILE, false);
+    		} catch (IOException e1) {
+                throw new CommandExecutionException("Container signature file could not be extracted! "+e1);
+    		}
             if (!containerSignaturesFile.exists()) {
                 throw new CommandExecutionException("Container signature file not found");
             }
             try {
-                final InputStream in = new FileInputStream(CONTAINER_SIG_FILE);
+                final InputStream in = new FileInputStream(containerSignaturesFile.getAbsoluteFile());
                 final ContainerSignatureSaxParser parser = new ContainerSignatureSaxParser();
                 containerSignatureDefinitions = parser.parse(in);
             } catch (SignatureParseException e) {
