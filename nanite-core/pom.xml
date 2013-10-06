@@ -8,8 +8,6 @@
       <artifactId>nanite</artifactId>
    </parent>
    <artifactId>nanite-core</artifactId>
-   <!-- Extend the version to include the version of the DROID signature file. -->
-   <version>${parent.version}-70</version>
    <build>
       <plugins>
          <plugin>
