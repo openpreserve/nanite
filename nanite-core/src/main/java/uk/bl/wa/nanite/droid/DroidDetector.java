@@ -115,7 +115,7 @@ public class DroidDetector implements Detector {
 	
     private static final String FORWARD_SLASH = "/";
     private static final String BACKWARD_SLASH = "\\";
-    private static long maxBytesToScan = -1;
+    private long maxBytesToScan = -1;
     boolean archives = false;
 
 	private uk.gov.nationalarchives.droid.core.CustomResultPrinter resultPrinter;
@@ -203,13 +203,29 @@ public class DroidDetector implements Detector {
 
 
 	/**
+	 * @return the maxBytesToScan
+	 */
+	public long getMaxBytesToScan() {
+		return maxBytesToScan;
+	}
+
+
+	/**
+	 * @param maxBytesToScan the maxBytesToScan to set
+	 */
+	public void setMaxBytesToScan(long maxBytesToScan) {
+		this.maxBytesToScan = maxBytesToScan;
+	}
+
+
+	/**
 	 * 
 	 * @param file
 	 * @return
 	 */
 	public MediaType detect(File file) {
 		// As this is a file, use the default number of bytes to inspect
-		this.binarySignatureIdentifier.setMaxBytesToScan(DroidDetector.maxBytesToScan);
+		this.binarySignatureIdentifier.setMaxBytesToScan(this.maxBytesToScan);
 		// And identify:
 		try {
 			String fileName;
