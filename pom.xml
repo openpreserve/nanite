@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>eu.scape-project.nanite</groupId>
   <artifactId>nanite</artifactId>
-  <version>1.0.70.0</version>
+  <version>1.0.70.1-SNAPSHOT</version>
   <packaging>pom</packaging>
    <organization>
       <name>The Open Planets Foundation</name>
@@ -50,6 +50,6 @@
   	<module>nanite-hadoop</module>
 -->
   </modules>
-  <name>Nanite - a friendly swarm of format-identifying robots.
+  <name>Nanite - a friendly swarm of format-identifying robots
 </name>
 </project>
