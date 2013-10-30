@@ -112,7 +112,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		String file = value.getRecord().getHeader().getUrl();
 		if(file!=null) {
 			final int lastIndexSlash = file.lastIndexOf('/');
-			if(lastIndexSlash>0&(lastIndexSlash+1<file.length())) {
+			if(lastIndexSlash>0&(lastIndexSlash<file.length())) {
 				file = file.substring(lastIndexSlash + 1);
 			}
 		} else {
