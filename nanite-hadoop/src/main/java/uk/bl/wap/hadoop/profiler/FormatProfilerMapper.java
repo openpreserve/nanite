@@ -198,7 +198,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			// The crawl year:
 			String waybackDate = ( ( String ) header.getDate() ).replaceAll( "[^0-9]", "" );
 			if( waybackDate != null ) 
-				waybackYear = waybackDate.substring(0,4);
+				waybackYear = waybackDate.substring(0,waybackDate.length()<4?waybackDate.length():4);
 
 		} else {
 			log.warn("LOG: Empty header fields!");
