@@ -5,10 +5,13 @@ package uk.bl.wap.hadoop.profiler;
  * http://hadoop.apache.org/common/docs/r0.18.3/mapred_tutorial.html
  */
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.URLEncoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,12 +22,15 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
+import org.apache.tika.metadata.Metadata;
 import org.archive.io.ArchiveRecordHeader;
 
 import uk.bl.wa.nanite.Nanite;
+import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.bl.wa.tika.TikaDeepIdentifier;
-import uk.bl.wap.hadoop.WritableArchiveRecord;
+import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wap.hadoop.format.Ohcount;
+import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
@@ -32,6 +38,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	String workingDirectory = "";
 	TikaDeepIdentifier tda = null;
 	Nanite nanite = null;
+	DroidDetector droidDetector = null;
 	Ohcount oh = null;
 	//private FileSystem hdfs;
 
@@ -48,6 +55,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		} catch ( Exception e) {
 			e.printStackTrace();
 			log.error("Exception on Nanite instanciation: "+e);
+		}
+		
+		try {
+			droidDetector = new DroidDetector();
+		} catch (CommandExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		/*
@@ -75,6 +89,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// log the file we are processing:
 		log.debug("Processing record from: "+key);
 		
+		final boolean INCLUDE_EXTENSION = true;
+		
 		// Get the wctID, if any:
 		String wctID = this.getWctTi( key.toString() );
 		
@@ -83,14 +99,74 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		String serverType = getServerType(value);
 		log.debug("Server Type: "+serverType);
 
-		// Type according to Tika:
-		String tikaType = tda.identify(value.getPayload());
-		
-		// Type according to Droid/Nanite:
-		String droidType = nanite.identify(value.getPayload()).toString();
+		// Get filename and separate the extension of the file
+		// Use URLEncoder as some URLs cause URISyntaxException in DroidDetector
+		String extURL = value.getRecord().getHeader().getUrl();
+		// Make sure we have something to turn in to a URL!
+		if(extURL!=null&&extURL.length()>0) {
+			extURL = URLEncoder.encode(extURL, "UTF-8");
+		} else {
+			extURL = "";
+		}
+		// Remove directories
+		String file = value.getRecord().getHeader().getUrl();
+		if(file!=null) {
+			final int lastIndexSlash = file.lastIndexOf('/');
+			if(lastIndexSlash>0&(lastIndexSlash<file.length())) {
+				file = file.substring(lastIndexSlash + 1);
+			}
+		} else {
+			file = "";
+		}
+		String fileExt = "";
+		// If we have a dot then get the extension
+		if(file.contains(".")) {
+			if(file.lastIndexOf('.')+1<file.length()) {
+				fileExt = file.substring(file.lastIndexOf('.')+1);
+			}
+		}
 
+		// Type according to Droid/Nanite:
+		Metadata metadata = new Metadata();  
+		metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+
+		// We need to mark the datastream so we can re-use it three times
+		InputStream datastream = new BufferedInputStream(value.getPayloadAsStream()); 
+		
+		// NOTE: reusing the InputStream in this way will fail on files that are larger
+		// than Integer.MAX_VALUE bytes
+		datastream.mark(Integer.MAX_VALUE);
+
+		// Type according to Nanite
+		final String naniteType = nanite.identify(datastream, metadata).toString();
+		
+		// We must reset the InputStream so it can be re-used otherwise we get no data! 
+		datastream.reset();
+		
+		// Type according to DroidDetector
+		final String droidType = droidDetector.detect(datastream, metadata).toString();
+
+		// We must reset the InputStream so it can be re-used otherwise we get no data! 
+		datastream.reset();
+
+		// NOTE: Tika is last here as the mark() on datastream gets lost resulting in
+		// "java.io.IOException: Resetting to invalid mark" on later reset() calls
+		
+		// Type according to Tika:
+		final String tikaType = tda.identify(datastream, metadata);
+		
+		String mapOutput = "\""+serverType+"\"\t\""+tikaType+"\"\t\""+naniteType+"\"\t\""+droidType+"\"";
+		
+		if(INCLUDE_EXTENSION) {
+			mapOutput = "\""+fileExt+"\"\t"+mapOutput;
+		}
+		
+		// try and lose the buffered data
+		datastream.close();
+		datastream = null;
+		
 		// Return the output for collation:
-		output.collect( new Text( "\""+serverType+"\"\t\""+tikaType+"\"\t\""+droidType+"\"" ), new Text( waybackYear ) );
+		output.collect( new Text( mapOutput ), new Text( waybackYear ) );
 	}
 	
 	/**
@@ -104,7 +180,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Get the server header data:
 		if( !header.getHeaderFields().isEmpty() ) {
 			// Type according to server:
-			serverType = value.getHttpHeader("Content-Type");
+			serverType = header.getMimetype();
 			if( serverType == null ) {
 				log.warn("LOG: Server Content-Type is null.");
 			}
@@ -127,7 +203,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			// The crawl year:
 			String waybackDate = ( ( String ) header.getDate() ).replaceAll( "[^0-9]", "" );
 			if( waybackDate != null ) 
-				waybackYear = waybackDate.substring(0,4);
+				waybackYear = waybackDate.substring(0,waybackDate.length()<4?waybackDate.length():4);
 
 		} else {
 			log.warn("LOG: Empty header fields!");

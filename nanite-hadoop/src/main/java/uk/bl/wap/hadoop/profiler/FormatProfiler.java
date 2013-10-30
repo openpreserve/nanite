@@ -26,7 +26,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.log4j.Logger;
 
 import uk.bl.wa.util.Unpack;
-import uk.bl.wap.hadoop.ArchiveFileInputFormat;
+import uk.bl.wa.hadoop.ArchiveFileInputFormat;
 import uk.bl.wap.hadoop.format.Ohcount;
 
 /**
@@ -78,7 +78,7 @@ public class FormatProfiler extends Configured implements Tool {
 		conf.set("mapred.user.jobconf.limit", "104857600");
 		
 		// Manually set a large number of reducers:
-		conf.setNumReduceTasks(50);
+		conf.setNumReduceTasks(1);
 		
 		JobClient.runJob( conf );
 		return 0;
