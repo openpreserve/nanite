@@ -105,13 +105,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Make sure we have something to turn in to a URL!
 		if(value.getRecord().getHeader().getUrl()!=null&&
 				value.getRecord().getHeader().getUrl().length()>0) {
-			URLEncoder.encode(value.getRecord().getHeader().getUrl(), "UTF-8");
+			extURL = URLEncoder.encode(value.getRecord().getHeader().getUrl(), "UTF-8");
 		}
 		// Remove directories
 		String file = extURL;
 		final int lastIndexSlash = extURL.lastIndexOf('/');
 		if(lastIndexSlash>0&(lastIndexSlash+1<extURL.length())) {
-				file = extURL.substring(extURL.lastIndexOf('/') + 1);
+				file = extURL.substring(lastIndexSlash + 1);
 		}
 		String fileExt = "";
 		// If we have a dot then get the extension
