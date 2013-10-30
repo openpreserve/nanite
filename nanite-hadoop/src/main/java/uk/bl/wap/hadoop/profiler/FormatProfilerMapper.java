@@ -88,6 +88,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// log the file we are processing:
 		log.debug("Processing record from: "+key);
 		
+		final boolean INCLUDE_EXTENSION = true;
+		
 		// Get the wctID, if any:
 		String wctID = this.getWctTi( key.toString() );
 		
@@ -132,8 +134,14 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Type according to Tika:
 		final String tikaType = tda.identify(datastream, metadata);
 
+		String mapOutput = "\""+serverType+"\"\t\""+tikaType+"\"\t\""+naniteType+"\"\t\""+droidType+"\"";
+		
+		if(INCLUDE_EXTENSION) {
+			mapOutput = "\""+fileExt+"\"\t"+mapOutput;
+		}
+		
 		// Return the output for collation:
-		output.collect( new Text( "\""+fileExt+"\"\t\""+serverType+"\"\t\""+tikaType+"\"\t\""+naniteType+"\"\t\""+droidType+"\"" ), new Text( waybackYear ) );
+		output.collect( new Text( mapOutput ), new Text( waybackYear ) );
 	}
 	
 	/**
