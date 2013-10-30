@@ -5,7 +5,9 @@ package uk.bl.wap.hadoop.profiler;
  * http://hadoop.apache.org/common/docs/r0.18.3/mapred_tutorial.html
  */
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -19,12 +21,15 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
+import org.apache.tika.metadata.Metadata;
 import org.archive.io.ArchiveRecordHeader;
 
 import uk.bl.wa.nanite.Nanite;
+import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.bl.wa.tika.TikaDeepIdentifier;
-import uk.bl.wap.hadoop.WritableArchiveRecord;
+import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wap.hadoop.format.Ohcount;
+import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
@@ -32,6 +37,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	String workingDirectory = "";
 	TikaDeepIdentifier tda = null;
 	Nanite nanite = null;
+	DroidDetector droidDetector = null;
 	Ohcount oh = null;
 	//private FileSystem hdfs;
 
@@ -48,6 +54,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		} catch ( Exception e) {
 			e.printStackTrace();
 			log.error("Exception on Nanite instanciation: "+e);
+		}
+		
+		try {
+			droidDetector = new DroidDetector();
+		} catch (CommandExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		/*
@@ -83,14 +96,44 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		String serverType = getServerType(value);
 		log.debug("Server Type: "+serverType);
 
-		// Type according to Tika:
-		String tikaType = tda.identify(value.getPayload());
-		
+		// Get filename and separate the extension of the file
+		final String extURL = value.getRecord().getHeader().getUrl();
+		//remove directories
+		final String file = extURL.substring(extURL.lastIndexOf('/') + 1);
+		String fileExt = "";
+		//if we have a dot then get the extension
+		if(file.contains(".")) {
+			fileExt = file.substring(file.lastIndexOf('.')+1);
+		}
+
 		// Type according to Droid/Nanite:
-		String droidType = nanite.identify(value.getPayload()).toString();
+		Metadata metadata = new Metadata();  
+		metadata.set(Metadata.RESOURCE_NAME_KEY, file);
+
+		// We need to mark the datastream so we can re-use it three times
+		InputStream datastream = new BufferedInputStream(value.getPayloadAsStream()); 
+		
+		// NOTE: reusing the InputStream in this way will fail on files that are larger
+		// than Integer.MAX_VALUE bytes
+		datastream.mark(Integer.MAX_VALUE);
+		
+		// Type according to Nanite
+		final String naniteType = nanite.identify(datastream, metadata).toString();
+		
+		// We must reset the InputStream so it can be re-used otherwise we get no data! 
+		datastream.reset();
+		
+		// Type according to DroidDetector
+		final String droidType = droidDetector.detect(datastream, metadata).toString();
+
+		// We must reset the InputStream so it can be re-used otherwise we get no data! 
+		datastream.reset();
+
+		// Type according to Tika:
+		final String tikaType = tda.identify(datastream, metadata);
 
 		// Return the output for collation:
-		output.collect( new Text( "\""+serverType+"\"\t\""+tikaType+"\"\t\""+droidType+"\"" ), new Text( waybackYear ) );
+		output.collect( new Text( "\""+fileExt+"\"\t\""+serverType+"\"\t\""+tikaType+"\"\t\""+naniteType+"\"\t\""+droidType+"\"" ), new Text( waybackYear ) );
 	}
 	
 	/**
@@ -104,7 +147,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Get the server header data:
 		if( !header.getHeaderFields().isEmpty() ) {
 			// Type according to server:
-			serverType = value.getHttpHeader("Content-Type");
+			serverType = header.getMimetype();
 			if( serverType == null ) {
 				log.warn("LOG: Server Content-Type is null.");
 			}

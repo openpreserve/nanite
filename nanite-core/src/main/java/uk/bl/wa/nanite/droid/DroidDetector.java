@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -277,7 +278,8 @@ public class DroidDetector implements Detector {
 			String fileName = "";
 			if( passFilenameWithInputStream ) {
 				if( metadata.get(Metadata.RESOURCE_NAME_KEY) != null ) {
-					fileName = metadata.get(Metadata.RESOURCE_NAME_KEY);
+					// Use URLEncoder as some URLs cause URISyntaxException
+					fileName = URLEncoder.encode(metadata.get(Metadata.RESOURCE_NAME_KEY), "UTF-8");
 				}
  			}
 			RequestMetaData metaData =
