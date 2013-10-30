@@ -140,6 +140,10 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			mapOutput = "\""+fileExt+"\"\t"+mapOutput;
 		}
 		
+		// try and lose the buffered data
+		datastream.close();
+		datastream = null;
+		
 		// Return the output for collation:
 		output.collect( new Text( mapOutput ), new Text( waybackYear ) );
 	}
