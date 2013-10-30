@@ -101,15 +101,20 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Get filename and separate the extension of the file
 		// Use URLEncoder as some URLs cause URISyntaxException in DroidDetector
-		final String extURL = URLEncoder.encode(value.getRecord().getHeader().getUrl(), "UTF-8");
-		//remove directories
+		String extURL = "";
+		// Make sure we have something to turn in to a URL!
+		if(value.getRecord().getHeader().getUrl()!=null&
+				value.getRecord().getHeader().getUrl().length()>0) {
+			URLEncoder.encode(value.getRecord().getHeader().getUrl(), "UTF-8");
+		}
+		// Remove directories
 		String file = extURL;
 		final int lastIndexSlash = extURL.lastIndexOf('/');
 		if(lastIndexSlash>0&(lastIndexSlash+1<extURL.length())) {
 				file = extURL.substring(extURL.lastIndexOf('/') + 1);
 		}
 		String fileExt = "";
-		//if we have a dot then get the extension
+		// If we have a dot then get the extension
 		if(file.contains(".")) {
 			if(file.lastIndexOf('.')+1<file.length()) {
 				fileExt = file.substring(file.lastIndexOf('.')+1);
@@ -127,12 +132,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// than Integer.MAX_VALUE bytes
 		datastream.mark(Integer.MAX_VALUE);
 
-		// Type according to Tika:
-		final String tikaType = tda.identify(datastream, metadata);
-
-		// We must reset the InputStream so it can be re-used otherwise we get no data! 
-		datastream.reset();
-
 		// Type according to Nanite
 		final String naniteType = nanite.identify(datastream, metadata).toString();
 		
@@ -142,6 +141,15 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Type according to DroidDetector
 		final String droidType = droidDetector.detect(datastream, metadata).toString();
 
+		// We must reset the InputStream so it can be re-used otherwise we get no data! 
+		datastream.reset();
+
+		// NOTE: Tika is last here as the mark() on datastream gets lost resulting in
+		// "java.io.IOException: Resetting to invalid mark" on later reset() calls
+		
+		// Type according to Tika:
+		final String tikaType = tda.identify(datastream, metadata);
+		
 		String mapOutput = "\""+serverType+"\"\t\""+tikaType+"\"\t\""+naniteType+"\"\t\""+droidType+"\"";
 		
 		if(INCLUDE_EXTENSION) {
