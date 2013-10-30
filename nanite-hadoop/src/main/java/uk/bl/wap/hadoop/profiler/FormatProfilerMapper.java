@@ -118,7 +118,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// NOTE: reusing the InputStream in this way will fail on files that are larger
 		// than Integer.MAX_VALUE bytes
 		datastream.mark(Integer.MAX_VALUE);
-		
+
+		// Type according to Tika:
+		final String tikaType = tda.identify(datastream, metadata);
+
+		// We must reset the InputStream so it can be re-used otherwise we get no data! 
+		datastream.reset();
+
 		// Type according to Nanite
 		final String naniteType = nanite.identify(datastream, metadata).toString();
 		
@@ -127,12 +133,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		
 		// Type according to DroidDetector
 		final String droidType = droidDetector.detect(datastream, metadata).toString();
-
-		// We must reset the InputStream so it can be re-used otherwise we get no data! 
-		datastream.reset();
-
-		// Type according to Tika:
-		final String tikaType = tda.identify(datastream, metadata);
 
 		String mapOutput = "\""+serverType+"\"\t\""+tikaType+"\"\t\""+naniteType+"\"\t\""+droidType+"\"";
 		
