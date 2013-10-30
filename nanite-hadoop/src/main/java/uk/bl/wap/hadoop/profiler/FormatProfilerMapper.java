@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.URLEncoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -99,13 +100,20 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		log.debug("Server Type: "+serverType);
 
 		// Get filename and separate the extension of the file
-		final String extURL = value.getRecord().getHeader().getUrl();
+		// Use URLEncoder as some URLs cause URISyntaxException in DroidDetector
+		final String extURL = URLEncoder.encode(value.getRecord().getHeader().getUrl(), "UTF-8");
 		//remove directories
-		final String file = extURL.substring(extURL.lastIndexOf('/') + 1);
+		String file = extURL;
+		final int lastIndexSlash = extURL.lastIndexOf('/');
+		if(lastIndexSlash>0&(lastIndexSlash+1<extURL.length())) {
+				file = extURL.substring(extURL.lastIndexOf('/') + 1);
+		}
 		String fileExt = "";
 		//if we have a dot then get the extension
 		if(file.contains(".")) {
-			fileExt = file.substring(file.lastIndexOf('.')+1);
+			if(file.lastIndexOf('.')+1<file.length()) {
+				fileExt = file.substring(file.lastIndexOf('.')+1);
+			}
 		}
 
 		// Type according to Droid/Nanite:
