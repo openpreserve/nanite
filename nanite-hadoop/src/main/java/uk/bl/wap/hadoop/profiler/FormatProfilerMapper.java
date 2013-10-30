@@ -103,7 +103,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Use URLEncoder as some URLs cause URISyntaxException in DroidDetector
 		String extURL = "";
 		// Make sure we have something to turn in to a URL!
-		if(value.getRecord().getHeader().getUrl()!=null&
+		if(value.getRecord().getHeader().getUrl()!=null&&
 				value.getRecord().getHeader().getUrl().length()>0) {
 			URLEncoder.encode(value.getRecord().getHeader().getUrl(), "UTF-8");
 		}
