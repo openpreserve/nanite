@@ -101,17 +101,22 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Get filename and separate the extension of the file
 		// Use URLEncoder as some URLs cause URISyntaxException in DroidDetector
-		String extURL = "";
+		String extURL = value.getRecord().getHeader().getUrl();
 		// Make sure we have something to turn in to a URL!
-		if(value.getRecord().getHeader().getUrl()!=null&&
-				value.getRecord().getHeader().getUrl().length()>0) {
-			extURL = URLEncoder.encode(value.getRecord().getHeader().getUrl(), "UTF-8");
+		if(extURL!=null&&extURL.length()>0) {
+			extURL = URLEncoder.encode(extURL, "UTF-8");
+		} else {
+			extURL = "";
 		}
 		// Remove directories
-		String file = extURL;
-		final int lastIndexSlash = extURL.lastIndexOf('/');
-		if(lastIndexSlash>0&(lastIndexSlash+1<extURL.length())) {
-				file = extURL.substring(lastIndexSlash + 1);
+		String file = value.getRecord().getHeader().getUrl();
+		if(file!=null) {
+			final int lastIndexSlash = file.lastIndexOf('/');
+			if(lastIndexSlash>0&(lastIndexSlash+1<file.length())) {
+				file = file.substring(lastIndexSlash + 1);
+			}
+		} else {
+			file = "";
 		}
 		String fileExt = "";
 		// If we have a dot then get the extension
@@ -123,7 +128,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Type according to Droid/Nanite:
 		Metadata metadata = new Metadata();  
-		metadata.set(Metadata.RESOURCE_NAME_KEY, file);
+		metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
 
 		// We need to mark the datastream so we can re-use it three times
 		InputStream datastream = new BufferedInputStream(value.getPayloadAsStream()); 
