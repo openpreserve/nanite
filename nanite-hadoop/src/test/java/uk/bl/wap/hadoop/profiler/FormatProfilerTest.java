@@ -72,6 +72,8 @@ public class FormatProfilerTest {
 		
 		//
 		Configuration conf = new Configuration();
+		conf.setStrings("dfs.datanode.data.dir.perm", "755");
+		//conf.setInt("dfs.datanode.data.dir.perm", 755);
 		dfsCluster = new MiniDFSCluster(conf, 1, true, null );
 		dfsCluster.getFileSystem().makeQualified(input);
 		dfsCluster.getFileSystem().makeQualified(output);
