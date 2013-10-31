@@ -289,8 +289,10 @@ public class DroidDetector implements Detector {
 		try {
 			return determineMediaType(request, input);
 		} catch (CommandExecutionException e) {
+			log.warning("Caught exception: "+e);
 			e.printStackTrace();
-			throw new IOException(e);
+			log.warning("Throwing wrapped exception: "+e);
+			throw new IOException(e.toString());
 		}
 	}
 	

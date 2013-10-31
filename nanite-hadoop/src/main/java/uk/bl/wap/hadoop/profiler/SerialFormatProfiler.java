@@ -47,7 +47,9 @@ public class SerialFormatProfiler {
 		while( ir.hasNext() ) {
 			ArchiveRecord rec = ir.next();
 			recordCount++;
-			System.out.println("Processing "+recordCount+"@"+rec.getHeader().getOffset()+": "+rec.getHeader().getUrl());
+			System.out.println("Processing "+recordCount+"@"+rec.getHeader().getOffset()+
+					"+"+rec.available()+","+rec.getHeader().getLength()+
+					": "+rec.getHeader().getUrl());
 			WritableArchiveRecord war = new WritableArchiveRecord();
 			war.setRecord(rec);
 			fpm.map(new Text(rec.getHeader().getUrl()), war, null, null);

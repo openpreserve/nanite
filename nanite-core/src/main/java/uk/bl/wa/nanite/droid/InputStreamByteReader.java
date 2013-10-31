@@ -7,6 +7,8 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.log4j.Logger;
+
 import net.domesdaybook.reader.ByteReader;
 
 
@@ -19,6 +21,7 @@ import net.domesdaybook.reader.ByteReader;
  *
  */
 public class InputStreamByteReader implements ByteReader {
+	private static Logger log = Logger.getLogger(InputStreamByteReader.class);
 	
 	private long nextpos = 0;
 	private BufferedInputStream in = null;
@@ -54,9 +57,9 @@ public class InputStreamByteReader implements ByteReader {
 			// Return the byte:
 			return (byte)b;
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("Runtime IOException in readByte: "+e);
+			throw new RuntimeException(e);
 		}
-		return 0;
 	}
 
 	InputStream getInputStream() {
