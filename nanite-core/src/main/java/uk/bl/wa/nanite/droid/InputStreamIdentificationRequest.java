@@ -66,5 +66,30 @@ public class InputStreamIdentificationRequest extends ByteArrayIdentificationReq
 		return in;
 	}
 
+	/**
+	 * 
+	 */
+	public void disposeBuffer() {
+		if( this.isReader != null ) {
+			try {
+				this.isReader.finalize();
+			} catch (Throwable e) {
+				//e.printStackTrace();
+				// TODO Log this...
+			}
+		}
+		this.isReader = null;
+	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#finalize()
+	 */
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		// Shut down any buffering:
+		this.disposeBuffer();
+	}
+	
+	
 }

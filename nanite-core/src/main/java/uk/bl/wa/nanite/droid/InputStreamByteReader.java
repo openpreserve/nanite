@@ -25,7 +25,7 @@ public class InputStreamByteReader implements ByteReader {
 	
 	private long nextpos = 0;
 	private BufferedInputStream in = null;
-	static int BUFFER_SIZE = 50*1024*1024; // Items larger than this likely to fail identification;
+	static int BUFFER_SIZE = 10*1024*1024; // Items larger than this likely to fail identification;
 
 	public InputStreamByteReader( InputStream in ) {
 		// Set up a large buffer for the input stream, allowing random access:
@@ -68,4 +68,13 @@ public class InputStreamByteReader implements ByteReader {
 		return this.in;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#finalize()
+	 */
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		// Discard the buffer:
+		this.in = null;
+	}
 }

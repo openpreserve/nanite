@@ -287,7 +287,9 @@ public class DroidDetector implements Detector {
 
 		IdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
 		try {
-			return determineMediaType(request, input);
+			MediaType type = determineMediaType(request, input);
+			//request.disposeBuffer();
+			return type;
 		} catch (CommandExecutionException e) {
 			log.warning("Caught exception: "+e);
 			e.printStackTrace();

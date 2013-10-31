@@ -1,19 +1,9 @@
 package uk.bl.wap.hadoop.profiler;
 
-/* 
- * For JobConf.get() property see:
- * http://hadoop.apache.org/common/docs/r0.18.3/mapred_tutorial.html
- */
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.net.URLEncoder;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
@@ -28,14 +18,17 @@ import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 
-import uk.bl.wa.nanite.Nanite;
 import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.bl.wa.tika.TikaDeepIdentifier;
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wap.hadoop.format.Ohcount;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 
-@SuppressWarnings( { "deprecation" } )
+/**
+ * 
+ * @author Andrew Jackson <Andrew.Jackson@bl.uk>
+ *
+ */
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
 	private static Logger log = Logger.getLogger(FormatProfilerMapper.class.getName());
 	String workingDirectory = "";
@@ -87,9 +80,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		
 		final boolean INCLUDE_EXTENSION = true;
 		
-		// Get the wctID, if any:
-		String wctID = this.getWctTi( key.toString() );
-		
 		// Year and type from record:
 		String waybackYear = getWaybackYear(value);
 		String serverType = getServerType(value);
@@ -136,8 +126,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// We need to mark the datastream so we can re-use it three times
 		InputStream datastream = new BufferedInputStream(value.getPayloadAsStream(), BUF_SIZE); 
 
-		// Big try-catch to deal with buffer-size error exceptions:
-		try {
+      // Big try-catch to deal with buffer-size error exceptions:
+	  try {
 		
 		// NOTE: reusing the InputStream in this way will fail on files that are larger
 		// than BUF_SIZE bytes
@@ -171,9 +161,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		} else {
 			log.info("OUTPUT "+mapOutput+" "+waybackYear);
 		}
-		} catch( Exception e ) {
+      } catch( Exception e ) {
 			log.error("Failed to identify due to exception:" +e);
-		}
+      }
 	}
 	
 	/**
@@ -218,20 +208,4 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		return waybackYear;
 	}
 	
-	private static String getStackTrace(Throwable aThrowable) {
-	    final Writer result = new StringWriter();
-	    final PrintWriter printWriter = new PrintWriter(result);
-	    aThrowable.printStackTrace(printWriter);
-	    return result.toString();
-	  }
-
-	private String getWctTi( String warcName ) {
-		Pattern pattern = Pattern.compile( "^BL-\\b([0-9]+)\\b.*\\.warc(\\.gz)?$" );
-		Matcher matcher = pattern.matcher( warcName );
-		if( matcher.matches() ) {
-			return matcher.group( 1 );
-		}
-		return "";
-	}
-
 }
