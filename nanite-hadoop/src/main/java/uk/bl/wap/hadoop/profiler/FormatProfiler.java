@@ -1,19 +1,14 @@
 package uk.bl.wap.hadoop.profiler;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -25,25 +20,20 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.util.Tool;
 import org.apache.log4j.Logger;
 
-import uk.bl.wa.util.Unpack;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+
 import uk.bl.wa.hadoop.ArchiveFileInputFormat;
-import uk.bl.wap.hadoop.format.Ohcount;
+
 
 /**
- * WARCTikExtractor
- * Extracts text using Tika from a series of WARC files.
  * 
- * @author rcoram
  */
-
-@SuppressWarnings( { "deprecation" } )
 public class FormatProfiler extends Configured implements Tool {
 	private static Logger log = Logger.getLogger(FormatProfiler.class.getName());
-	private static final String CONFIG = "/hadoop_utils.config";
+	
 
-	public int run( String[] args ) throws IOException {
-		JobConf conf = new JobConf( getConf(), FormatProfiler.class );
-
+	public void createJobConf(JobConf conf, String[] args) throws IOException {
 		log.info("Loading paths...");
 		String line = null;
 		List<Path> paths = new ArrayList<Path>();
@@ -51,6 +41,7 @@ public class FormatProfiler extends Configured implements Tool {
 		while( ( line = br.readLine() ) != null ) {
 			paths.add( new Path( line ) );
 		}
+		br.close();
 		log.info("Setting paths...");
 		FileInputFormat.setInputPaths( conf, paths.toArray(new Path[] {}) );
 		log.info("Set "+paths.size()+" InputPaths");
@@ -78,31 +69,15 @@ public class FormatProfiler extends Configured implements Tool {
 		conf.set("mapred.user.jobconf.limit", "104857600");
 		
 		// Manually set a large number of reducers:
-		conf.setNumReduceTasks(1);
-		
+		Config config = ConfigFactory.load();
+		conf.setNumReduceTasks(config.getInt("warc.hadoop.num_reducers"));
+	}	
+
+	public int run( String[] args ) throws IOException {
+		JobConf conf = new JobConf( getConf(), FormatProfiler.class );
+		this.createJobConf(conf, args);
 		JobClient.runJob( conf );
 		return 0;
-	}
-
-	private void setProperties( JobConf conf ) throws IOException {
-		Properties properties = new Properties();
-		properties.load( this.getClass().getResourceAsStream( ( CONFIG ) ) );
-		conf.set( "solr.default", properties.getProperty( "solr_default" ) );
-		conf.set( "solr.image", properties.getProperty( "solr_image" ) );
-		conf.set( "solr.media", properties.getProperty( "solr_media" ) );
-		conf.set( "solr.batch.size", properties.getProperty( "solr_batch_size" ) );
-		conf.set( "solr.threads", properties.getProperty( "solr_threads" ) );
-		conf.set( "solr.image.regex", properties.getProperty( "solr_image_regex" ) );
-		conf.set( "solr.media.regex", properties.getProperty( "solr_media_regex" ) );
-
-		conf.set( "record.exclude.mime", properties.getProperty( "mime_exclude" ) );
-		conf.set( "record.exclude.url", properties.getProperty( "url_exclude" ) );
-		conf.set( "record.size.max", properties.getProperty( "max_payload_size" ) );
-		conf.set( "record.include.response", properties.getProperty( "response_include" ) );
-		conf.set( "record.include.protocol", properties.getProperty( "protocol_include" ) );
-
-		conf.set( "tika.exclude.mime", properties.getProperty( "mime_exclude" ) );
-		conf.set( "tika.timeout", properties.getProperty( "tika_timeout" ) );
 	}
 
 	public static void main( String[] args ) throws Exception {

@@ -4,10 +4,17 @@
 	<parent>
 		<groupId>eu.scape-project.nanite</groupId>
 		<artifactId>nanite</artifactId>
-		<version>1.0.70.1-SNAPSHOT</version>
+		<version>1.0.70.2-SNAPSHOT</version>
 		<relativePath>..</relativePath>
 	</parent>
 	<artifactId>nanite-hadoop</artifactId>
+    <properties>
+      <hadoop.version>0.20.205.0</hadoop.version>
+        <!-- CDH4 Hadoop libs: tests don't work it seems, no MiniDFSCluster. -->
+    <!-- 
+      <hadoop.version>2.0.0-mr1-cdh4.2.0</hadoop.version>
+     -->
+    </properties>
 	<build>
 		<plugins>
 			<plugin>
@@ -32,26 +39,28 @@
 		</plugins>
 	</build>
 	<dependencies>
-		<!-- original Hadoop lib -->
-		<!--  
-		<dependency> 
-			<groupId>org.apache.hadoop</groupId> 
-			<artifactId>hadoop-core</artifactId> 
-			<version>0.20.2</version> 
-			<scope>provided</scope> 
-		</dependency> -->
-		<!-- CDH4 Hadoop libs -->
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-client</artifactId>
-			<version>2.0.0-mr1-cdh4.2.0</version>
-			<scope>provided</scope>
-		</dependency>
-		<!-- end of CDH4 Hadoop libs -->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-core</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+         <groupId>org.apache.hadoop</groupId>
+         <artifactId>hadoop-test</artifactId>
+            <version>${hadoop.version}</version>
+         <scope>test</scope>
+        </dependency>
+        <dependency>
+           <groupId>junit</groupId>
+           <artifactId>junit</artifactId>
+           <version>4.10</version>
+           <scope>test</scope>
+        </dependency>
 		<dependency>
 			<groupId>eu.scape-project.nanite</groupId>
 			<artifactId>nanite-ext</artifactId>
-			<version>1.0.70.1-SNAPSHOT</version>
+			<version>1.0.70.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>uk.bl.wa.discovery</groupId>
