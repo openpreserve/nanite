@@ -75,7 +75,7 @@ public class Nanite {
 	 * @throws IOException
 	 */
 	public MediaType identify( InputStream in, Metadata metadata ) throws IOException {
-		return nan.detect(TikaInputStream.get(in), metadata);
+		return nan.detect(in, metadata);
 	}
 
 }

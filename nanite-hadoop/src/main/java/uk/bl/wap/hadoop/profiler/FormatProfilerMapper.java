@@ -23,6 +23,7 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
 import org.archive.io.ArchiveRecordHeader;
 
 import uk.bl.wa.nanite.Nanite;
@@ -37,9 +38,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private static Logger log = Logger.getLogger(FormatProfilerMapper.class.getName());
 	String workingDirectory = "";
 	TikaDeepIdentifier tda = null;
-	Nanite nanite = null;
 	DroidDetector droidDetector = null;
 	Ohcount oh = null;
+	private static int BUF_SIZE = 10*1024*1024;
 	//private FileSystem hdfs;
 
 	public FormatProfilerMapper() {
@@ -49,13 +50,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	public void configure( JobConf job ) {
 		// Set up Tika:
 		tda = new TikaDeepIdentifier();
-		// Set up Nanite:
-		try {
-			nanite = new Nanite();
-		} catch ( Exception e) {
-			e.printStackTrace();
-			log.error("Exception on Nanite instanciation: "+e);
-		}
 		
 		try {
 			droidDetector = new DroidDetector();
@@ -80,7 +74,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		
 		// This returns a hdfs URI:
 		//this.workingDirectory = job.get( "mapred.work.output.dir" );
-		this.workingDirectory = job.getWorkingDirectory().toString();
+		//this.workingDirectory = job.getWorkingDirectory().toString();
 		
 	}
 
@@ -131,20 +125,14 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
 
 		// We need to mark the datastream so we can re-use it three times
-		InputStream datastream = new BufferedInputStream(value.getPayloadAsStream()); 
+		InputStream datastream = new BufferedInputStream(value.getPayloadAsStream(), BUF_SIZE); 
 		
 		// NOTE: reusing the InputStream in this way will fail on files that are larger
-		// than Integer.MAX_VALUE bytes
-		datastream.mark(Integer.MAX_VALUE);
+		// than BUF_SIZE bytes
+		datastream.mark(BUF_SIZE);
 
-		// Type according to Nanite
-		final String naniteType = nanite.identify(datastream, metadata).toString();
-		
-		// We must reset the InputStream so it can be re-used otherwise we get no data! 
-		datastream.reset();
-		
 		// Type according to DroidDetector
-		final String droidType = droidDetector.detect(datastream, metadata).toString();
+		final MediaType droidType = droidDetector.detect(datastream, metadata);
 
 		// We must reset the InputStream so it can be re-used otherwise we get no data! 
 		datastream.reset();
@@ -155,7 +143,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Type according to Tika:
 		final String tikaType = tda.identify(datastream, metadata);
 		
-		String mapOutput = "\""+serverType+"\"\t\""+tikaType+"\"\t\""+naniteType+"\"\t\""+droidType+"\"";
+		String mapOutput = "\""+serverType+"\"\t\""+tikaType+"\"\t\""+droidType+"\"";
 		
 		if(INCLUDE_EXTENSION) {
 			mapOutput = "\""+fileExt+"\"\t"+mapOutput;
@@ -166,7 +154,11 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		datastream = null;
 		
 		// Return the output for collation:
-		output.collect( new Text( mapOutput ), new Text( waybackYear ) );
+		if( output != null ) {
+			output.collect( new Text( mapOutput ), new Text( waybackYear ) );
+		} else {
+			log.info("OUTPUT:"+mapOutput+" "+waybackYear);
+		}
 	}
 	
 	/**
