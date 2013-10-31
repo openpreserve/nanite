@@ -56,7 +56,7 @@
       <dependency>
          <groupId>org.apache.tika</groupId>
          <artifactId>tika-core</artifactId>
-         <version>1.4</version>
+         <version>${tika.version}</version>
       </dependency>
       <dependency>
          <groupId>junit</groupId>

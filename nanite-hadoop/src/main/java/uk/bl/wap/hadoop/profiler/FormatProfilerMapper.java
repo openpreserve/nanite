@@ -132,7 +132,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		datastream.mark(BUF_SIZE);
 
 		// Type according to DroidDetector
-		final MediaType droidType = droidDetector.detect(datastream, metadata);
+		MediaType droidType = null;
+		try {
+			 droidType = droidDetector.detect(datastream, metadata);
+		} catch( Exception e ) {
+			log.error("Failed to identify using DROID:" +e);
+			droidType = null;
+		}
 
 		// We must reset the InputStream so it can be re-used otherwise we get no data! 
 		datastream.reset();
@@ -157,7 +163,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		if( output != null ) {
 			output.collect( new Text( mapOutput ), new Text( waybackYear ) );
 		} else {
-			log.info("OUTPUT:"+mapOutput+" "+waybackYear);
+			log.info("OUTPUT "+mapOutput+" "+waybackYear);
 		}
 	}
 	
