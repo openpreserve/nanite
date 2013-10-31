@@ -135,19 +135,16 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// We need to mark the datastream so we can re-use it three times
 		InputStream datastream = new BufferedInputStream(value.getPayloadAsStream(), BUF_SIZE); 
+
+		// Big try-catch to deal with buffer-size error exceptions:
+		try {
 		
 		// NOTE: reusing the InputStream in this way will fail on files that are larger
 		// than BUF_SIZE bytes
 		datastream.mark(BUF_SIZE);
 
 		// Type according to DroidDetector
-		MediaType droidType = null;
-		try {
-			 droidType = droidDetector.detect(datastream, metadata);
-		} catch( Exception e ) {
-			log.error("Failed to identify using DROID:" +e);
-			droidType = null;
-		}
+		MediaType droidType = droidDetector.detect(datastream, metadata);
 
 		// We must reset the InputStream so it can be re-used otherwise we get no data! 
 		datastream.reset();
@@ -173,6 +170,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			output.collect( new Text( mapOutput ), new Text( waybackYear ) );
 		} else {
 			log.info("OUTPUT "+mapOutput+" "+waybackYear);
+		}
+		} catch( Exception e ) {
+			log.error("Failed to identify due to exception:" +e);
 		}
 	}
 	
