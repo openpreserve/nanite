@@ -24,7 +24,9 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
+import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
+import org.archive.io.arc.ARCRecord;
 
 import uk.bl.wa.nanite.Nanite;
 import uk.bl.wa.nanite.droid.DroidDetector;
@@ -123,6 +125,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Type according to Droid/Nanite:
 		Metadata metadata = new Metadata();  
 		metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+		
+		// Need to consume the headers.
+		ArchiveRecord record = value.getRecord();
+		if( record instanceof ARCRecord ) {
+			ARCRecord arc = (ARCRecord) record;
+			arc.skipHttpHeader();
+		}
 
 		// We need to mark the datastream so we can re-use it three times
 		InputStream datastream = new BufferedInputStream(value.getPayloadAsStream(), BUF_SIZE); 
