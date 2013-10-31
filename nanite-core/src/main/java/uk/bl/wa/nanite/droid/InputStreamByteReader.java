@@ -25,7 +25,7 @@ public class InputStreamByteReader implements ByteReader {
 	
 	private long nextpos = 0;
 	private BufferedInputStream in = null;
-	static int BUFFER_SIZE = 10*1024*1024; //Integer.MAX_VALUE;
+	static int BUFFER_SIZE = 50*1024*1024; // Items larger than this likely to fail identification;
 
 	public InputStreamByteReader( InputStream in ) {
 		// Set up a large buffer for the input stream, allowing random access:
@@ -57,7 +57,9 @@ public class InputStreamByteReader implements ByteReader {
 			// Return the byte:
 			return (byte)b;
 		} catch (IOException e) {
-			log.error("Runtime IOException in readByte: "+e);
+			log.error("IOException in readByte: "+e);
+			e.printStackTrace();
+			log.error("Throwing as RuntimeException...");
 			throw new RuntimeException(e);
 		}
 	}
