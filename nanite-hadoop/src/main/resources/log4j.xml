@@ -15,10 +15,13 @@
   </logger>
 	
   <!--  Increase logging from this code  -->
-  <logger name="uk.bl.wa">
+  <logger name="uk.bl">
     <level value="info"/>
   </logger>
-	
+  <logger name="eu">
+    <level value="info"/>
+  </logger>
+    
   <root> 
     <priority value="warn" /> 
     <appender-ref ref="console" />
