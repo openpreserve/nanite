@@ -269,32 +269,29 @@ public class DroidDetector implements Detector {
 	@Override
 	public MediaType detect(InputStream input, Metadata metadata)
 			throws IOException {
+		
 		// As this is an inputstream, restrict the number of bytes to inspect
 		this.binarySignatureIdentifier.setMaxBytesToScan(InputStreamByteReader.BUFFER_SIZE);
 		// And identify:
-		try {
-			// Optionally, get filename and identifiers from metadata: 
-			String fileName = "";
-			if( passFilenameWithInputStream ) {
-				if( metadata.get(Metadata.RESOURCE_NAME_KEY) != null ) {
-					fileName = metadata.get(Metadata.RESOURCE_NAME_KEY);
-				}
- 			}
-			RequestMetaData metaData =
-					new RequestMetaData((long) input.available(), null, fileName);
-			RequestIdentifier identifier = new RequestIdentifier(URI.create("file:///./"+fileName));
-			identifier.setParentId(1L);
-
-			IdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
-			try {
-				return determineMediaType(request, input);
-			} catch (IOException e) {
-				throw new CommandExecutionException(e);
+		// Optionally, get filename and identifiers from metadata: 
+		String fileName = "";
+		if( passFilenameWithInputStream ) {
+			if( metadata.get(Metadata.RESOURCE_NAME_KEY) != null ) {
+				fileName = metadata.get(Metadata.RESOURCE_NAME_KEY);
 			}
+		}
+		RequestMetaData metaData =
+				new RequestMetaData((long) input.available(), null, fileName);
+		RequestIdentifier identifier = new RequestIdentifier(URI.create("file:///./"+fileName));
+		identifier.setParentId(1L);
+
+		IdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
+		try {
+			return determineMediaType(request, input);
 		} catch (CommandExecutionException e) {
 			e.printStackTrace();
+			throw new IOException(e);
 		}
-		return null;
 	}
 	
 	/**
