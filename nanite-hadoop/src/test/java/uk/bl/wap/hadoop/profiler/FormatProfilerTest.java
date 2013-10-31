@@ -130,9 +130,8 @@ public class FormatProfilerTest {
 		log.info("Job finished, checking the results...");
 
 		// check the output
-		Path[] outputFiles = FileUtil.stat2Paths(getFileSystem().listStatus(
-				output, new OutputLogFilter()));
-		//Assert.assertEquals( config.getInt( "warc.hadoop.num_reducers" ), outputFiles.length );
+		Path[] outputFiles = FileUtil.stat2Paths( getFileSystem().listStatus(output) );
+		Assert.assertEquals( config.getInt( "warc.hadoop.num_reducers" ) + 1, outputFiles.length );
 		
 		// Check contents of the output:
 		for( Path output : outputFiles ) {
