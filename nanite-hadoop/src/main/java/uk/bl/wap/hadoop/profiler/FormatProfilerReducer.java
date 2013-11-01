@@ -10,9 +10,12 @@ import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.log4j.Logger;
 
 @SuppressWarnings( { "deprecation" } )
 public class FormatProfilerReducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
+	private static Logger log = Logger.getLogger(FormatProfilerReducer.class);
+	
 	public FormatProfilerReducer() {}
 
 	class MutableInt {
@@ -23,9 +26,9 @@ public class FormatProfilerReducer extends MapReduceBase implements Reducer<Text
 	
 	@Override
 	public void reduce( Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
-		//Map<String,Integer> freq = new HashMap<String,Integer>();
 		Map<String,MutableInt> freq = new HashMap<String,MutableInt>();
 		
+		log.info("Reducing for key: "+key);
 		
 		Text fs = new Text();
 		
@@ -50,7 +53,5 @@ public class FormatProfilerReducer extends MapReduceBase implements Reducer<Text
 			output.collect( key, new Text( fss+"\t"+freq.get(fss).get() ) );
 		}
 		
-		//output.collect( new Text( "" ), new Text( "<?xml version=\"1.0\" encoding=\"UTF-8\"?><wctdocs>" ) );
-		//output.collect( new Text( "" ), new Text( "</wctdocs>" ) );
 	}
 }
