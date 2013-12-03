@@ -1,0 +1,6 @@
+# set default behaviour, in case core.autocrlf not set
+text=auto
+
+# explicit text for java and xml
+*.java text
+*.xml text
