@@ -1,7 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.opf-labs</groupId>
+	<parent>
+    	<groupId>eu.scape-project.nanite</groupId>
+    	<artifactId>nanite</artifactId>
+    	<version>1.0.70.2-SNAPSHOT</version>
+    	<relativePath>..</relativePath>
+ 	</parent>
 	<artifactId>nanite-file</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>nanite-file - Java wrapper for libmagic</name>
@@ -10,6 +15,7 @@
 		<jdk.source.version>1.6</jdk.source.version>
 		<jdk.target.version>1.6</jdk.target.version>
 		<maven.resources.version>2.6</maven.resources.version>
+		<tika.version>1.4</tika.version>
 	</properties>
 	<build>
 		<pluginManagement>
@@ -83,5 +89,10 @@
 			<artifactId>jna</artifactId>
 			<version>3.0.9</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>${tika.version}</version>
+      </dependency>
 	</dependencies>
 </project>
