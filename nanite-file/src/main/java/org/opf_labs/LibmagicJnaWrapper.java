@@ -8,6 +8,10 @@ import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
+import org.apache.tika.detect.Detector;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
+
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
@@ -24,7 +28,7 @@ import com.sun.jna.Pointer;
  * @author hbian
  * @author carl@openplanetsfoundation.org
  */
-public class LibmagicJnaWrapper {
+public class LibmagicJnaWrapper implements Detector {
 	/** The default path for the magic file, taken from an Ubuntu installation */
 	public static final String DEFAULT_MAGIC_PATH = "/usr/share/misc/magic.mgc";
 	/** The default buffer size, the number of bytes to pass to file */
@@ -258,5 +262,38 @@ public class LibmagicJnaWrapper {
 	 */
 	public int loadCompiledMagic() {
 		return this.load(DEFAULT_MAGIC_PATH);
+	}
+	
+	/**
+	 * Implements the Tika Detector interface.
+	 * 
+	 * @param input
+	 * @param metadata nothing is done with this
+	 */
+	public MediaType detect(InputStream input, Metadata metadata) throws IOException {
+		return this.detect(input, DEFAULT_BUFFER_SIZE, metadata);
+	}
+	
+	/**
+	 * 
+	 * @param input
+	 * @param buffer
+	 * @param metadata nothing is done with this
+	 * @return
+	 * @throws IOException
+	 */
+	public MediaType detect(InputStream input, int buffer, Metadata metadata) throws IOException
+	{
+		if(input == null)
+			return MediaType.OCTET_STREAM;
+		
+		String mimeType = getMimeType(input,buffer);
+		
+		MediaType mediaType = MediaType.parse(mimeType);
+		
+		if(mimeType == null || mimeType.equals(""))
+			return MediaType.OCTET_STREAM;
+		
+		return mediaType;
 	}
 }
