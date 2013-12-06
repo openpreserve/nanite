@@ -285,10 +285,10 @@ public class DroidDetector implements Detector {
 		RequestIdentifier identifier = new RequestIdentifier(URI.create("file:///./"+fileName));
 		identifier.setParentId(1L);
 
-		IdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
+		InputStreamIdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
 		try {
 			MediaType type = determineMediaType(request, input);
-			//request.disposeBuffer();
+			request.disposeBuffer();
 			return type;
 		} catch (CommandExecutionException e) {
 			log.warning("Caught exception: "+e);
