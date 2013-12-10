@@ -34,6 +34,7 @@ import org.apache.tika.sax.BodyContentHandler;
 import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
+import org.opf_labs.LibmagicJnaWrapper;
 import org.xml.sax.SAXException;
 
 import uk.bl.wa.hadoop.WritableArchiveRecord;
@@ -62,6 +63,12 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// fails with "resetting to invalid mark" when LOCAL_BUFFER is off.  Creating a new
 	// InputStream that re-uses a local byte[] does not cause that failure.
 	final boolean LOCAL_BUFFER = true;
+
+	// Should we use libmagic?
+	final boolean USE_LIBMAGIC = true;
+	
+	// Whether to ignore the year of harvest (if so, will set a default year)
+	final boolean IGNORE_WAYBACKYEAR = true;
 	
 	// Maximum buffer size
 	private static final int BUF_SIZE = 20*1024*1024;
@@ -75,7 +82,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 	private DroidDetector droidDetector = null;
     private Parser tikaParser = new AutoDetectParser();
-
+    private LibmagicJnaWrapper libMagicWrapper = null;
+    
 	//private DefaultDetector tikaDetector = new DefaultDetector();
 	//private TikaDeepIdentifier tda = null;
 	//private Ohcount oh = null;
@@ -89,6 +97,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Set up Tika
 		//tda = new TikaDeepIdentifier();
 
+		if(USE_LIBMAGIC) {
+			// Set up libMagicWrapper
+			libMagicWrapper = new LibmagicJnaWrapper();
+			// Load default magic file
+			libMagicWrapper.loadCompiledMagic();
+		}
+		
 		// Set up Droid
 		try {
 			droidDetector = new DroidDetector();
@@ -110,7 +125,12 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		log.debug("Processing record from: " + key);
 
 		// Year and type from record:
-		//String waybackYear = getWaybackYear(value);
+		String waybackYear = "";
+		if(IGNORE_WAYBACKYEAR) {
+			waybackYear = "2013";
+		} else {
+			waybackYear = getWaybackYear(value);
+		}
 		String serverType = getServerType(value);
 		log.debug("Server Type: "+serverType);
 
@@ -145,7 +165,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				fileExt = getFileExt(file);
 			}
 			
-			log.error("file: "+file+", ext: "+fileExt);
+			log.debug("file: "+file+", ext: "+fileExt);
 			
 			// Need to consume the headers.
 			ArchiveRecord record = value.getRecord();
@@ -157,11 +177,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			// We use this variable when creating a new ByteArrayInputStream so it does not
 			// attempt to read past the file size
 			int fileSize = 0;
-			
 			if(LOCAL_BUFFER) {
 				// Fill the buffer, reading at most payload.length bytes
 				fileSize = value.getPayloadAsStream().read(payload, 0, payload.length);
-				log.error("payload.length: " + payload.length);
 				datastream = new ByteArrayInputStream(payload, 0, fileSize);
 			} else {
 				datastream = new BufferedInputStream(value.getPayloadAsStream(), BUF_SIZE);
@@ -173,23 +191,46 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             // Type according to DroidDetector
             Metadata metadata = new Metadata();
             metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
-            log.trace("Using DroidDetector.detect()...");
+            log.trace("Using DroidDetector...");
 			final MediaType droidType = droidDetector.detect(datastream, metadata);
 
 			// Reset the datastream
-			if(LOCAL_BUFFER) {
-				datastream.close();
-				datastream = new ByteArrayInputStream(payload, 0, fileSize);
-			} else {
-				datastream.reset();
-			}
+            if(LOCAL_BUFFER) {
+            	datastream.close();
+            	datastream = new ByteArrayInputStream(payload, 0, fileSize);
+            } else {
+            	datastream.reset();
+            }
+            
+            String libMagicType = null;
+            if(USE_LIBMAGIC) {
+
+            	// Use libmagic-jna-wrapper to identify the file
+            	// You need to manually install this to your local maven repo - see pom for download url
+            	// Also - libmagic.so needs to be installed on your cluster, for Ubuntu this is
+            	// contained in the libmagic-dev package
+            	// 
+            	// Note: libmagic does not currently consume a metadata object
+            	log.trace("Using libMagicWrapper...");
+            	// libMagic needs the fileSize to work correctly with our buffering setup
+            	libMagicType = libMagicWrapper.getMimeType(datastream, fileSize);
+
+            	// Reset the datastream
+            	if(LOCAL_BUFFER) {
+            		datastream.close();
+            		datastream = new ByteArrayInputStream(payload, 0, fileSize);
+            	} else {
+            		datastream.reset();
+            	}
+
+            }
 			
 			// Type according to vanilla-Tika
             metadata = new Metadata();
             metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
-            log.trace("Using tikaParserIdentifier()...");
+            log.trace("Using Tika...");
             String defaultTikaType = tikaDetect(datastream, metadata);
-
+            
             // Try and lose the buffered data
 			if(LOCAL_BUFFER) {
 				// We should think about emptying/zero-ing payload
@@ -200,18 +241,22 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			String mapOutput = "\"" + serverType + "\"\t\"" + defaultTikaType
 					+ "\"\t\"" + droidType + "\"";
 
+			if(USE_LIBMAGIC) {
+				mapOutput += "\t\"" + libMagicType + "\"";
+			}
+			
 			if (INCLUDE_EXTENSION) {
 				mapOutput = "\"" + fileExt + "\"\t" + mapOutput;
 			}
 
 			// Return the output for collation
-			output.collect(new Text(mapOutput), new Text("2013"));
+			output.collect(new Text(mapOutput), new Text(waybackYear));
 
 		} catch (IOException e) {
 			log.error("Failed to identify due to IOException:" + e);
 			try {
 				// Output a result so we can see how many records fail to process
-				output.collect(new Text("IOException: "+e.getMessage()), new Text("2013"));
+				output.collect(new Text("IOException: "+e.getMessage()), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -220,7 +265,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			log.error("Potentially malformed (W)ARC file, skipping URL: ("+value.getRecord().getHeader().getUrl()+")");
 			try {
 				// Output a result so we can see how many records fail to process
-				output.collect(new Text("\"Malformed Record\""), new Text("2013"));
+				output.collect(new Text("\"Malformed Record\""), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -230,7 +275,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			e.printStackTrace();
 			try {
 				// Output a result so we can see some basic details
-				output.collect(new Text("Exception: "+e.getMessage()), new Text("2013"));
+				output.collect(new Text("Exception: "+e.getMessage()), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}			

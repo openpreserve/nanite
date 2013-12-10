@@ -63,6 +63,12 @@
 			<artifactId>bcprov-jdk16</artifactId>
 			<version>1.45</version>
 		</dependency>
+		<!-- download and "mvn install" from here: https://github.com/openplanets/libmagic-jna-wrapper -->
+		<dependency>
+			<groupId>org.opf-labs</groupId>
+			<artifactId>libmagic-jna-wrapper</artifactId>
+			<version>0.0.2-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 	<profiles>
