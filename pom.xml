@@ -48,6 +48,7 @@
   	<module>nanite-ext</module>
   	<module>nanite-cli</module>
   	<module>nanite-hadoop</module>
+	<module>nanite-file</module>
   </modules>
   <name>Nanite - a friendly swarm of format-identifying robots
 </name>
