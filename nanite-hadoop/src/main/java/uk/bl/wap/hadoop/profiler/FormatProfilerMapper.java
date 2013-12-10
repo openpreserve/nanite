@@ -109,7 +109,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Set up Droid
 		try {
 			droidDetector = new DroidDetector();
-			dd.setBinarySignaturesOnly( droidUseBinarySignaturesOnly );
+			droidDetector.setBinarySignaturesOnly( droidUseBinarySignaturesOnly );
 		} catch (CommandExecutionException e) {
 			log.error("droidDetector CommandExecutionException "+ e);
 		}
