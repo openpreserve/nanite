@@ -8,13 +8,7 @@
 		<relativePath>..</relativePath>
 	</parent>
 	<artifactId>nanite-hadoop</artifactId>
-    <properties>
-	<!--
-      <hadoop.version>0.20.205.0</hadoop.version>
-	  -->
-        <!-- CDH4 Hadoop libs: tests don't work it seems, no MiniDFSCluster. -->
-      <hadoop.version>2.0.0-mr1-cdh4.2.0</hadoop.version>
-    </properties>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -38,42 +32,24 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<!-- Hadoop dependencies are defined in the profiles -->
+
 	<dependencies>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-minicluster</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>provided</scope>
-        </dependency>	
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-client</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-         <groupId>org.apache.hadoop</groupId>
-         <artifactId>hadoop-test</artifactId>
-            <version>${hadoop.version}</version>
-         <scope>test</scope>
-        </dependency>
-        <!-- 
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-minicluster</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>test</scope>
-        </dependency>
-         -->
-        <dependency>
-           <groupId>junit</groupId>
-           <artifactId>junit</artifactId>
-           <version>4.10</version>
-           <scope>test</scope>
-        </dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>1.8.2</version>
+		</dependency>
 		<dependency>
 			<groupId>eu.scape-project.nanite</groupId>
-			<artifactId>nanite-ext</artifactId>
+			<artifactId>nanite-core</artifactId>
 			<version>1.0.70.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
@@ -82,7 +58,68 @@
 			<version>1.1.1-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk16</artifactId>
+			<version>1.45</version>
+		</dependency>
 	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>dpt</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<hadoop.version>2.0.0-mr1-cdh4.2.0</hadoop.version>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-client</artifactId>
+					<version>${hadoop.version}</version>
+					<scope>provided</scope>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-minicluster</artifactId>
+					<version>${hadoop.version}</version>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+			<repositories>
+				<repository>
+					<id>cloudera</id>
+					<url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+				</repository>
+			</repositories>
+		</profile>
+		<profile>
+			<id>wap</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<hadoop.version>0.20.205.0</hadoop.version>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-core</artifactId>
+					<version>${hadoop.version}</version>
+					<scope>provided</scope>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-test</artifactId>
+					<version>${hadoop.version}</version>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
+
 	<repositories>
 		<repository>
 			<releases>
@@ -100,11 +137,6 @@
 			<url>http://builds.archive.org:8080/maven2</url>
 			<layout>default</layout>
 		</repository>
-
-		<repository>
-			<id>cloudera</id>
-			<url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-		</repository>
-
 	</repositories>
+
 </project>
