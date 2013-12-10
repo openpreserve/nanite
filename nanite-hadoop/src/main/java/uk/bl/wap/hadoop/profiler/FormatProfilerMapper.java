@@ -67,6 +67,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// Should we use libmagic?
 	final boolean USE_LIBMAGIC = true;
 	
+	private boolean droidUseBinarySignaturesOnly = false;
+	
 	// Whether to ignore the year of harvest (if so, will set a default year)
 	final boolean IGNORE_WAYBACKYEAR = true;
 	
@@ -107,6 +109,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Set up Droid
 		try {
 			droidDetector = new DroidDetector();
+			dd.setBinarySignaturesOnly( droidUseBinarySignaturesOnly );
 		} catch (CommandExecutionException e) {
 			log.error("droidDetector CommandExecutionException "+ e);
 		}
@@ -192,6 +195,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             Metadata metadata = new Metadata();
             metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
             log.trace("Using DroidDetector...");
+			droidDetector.setMaxBytesToScan(fileSize);
 			final MediaType droidType = droidDetector.detect(datastream, metadata);
 
 			// Reset the datastream
