@@ -47,7 +47,8 @@ public class FormatProfilerTest {
 	// 1. The variations.warc.gz example is rather large, and there are mysterious problems parsing the statusCode.
 	// 2. System can't cope with uncompressed inputs right now.
 	private final String[] testWarcs = new String[] {
-			"IAH-urls-wget.warc.gz"
+			//"IAH-urls-wget.warc.gz"
+			"DOTUK-HISTORICAL-1996-2010-GROUP-AA-XAABAW-20110428000000-00000.arc.gz"
 			};
 
 	private final Path input = new Path("inputs");
@@ -125,6 +126,8 @@ public class FormatProfilerTest {
 		log.info("Setting up job config...");
 		JobConf conf = this.mrCluster.createJobConf();
 		wir.createJobConf(conf, args);
+		// Disable speculative execution for tests:
+		conf.set( "mapred.reduce.tasks.speculative.execution", "false" );
 		log.info("Running job...");
 		JobClient.runJob(conf);
 		log.info("Job finished, checking the results...");
