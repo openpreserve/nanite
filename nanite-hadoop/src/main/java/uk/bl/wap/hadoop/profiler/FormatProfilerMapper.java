@@ -25,6 +25,7 @@ import org.apache.pdfbox.io.RandomAccessFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.CloseShieldInputStream;
+import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
@@ -55,25 +56,28 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	//////////////////////////////////////////////////	
 	
 	// Whether or not to include the extension in the output
-	final boolean INCLUDE_EXTENSION = true;
+	final private boolean INCLUDE_EXTENSION = true;
 	
 	// Whether or not to buffer the data locally before re-using it (seems to be twice as 
 	// fast as not doing this)
 	// Testing indicates that this is faster and causes fewer exceptions.  Droid sometimes
 	// fails with "resetting to invalid mark" when LOCAL_BUFFER is off.  Creating a new
 	// InputStream that re-uses a local byte[] does not cause that failure.
-	final boolean LOCAL_BUFFER = true;
+	final private boolean LOCAL_BUFFER = true;
 
 	// Should we use libmagic?
-	final boolean USE_LIBMAGIC = true;
+	final private boolean USE_LIBMAGIC = false;
 	
-	private boolean droidUseBinarySignaturesOnly = false;
+	// Use a Tika object
+	final private boolean USE_TIKAOBJECT = false;
+	
+	final private boolean droidUseBinarySignaturesOnly = false;
 	
 	// Whether to ignore the year of harvest (if so, will set a default year)
-	final boolean IGNORE_WAYBACKYEAR = true;
+	final private boolean IGNORE_WAYBACKYEAR = true;
 	
 	// Maximum buffer size
-	private static final int BUF_SIZE = 20*1024*1024;
+	final private static int BUF_SIZE = 20*1024*1024;
 	
 	//////////////////////////////////////////////////
 	// Global variables
@@ -85,19 +89,27 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private DroidDetector droidDetector = null;
     private Parser tikaParser = new AutoDetectParser();
     private LibmagicJnaWrapper libMagicWrapper = null;
-    
+	Tika tda = null;
+	
 	//private DefaultDetector tikaDetector = new DefaultDetector();
 	//private TikaDeepIdentifier tda = null;
 	//private Ohcount oh = null;
 
     
     public FormatProfilerMapper() {
+
 	}
 
 	@Override
 	public void configure( JobConf job ) {
+
 		// Set up Tika
 		//tda = new TikaDeepIdentifier();
+		if(USE_TIKAOBJECT) {
+			log.info("Instanciating FPMapper...");
+			// Set up Tika:
+			tda = new Tika();
+		}
 
 		if(USE_LIBMAGIC) {
 			// Set up libMagicWrapper
@@ -105,7 +117,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			// Load default magic file
 			libMagicWrapper.loadCompiledMagic();
 		}
-		
+
 		// Set up Droid
 		try {
 			droidDetector = new DroidDetector();
@@ -123,9 +135,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 	@Override
 	public void map( Text key, WritableArchiveRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
-		
+
 		// log the file we are processing:
-		log.debug("Processing record from: " + key);
+		log.info("Processing record from: "+key);
 
 		// Year and type from record:
 		String waybackYear = "";
@@ -217,7 +229,12 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	// Note: libmagic does not currently consume a metadata object
             	log.trace("Using libMagicWrapper...");
             	// libMagic needs the fileSize to work correctly with our buffering setup
-            	libMagicType = libMagicWrapper.getMimeType(datastream, fileSize);
+            	if(LOCAL_BUFFER) {
+            		libMagicType = libMagicWrapper.getMimeType(datastream, fileSize);
+            	} else {
+            		// We don't have fileSize is LOCAL_BUFFER is off
+            		libMagicType = libMagicWrapper.getMimeType(datastream);
+            	}
 
             	// Reset the datastream
             	if(LOCAL_BUFFER) {
@@ -233,7 +250,20 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             metadata = new Metadata();
             metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
             log.trace("Using Tika...");
-            String defaultTikaType = tikaDetect(datastream, metadata);
+            String parserTikaType = tikaDetect(datastream, metadata);
+
+            String tdaTikaType = "";
+    		// Type according to Tika:
+    		if(USE_TIKAOBJECT) {
+    			if(LOCAL_BUFFER) {
+    				datastream.close();
+    				datastream = new ByteArrayInputStream(payload, 0, fileSize);
+    			} else {
+    				datastream.reset();
+    			}
+
+    			tdaTikaType = tda.detect(datastream, metadata);
+    		}
             
             // Try and lose the buffered data
 			if(LOCAL_BUFFER) {
@@ -242,9 +272,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			} 				
 			datastream = null;
             
-			String mapOutput = "\"" + serverType + "\"\t\"" + defaultTikaType
+			String mapOutput = "\"" + serverType + "\"\t\"" + parserTikaType
 					+ "\"\t\"" + droidType + "\"";
 
+			if(USE_TIKAOBJECT) {
+				mapOutput += "\t\"" + tdaTikaType + "\"";
+			}
+			
 			if(USE_LIBMAGIC) {
 				mapOutput += "\t\"" + libMagicType + "\"";
 			}
@@ -255,7 +289,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 			// Return the output for collation
 			output.collect(new Text(mapOutput), new Text(waybackYear));
-
+			log.info("OUTPUT "+mapOutput+" "+waybackYear);
+			
 		} catch (IOException e) {
 			log.error("Failed to identify due to IOException:" + e);
 			try {
