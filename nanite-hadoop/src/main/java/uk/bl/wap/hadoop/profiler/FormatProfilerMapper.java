@@ -56,15 +56,23 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// Global constants
 	//////////////////////////////////////////////////	
 	
+	// TODO: move these to a properties file?
+	
 	// Whether or not to include the extension in the output
 	final private boolean INCLUDE_EXTENSION = true;
 
+	// Should we use Droid?
+	final private boolean USE_DROID = true;
+	
+	// Should we use Tika (parser)?
+	final private boolean USE_TIKAPARSER = true;
+	
+	// Should we use Tika (detect)?
+	final private boolean USE_TIKADETECT = false;
+
 	// Should we use libmagic?
 	final private boolean USE_LIBMAGIC = false;
-	
-	// Use a Tika object
-	final private boolean USE_TIKAOBJECT = false;
-	
+		
 	final private boolean droidUseBinarySignaturesOnly = false;
 	
 	// Whether to ignore the year of harvest (if so, will set a default year)
@@ -96,7 +104,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Set up Tika
 		//tda = new TikaDeepIdentifier();
-		if(USE_TIKAOBJECT) {
+		if(USE_TIKADETECT) {
 			log.info("Instanciating FPMapper...");
 			// Set up Tika:
 			tda = new Tika();
@@ -159,11 +167,17 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			} else {
 				file = "";
 			}
+
+			String mapOutput = "\"" + serverType + "\"";
 			
 			// Get file extension
 			String fileExt = "";
 			if (file.contains(".")) {
 				fileExt = getFileExt(file);
+			}
+			
+			if (INCLUDE_EXTENSION) {
+				mapOutput = "\"" + fileExt + "\"\t" + mapOutput;
 			}
 			
 			log.debug("file: "+file+", ext: "+fileExt);
@@ -175,29 +189,63 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				arc.skipHttpHeader();
 			}
 
-			// We use this variable when creating a new ByteArrayInputStream so it does not
-			// attempt to read past the file size
-			int fileSize = 0;
-
 			// Initialise a buffered input stream
 			// - don't pass BUF_SIZE as a parameter here, testing indicates it dramatically slows down the processing
 			datastream = new BufferedInputStream(value.getPayloadAsStream());
 			// Mark the datastream so we can re-use it
-			// NOTE: this code will fail if the payload is > BUF_SIZE
+			// NOTE: this code will fail if >BUF_SIZE bytes are read
 			datastream.mark(BUF_SIZE);
 
-            // Type according to DroidDetector
-            Metadata metadata = new Metadata();
-            metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
-            log.trace("Using DroidDetector...");
-			droidDetector.setMaxBytesToScan(fileSize);
-			final MediaType droidType = droidDetector.detect(datastream, metadata);
+			if (USE_DROID) {
+				// Type according to DroidDetector
+				Metadata metadata = new Metadata();
+				metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+				
+				log.trace("Using DroidDetector...");
+				droidDetector.setMaxBytesToScan(BUF_SIZE);
+				final MediaType droidType = droidDetector.detect(datastream, metadata);
 
-			// Reset the datastream for reuse
-           	datastream.reset();
+				mapOutput += "\t\"" + droidType + "\"";
+				
+				// Reset the datastream for reuse
+				datastream.reset();
+
+			}
             
-            String libMagicType = null;
-            if(USE_LIBMAGIC) {
+            if (USE_TIKAPARSER) {
+            	// Type according to Tika parser
+            	Metadata metadata = new Metadata();
+            	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+            	
+            	log.trace("Using Tika parser...");
+    			BodyContentHandler handler = new BodyContentHandler();
+     			// This will parse all files to get meta data information
+    			tikaParser.parse(datastream, handler, metadata, new ParseContext());
+                final String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
+                
+            	mapOutput += "\t\"" + parserTikaType + "\"";
+            	
+           		// Reset the datastream for reuse
+           		datastream.reset();
+           		
+            }
+			
+            if (USE_TIKADETECT) {
+            	// Type according to Tika detect
+            	Metadata metadata = new Metadata();
+            	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+            	
+            	log.trace("Using Tika detect...");
+            	final String tdaTikaType = tda.detect(datastream, metadata);
+
+            	mapOutput += "\t\"" + tdaTikaType + "\"";
+            	
+           		// Reset the datastream for reuse
+           		datastream.reset();
+
+            }
+			
+            if (USE_LIBMAGIC) {
 
             	// Use libmagic-jna-wrapper to identify the file
             	// You need to manually install this to your local maven repo - see pom for download url
@@ -207,49 +255,19 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	// Note: libmagic does not currently consume a metadata object
             	log.trace("Using libMagicWrapper...");
 
-            	// We don't have fileSize if LOCAL_BUFFER is off
-            	libMagicType = libMagicWrapper.getMimeType(datastream);
+            	// We don't have fileSize
+            	final String libMagicType = libMagicWrapper.getMimeType(datastream);
 
+            	mapOutput += "\t\"" + libMagicType + "\"";
+            	
     			// Reset the datastream for reuse
                	datastream.reset();
 
             }
-			
-			// Type according to vanilla-Tika
-            metadata = new Metadata();
-            metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
-            log.trace("Using Tika...");
-            String parserTikaType = tikaDetect(datastream, metadata);
-
-            String tdaTikaType = "";
-    		// Type according to Tika:
-    		if(USE_TIKAOBJECT) {
-
-    			tdaTikaType = tda.detect(datastream, metadata);
-    			
-    			// Reset the datastream for reuse
-               	datastream.reset();
-
-    		}
             
             // Try and lose the buffered data
 			datastream = null;
-            
-			String mapOutput = "\"" + serverType + "\"\t\"" + parserTikaType
-					+ "\"\t\"" + droidType + "\"";
-
-			if(USE_TIKAOBJECT) {
-				mapOutput += "\t\"" + tdaTikaType + "\"";
-			}
 			
-			if(USE_LIBMAGIC) {
-				mapOutput += "\t\"" + libMagicType + "\"";
-			}
-			
-			if (INCLUDE_EXTENSION) {
-				mapOutput = "\"" + fileExt + "\"\t" + mapOutput;
-			}
-
 			// Return the output for collation
 			output.collect(new Text(mapOutput), new Text(waybackYear));
 			log.info("OUTPUT "+mapOutput+" "+waybackYear);
@@ -293,6 +311,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	
 	/**
 	 * Convenience method for getting the file extension from a URI
+	 * @param s path
+	 * @return file extension
 	 */
 	public String getFileExt(String s) {
 		String shortenedToExt = s.toLowerCase();
@@ -319,28 +339,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 		//System.out.println(s+" found: "+found+" ext: "+ext);
 		return ext;
-	}
-	
-	/**
-	 * This method uses vanilla Tika to get properties of the file
-	 */
-	private String tikaDetect(InputStream datastream, Metadata metadata) {
-		String defaultTikaType = "";
-		try {
-			BodyContentHandler handler = new BodyContentHandler();
- 			// This will parse all files to get meta data information
-			tikaParser.parse(datastream, handler, metadata, new ParseContext());
-            final String mimeType = metadata.get(Metadata.CONTENT_TYPE);
-            defaultTikaType = mimeType;
-            // TODO: remove charset info?  We don't really need it here
-		} catch (IOException e) {
-			log.error("Failed due to IO exception:" + e);
-		} catch (TikaException e) {
-			log.error("Failed due to TikaException exception:" + e);
-		} catch (SAXException e) {
-			log.error("Failed due to SAXException exception:" + e);
-		}
-		return defaultTikaType;
 	}
 	
 	/**
