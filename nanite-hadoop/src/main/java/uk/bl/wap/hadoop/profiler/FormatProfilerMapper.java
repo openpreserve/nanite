@@ -58,12 +58,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// Whether or not to include the extension in the output
 	final private boolean INCLUDE_EXTENSION = true;
 	
-	// Whether or not to buffer the data locally before re-using it (seems to be twice as 
-	// fast as not doing this)
-	// Testing indicates that this is faster and causes fewer exceptions.  Droid sometimes
-	// fails with "resetting to invalid mark" when LOCAL_BUFFER is off.  Creating a new
-	// InputStream that re-uses a local byte[] does not cause that failure.
-	final private boolean LOCAL_BUFFER = true;
+	// Whether or not to buffer the data locally before re-using it
+	// Don't use this - to be removed
+	final private boolean LOCAL_BUFFER = false;
 
 	// Should we use libmagic?
 	final private boolean USE_LIBMAGIC = false;
@@ -89,7 +86,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private DroidDetector droidDetector = null;
     private Parser tikaParser = new AutoDetectParser();
     private LibmagicJnaWrapper libMagicWrapper = null;
-	Tika tda = null;
+	private Tika tda = null;
 	
 	//private DefaultDetector tikaDetector = new DefaultDetector();
 	//private TikaDeepIdentifier tda = null;
@@ -197,7 +194,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				fileSize = value.getPayloadAsStream().read(payload, 0, payload.length);
 				datastream = new ByteArrayInputStream(payload, 0, fileSize);
 			} else {
-				datastream = new BufferedInputStream(value.getPayloadAsStream(), BUF_SIZE);
+				// don't pass BUF_SIZE as a paremeter here, testing indicates it dramatically slows down the processing
+				datastream = new BufferedInputStream(value.getPayloadAsStream());
 				// Mark the datastream so we can re-use it
 				// NOTE: this code will fail if the payload is > BUF_SIZE
 				datastream.mark(BUF_SIZE);
