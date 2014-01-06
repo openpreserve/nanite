@@ -45,7 +45,8 @@ import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 /**
  * 
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
- *
+ * @author William Palmer <William.Palmer@bl.uk>
+ * 
  */
 public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, WritableArchiveRecord, Text, Text> {
 
@@ -57,10 +58,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	
 	// Whether or not to include the extension in the output
 	final private boolean INCLUDE_EXTENSION = true;
-	
-	// Whether or not to buffer the data locally before re-using it
-	// Don't use this - to be removed
-	final private boolean LOCAL_BUFFER = false;
 
 	// Should we use libmagic?
 	final private boolean USE_LIBMAGIC = false;
@@ -79,9 +76,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	//////////////////////////////////////////////////
 	// Global variables
 	//////////////////////////////////////////////////	
-	
-	// Global buffer for LOCAL_BUFFER use
-	private byte[] payload = null;
 
 	private DroidDetector droidDetector = null;
     private Parser tikaParser = new AutoDetectParser();
@@ -121,11 +115,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			droidDetector.setBinarySignaturesOnly( droidUseBinarySignaturesOnly );
 		} catch (CommandExecutionException e) {
 			log.error("droidDetector CommandExecutionException "+ e);
-		}
-		
-		// Initialise local payload buffer
-		if(LOCAL_BUFFER) {
-			payload = new byte[BUF_SIZE];
 		}
 		
 	}
@@ -189,17 +178,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			// We use this variable when creating a new ByteArrayInputStream so it does not
 			// attempt to read past the file size
 			int fileSize = 0;
-			if(LOCAL_BUFFER) {
-				// Fill the buffer, reading at most payload.length bytes
-				fileSize = value.getPayloadAsStream().read(payload, 0, payload.length);
-				datastream = new ByteArrayInputStream(payload, 0, fileSize);
-			} else {
-				// don't pass BUF_SIZE as a paremeter here, testing indicates it dramatically slows down the processing
-				datastream = new BufferedInputStream(value.getPayloadAsStream());
-				// Mark the datastream so we can re-use it
-				// NOTE: this code will fail if the payload is > BUF_SIZE
-				datastream.mark(BUF_SIZE);
-			}
+
+			// Initialise a buffered input stream
+			// - don't pass BUF_SIZE as a parameter here, testing indicates it dramatically slows down the processing
+			datastream = new BufferedInputStream(value.getPayloadAsStream());
+			// Mark the datastream so we can re-use it
+			// NOTE: this code will fail if the payload is > BUF_SIZE
+			datastream.mark(BUF_SIZE);
 
             // Type according to DroidDetector
             Metadata metadata = new Metadata();
@@ -208,13 +193,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			droidDetector.setMaxBytesToScan(fileSize);
 			final MediaType droidType = droidDetector.detect(datastream, metadata);
 
-			// Reset the datastream
-            if(LOCAL_BUFFER) {
-            	datastream.close();
-            	datastream = new ByteArrayInputStream(payload, 0, fileSize);
-            } else {
-            	datastream.reset();
-            }
+			// Reset the datastream for reuse
+           	datastream.reset();
             
             String libMagicType = null;
             if(USE_LIBMAGIC) {
@@ -226,21 +206,12 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	// 
             	// Note: libmagic does not currently consume a metadata object
             	log.trace("Using libMagicWrapper...");
-            	// libMagic needs the fileSize to work correctly with our buffering setup
-            	if(LOCAL_BUFFER) {
-            		libMagicType = libMagicWrapper.getMimeType(datastream, fileSize);
-            	} else {
-            		// We don't have fileSize is LOCAL_BUFFER is off
-            		libMagicType = libMagicWrapper.getMimeType(datastream);
-            	}
 
-            	// Reset the datastream
-            	if(LOCAL_BUFFER) {
-            		datastream.close();
-            		datastream = new ByteArrayInputStream(payload, 0, fileSize);
-            	} else {
-            		datastream.reset();
-            	}
+            	// We don't have fileSize if LOCAL_BUFFER is off
+            	libMagicType = libMagicWrapper.getMimeType(datastream);
+
+    			// Reset the datastream for reuse
+               	datastream.reset();
 
             }
 			
@@ -253,21 +224,15 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             String tdaTikaType = "";
     		// Type according to Tika:
     		if(USE_TIKAOBJECT) {
-    			if(LOCAL_BUFFER) {
-    				datastream.close();
-    				datastream = new ByteArrayInputStream(payload, 0, fileSize);
-    			} else {
-    				datastream.reset();
-    			}
 
     			tdaTikaType = tda.detect(datastream, metadata);
+    			
+    			// Reset the datastream for reuse
+               	datastream.reset();
+
     		}
             
             // Try and lose the buffered data
-			if(LOCAL_BUFFER) {
-				// We should think about emptying/zero-ing payload
-				datastream.close();
-			} 				
 			datastream = null;
             
 			String mapOutput = "\"" + serverType + "\"\t\"" + parserTikaType
