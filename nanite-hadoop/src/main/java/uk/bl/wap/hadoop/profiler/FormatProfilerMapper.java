@@ -296,7 +296,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				e1.printStackTrace();
 			}			
 		} finally {
-			//payload = null;
 			if (datastream != null) {
 				// Closing the datastream causes a NumberFormatException in 
 				// ArchiveRecord/ARCRecordMetaData, so don't directly close the input stream.
