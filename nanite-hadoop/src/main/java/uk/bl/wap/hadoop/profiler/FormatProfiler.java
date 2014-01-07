@@ -27,12 +27,17 @@ import uk.bl.wa.hadoop.ArchiveFileInputFormat;
 
 
 /**
- * 
+ * Main class for FormarProfiler Hadoop job
  */
 public class FormatProfiler extends Configured implements Tool {
 	private static Logger log = Logger.getLogger(FormatProfiler.class.getName());
 	
-
+	/**
+	 * Initialise job configuration
+	 * @param conf configuration to initialise
+	 * @param args command line arguments
+	 * @throws IOException
+	 */
 	public void createJobConf(JobConf conf, String[] args) throws IOException {
 		log.info("Loading paths...");
 		String line = null;
@@ -80,6 +85,11 @@ public class FormatProfiler extends Configured implements Tool {
 		return 0;
 	}
 
+	/**
+	 * Main method
+	 * @param args arguments
+	 * @throws Exception exception
+	 */
 	public static void main( String[] args ) throws Exception {
 		if( !( args.length > 0 ) ) {
 			System.out.println( "Need input file.list and output dir!" );
@@ -91,6 +101,7 @@ public class FormatProfiler extends Configured implements Tool {
 		System.exit( ret );
 	}
 
+	@SuppressWarnings("unused")
 	private String getWctTi( String warcName ) {
 		Pattern pattern = Pattern.compile( "^BL-([0-9]+)-[0-9]+\\.warc(\\.gz)?$" );
 		Matcher matcher = pattern.matcher( warcName );
