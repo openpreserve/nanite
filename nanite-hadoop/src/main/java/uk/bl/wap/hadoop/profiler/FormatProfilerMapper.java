@@ -272,7 +272,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			log.error("Failed to identify due to IOException:" + e);
 			try {
 				// Output a result so we can see how many records fail to process
-				output.collect(new Text("IOException: "+e.getMessage()), new Text(waybackYear));
+				output.collect(new Text("IOException\t\""+key+"\""), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -281,7 +281,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			log.error("Potentially malformed (W)ARC file, skipping URL: ("+value.getRecord().getHeader().getUrl()+")");
 			try {
 				// Output a result so we can see how many records fail to process
-				output.collect(new Text("\"Malformed Record\""), new Text(waybackYear));
+				output.collect(new Text("\"Malformed Record\"\t\""+key+"\""), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -291,7 +291,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			e.printStackTrace();
 			try {
 				// Output a result so we can see some basic details
-				output.collect(new Text("Exception: "+e.getMessage()), new Text(waybackYear));
+				output.collect(new Text("Exception\t\""+key+"\""), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}			
