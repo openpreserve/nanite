@@ -75,6 +75,9 @@ public class InputStreamByteReader implements ByteReader {
 	protected void finalize() throws Throwable {
 		super.finalize();
 		// Discard the buffer:
+		if(this.in != null) {
+			this.in.close();
+		}
 		this.in = null;
 	}
 }
