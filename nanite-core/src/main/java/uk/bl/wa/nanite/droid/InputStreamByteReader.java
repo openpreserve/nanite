@@ -7,6 +7,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.log4j.Logger;
 
 import net.domesdaybook.reader.ByteReader;
@@ -27,7 +28,10 @@ public class InputStreamByteReader implements ByteReader {
 	private BufferedInputStream in = null;
 	static int BUFFER_SIZE = 10*1024*1024; // Items larger than this likely to fail identification;
 
-	public InputStreamByteReader( InputStream in ) {
+	/**
+	 * @param in Force use of a CloseShieldInputStream so we can safely dispose of any buffers we create
+	 */
+	public InputStreamByteReader( CloseShieldInputStream in ) {
 		// Set up a large buffer for the input stream, allowing random access:
 		this.in = new BufferedInputStream(in, BUFFER_SIZE);
 		// The 'reset' logic will fail if the buffer is not big enough.
@@ -74,6 +78,10 @@ public class InputStreamByteReader implements ByteReader {
 	@Override
 	protected void finalize() throws Throwable {
 		super.finalize();
+		// Close buffers
+		if(this.in!=null) {
+			this.in.close();
+		}
 		// Discard the buffer:
 		this.in = null;
 	}
