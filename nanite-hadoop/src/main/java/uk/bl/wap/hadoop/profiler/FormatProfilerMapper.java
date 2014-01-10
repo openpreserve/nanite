@@ -1,7 +1,6 @@
 package uk.bl.wap.hadoop.profiler;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -10,7 +9,6 @@ import java.net.URLEncoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -30,7 +28,6 @@ import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
-
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
@@ -74,8 +71,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// Maximum buffer size
 	final private static int BUF_SIZE = 20*1024*1024;
 	
-	final private boolean BUF_STREAMS = true;
-	
 	//////////////////////////////////////////////////
 	// Global variables
 	//////////////////////////////////////////////////	
@@ -84,8 +79,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     private Parser tikaParser = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
 	private Tika tikaDetect = null;
-	
-	private byte[] payload = null;
 	
 	//private TikaDeepIdentifier tda = null;
 	//private Ohcount oh = null;
@@ -126,10 +119,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			libMagicWrapper = new LibmagicJnaWrapper();
 			// Load default magic file
 			libMagicWrapper.loadCompiledMagic();
-		}
-		
-		if(BUF_STREAMS) {
-			payload = new byte[BUF_SIZE];
 		}
 		
 	}
@@ -198,18 +187,10 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 			// Initialise a buffered input stream
 			// - don't pass BUF_SIZE as a parameter here, testing indicates it dramatically slows down the processing
-	       int fileSize = 0;
-			if(BUF_STREAMS) {
-				// Fill the buffer, reading at most payload.length bytes
-				fileSize = value.getPayloadAsStream().read(payload, 0, payload.length);
-				// Create a buffer from the byte array and limit it's length to fileSize
-				datastream = new BoundedInputStream(new ByteArrayInputStream(payload), fileSize);	
-			} else {
-				datastream = new BufferedInputStream(new CloseShieldInputStream(value.getPayloadAsStream()));
-				// Mark the datastream so we can re-use it
-				// NOTE: this code will fail if >BUF_SIZE bytes are read
-				datastream.mark(BUF_SIZE);
-			}
+			datastream = new BufferedInputStream(new CloseShieldInputStream(value.getPayloadAsStream()));
+			// Mark the datastream so we can re-use it
+			// NOTE: this code will fail if >BUF_SIZE bytes are read
+			datastream.mark(BUF_SIZE);
 
 			if (USE_DROID) {
 				// Type according to DroidDetector
@@ -223,12 +204,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				mapOutput += "\t\"" + droidType + "\"";
 				
 				// Reset the datastream for reuse
-				if(BUF_STREAMS) {
-					datastream.close();
-					datastream = new BoundedInputStream(new ByteArrayInputStream(payload), fileSize);	
-				} else {
-					datastream.reset();
-				}
+				datastream.reset();
 
 			}
             
@@ -246,12 +222,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	mapOutput += "\t\"" + parserTikaType + "\"";
             	
            		// Reset the datastream for reuse
-				if(BUF_STREAMS) {
-					datastream.close();
-					datastream = new BoundedInputStream(new ByteArrayInputStream(payload), fileSize);	
-				} else {
-					datastream.reset();
-				}
+           		datastream.reset();
            		
             }
 			
@@ -266,12 +237,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	mapOutput += "\t\"" + tdaTikaType + "\"";
             	
            		// Reset the datastream for reuse
-				if(BUF_STREAMS) {
-					datastream.close();
-					datastream = new BoundedInputStream(new ByteArrayInputStream(payload), fileSize);	
-				} else {
-					datastream.reset();
-				}
+           		datastream.reset();
 
             }
 			
@@ -285,23 +251,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	// Note: libmagic does not currently consume a metadata object
             	log.trace("Using libMagicWrapper...");
 
-            	String libMagicType = "";
-            	if(BUF_STREAMS) {
-            		libMagicType = libMagicWrapper.getMimeType(datastream, fileSize);
-            	} else {
-                	// We don't have fileSize in this instance
-            		libMagicType = libMagicWrapper.getMimeType(datastream);
-            	}
+            	// We don't have fileSize
+            	final String libMagicType = libMagicWrapper.getMimeType(datastream);
 
             	mapOutput += "\t\"" + libMagicType + "\"";
             	
-    			// Reset the datastream for reuse (but not currently reused)
-				if(BUF_STREAMS) {
-					//datastream.close();
-					//datastream = new BoundedInputStream(new ByteArrayInputStream(payload), fileSize);	
-				} else {
-					//datastream.reset();
-				}
+    			// Reset the datastream for reuse
+               	datastream.reset();
 
             }
             
@@ -347,12 +303,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				// if it makes a difference
 				datastream.close();
 				datastream = null;
-			}
-			if(BUF_STREAMS) {
-				// zero the payload buffer, just to be sure
-				for(int i=0;i<payload.length;i++) {
-					payload[i] = 0;
-				}
 			}
 		}
 	}
