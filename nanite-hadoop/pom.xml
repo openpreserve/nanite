@@ -9,6 +9,10 @@
 	</parent>
 	<artifactId>nanite-hadoop</artifactId>
 
+	<properties>
+		<warc-hadoop-recordreaders.version>1.1.1-SNAPSHOT</warc-hadoop-recordreaders.version>
+	</properties>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -52,12 +56,10 @@
 			<artifactId>nanite-core</artifactId>
 			<version>1.0.70.2-SNAPSHOT</version>
 		</dependency>
-		<dependency>
-			<groupId>uk.bl.wa.discovery</groupId>
-			<artifactId>warc-hadoop-recordreaders</artifactId>
-			<version>1.1.1-SNAPSHOT</version>
-			<scope>compile</scope>
-		</dependency>
+
+		<!-- warc-hadoop-recordreaders moved to profile section due to library 
+			 incompatibilities with some versions of hadoop -->
+
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk16</artifactId>
@@ -93,6 +95,18 @@
 					<version>${hadoop.version}</version>
 					<scope>test</scope>
 				</dependency>
+				<dependency>
+					<groupId>uk.bl.wa.discovery</groupId>
+					<artifactId>warc-hadoop-recordreaders</artifactId>
+					<version>${warc-hadoop-recordreaders.version}</version>
+					<scope>compile</scope>
+					<exclusions>
+						<exclusion>
+							<artifactId>guava</artifactId>
+							<groupId>com.google.guava</groupId>
+						</exclusion>
+					</exclusions>
+				</dependency>
 			</dependencies>
 			<repositories>
 				<repository>
@@ -105,6 +119,11 @@
 			<id>wap</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
+				<!-- enable this profile on Travis -->
+				<property>
+					<name>env.TRAVIS</name>
+					<value>true</value>
+				</property>
 			</activation>
 			<properties>
 				<hadoop.version>0.20.205.0</hadoop.version>
@@ -121,6 +140,12 @@
 					<artifactId>hadoop-test</artifactId>
 					<version>${hadoop.version}</version>
 					<scope>test</scope>
+				</dependency>
+				<dependency>
+					<groupId>uk.bl.wa.discovery</groupId>
+					<artifactId>warc-hadoop-recordreaders</artifactId>
+					<version>${warc-hadoop-recordreaders.version}</version>
+					<scope>compile</scope>
 				</dependency>
 			</dependencies>
 		</profile>

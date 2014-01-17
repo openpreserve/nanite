@@ -1,12 +1,8 @@
 package uk.bl.wap.hadoop.profiler;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -20,10 +16,6 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
-import org.apache.pdfbox.io.RandomAccess;
-import org.apache.pdfbox.io.RandomAccessFile;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
@@ -36,8 +28,6 @@ import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
-import org.xml.sax.SAXException;
-
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
@@ -86,15 +76,16 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	//////////////////////////////////////////////////	
 
 	private DroidDetector droidDetector = null;
-    private Parser tikaParser = new AutoDetectParser();
+    private Parser tikaParser = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
-	private Tika tda = null;
+	private Tika tikaDetect = null;
 	
-	//private DefaultDetector tikaDetector = new DefaultDetector();
 	//private TikaDeepIdentifier tda = null;
 	//private Ohcount oh = null;
 
-    
+	/**
+	 * Default constructor
+	 */
     public FormatProfilerMapper() {
 
 	}
@@ -102,27 +93,32 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	@Override
 	public void configure( JobConf job ) {
 
-		// Set up Tika
-		//tda = new TikaDeepIdentifier();
+		// Set up Droid
+		if(USE_DROID) {
+			try {
+				droidDetector = new DroidDetector();
+				droidDetector.setBinarySignaturesOnly( droidUseBinarySignaturesOnly );
+			} catch (CommandExecutionException e) {
+				log.error("droidDetector CommandExecutionException "+ e);
+			}
+		}
+		
+		// Set up Tika (detect)
 		if(USE_TIKADETECT) {
-			log.info("Instanciating FPMapper...");
-			// Set up Tika:
-			tda = new Tika();
+			tikaDetect = new Tika();
 		}
 
+		// Set up Tika (parser)
+		if(USE_TIKAPARSER) {
+		    tikaParser = new AutoDetectParser();
+		}
+
+		// Set up libMagic
 		if(USE_LIBMAGIC) {
 			// Set up libMagicWrapper
 			libMagicWrapper = new LibmagicJnaWrapper();
 			// Load default magic file
 			libMagicWrapper.loadCompiledMagic();
-		}
-
-		// Set up Droid
-		try {
-			droidDetector = new DroidDetector();
-			droidDetector.setBinarySignaturesOnly( droidUseBinarySignaturesOnly );
-		} catch (CommandExecutionException e) {
-			log.error("droidDetector CommandExecutionException "+ e);
 		}
 		
 	}
@@ -191,7 +187,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 			// Initialise a buffered input stream
 			// - don't pass BUF_SIZE as a parameter here, testing indicates it dramatically slows down the processing
-			datastream = new BufferedInputStream(value.getPayloadAsStream());
+			datastream = new BufferedInputStream(new CloseShieldInputStream(value.getPayloadAsStream()));
 			// Mark the datastream so we can re-use it
 			// NOTE: this code will fail if >BUF_SIZE bytes are read
 			datastream.mark(BUF_SIZE);
@@ -236,7 +232,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
             	
             	log.trace("Using Tika detect...");
-            	final String tdaTikaType = tda.detect(datastream, metadata);
+            	final String tdaTikaType = tikaDetect.detect(datastream, metadata);
 
             	mapOutput += "\t\"" + tdaTikaType + "\"";
             	
@@ -266,7 +262,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             }
             
             // Try and lose the buffered data
-			datastream = null;
+			// datastream = null;
 			
 			// Return the output for collation
 			output.collect(new Text(mapOutput), new Text(waybackYear));
@@ -276,7 +272,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			log.error("Failed to identify due to IOException:" + e);
 			try {
 				// Output a result so we can see how many records fail to process
-				output.collect(new Text("IOException: "+e.getMessage()), new Text(waybackYear));
+				output.collect(new Text("IOException\t\""+key+"\""), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -285,7 +281,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			log.error("Potentially malformed (W)ARC file, skipping URL: ("+value.getRecord().getHeader().getUrl()+")");
 			try {
 				// Output a result so we can see how many records fail to process
-				output.collect(new Text("\"Malformed Record\""), new Text(waybackYear));
+				output.collect(new Text("\"Malformed Record\"\t\""+key+"\""), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -295,15 +291,17 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			e.printStackTrace();
 			try {
 				// Output a result so we can see some basic details
-				output.collect(new Text("Exception: "+e.getMessage()), new Text(waybackYear));
+				output.collect(new Text("Exception\t\""+key+"\""), new Text(waybackYear));
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}			
 		} finally {
-			//payload = null;
 			if (datastream != null) {
 				// Closing the datastream causes a NumberFormatException in 
-				// ArchiveRecord/ARCRecordMetaData, so don't do datastream.close()!
+				// ArchiveRecord/ARCRecordMetaData, so don't directly close the input stream.
+				// The source InputStream is now wrapped in a CloseShieldInputStream, will see 
+				// if it makes a difference
+				datastream.close();
 				datastream = null;
 			}
 		}

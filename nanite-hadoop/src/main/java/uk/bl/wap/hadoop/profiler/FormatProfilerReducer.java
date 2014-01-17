@@ -12,10 +12,15 @@ import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
 
-@SuppressWarnings( { "deprecation" } )
+/**
+ * @author Andrew Jackson <Andrew.Jackson@bl.uk>
+ */
 public class FormatProfilerReducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
 	private static Logger log = Logger.getLogger(FormatProfilerReducer.class);
 	
+	/**
+	 * Default constructor
+	 */
 	public FormatProfilerReducer() {}
 
 	class MutableInt {
