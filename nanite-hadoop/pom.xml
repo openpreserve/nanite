@@ -58,7 +58,7 @@
 		</dependency>
 
 		<!-- warc-hadoop-recordreaders moved to profile section due to library 
-			 incompatibilities with some versions of hadoop -->
+			incompatibilities with some versions of hadoop -->
 
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
@@ -146,6 +146,12 @@
 					<artifactId>warc-hadoop-recordreaders</artifactId>
 					<version>${warc-hadoop-recordreaders.version}</version>
 					<scope>compile</scope>
+				</dependency>
+				<!-- see https://issues.apache.org/jira/browse/HADOOP-7461 -->
+				<dependency>
+					<groupId>org.codehaus.jackson</groupId>
+					<artifactId>jackson-mapper-asl</artifactId>
+					<version>1.0.1</version>
 				</dependency>
 			</dependencies>
 		</profile>
