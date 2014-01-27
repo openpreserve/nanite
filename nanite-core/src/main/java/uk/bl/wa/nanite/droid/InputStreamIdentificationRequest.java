@@ -6,6 +6,8 @@ package uk.bl.wa.nanite.droid;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.commons.io.input.CloseShieldInputStream;
+
 import net.domesdaybook.reader.ByteReader;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
@@ -28,7 +30,7 @@ public class InputStreamIdentificationRequest extends ByteArrayIdentificationReq
 			e.printStackTrace();
 		}
 		// Init the reader:
-		this.isReader = new InputStreamByteReader(in);
+		this.isReader = new InputStreamByteReader(new CloseShieldInputStream(in));
 	}
 
 	/* (non-Javadoc)
