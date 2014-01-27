@@ -417,6 +417,14 @@ public class DroidDetector implements Detector {
 		return DroidSigUtils.getSigFile(binarySignatureIdentifier);
 	}
 	
+	/**
+	 * Allow the container signatures to be accessed directly.
+	 * @return ContainerSignatureDefinitions
+	 */
+	public ContainerSignatureDefinitions getContainerSignatures() {
+		return this.containerSignatureDefinitions;
+	}
+	
 	/* ----- ----- ----- ----- */
 	
 	/**
