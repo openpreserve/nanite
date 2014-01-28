@@ -225,7 +225,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			// Get file extension
 			String fileExt = "";
 			if (file.contains(".")) {
-				fileExt = getFileExt(file);
+				fileExt = parseExtension(file);
 			}
 			
 			if (INCLUDE_EXTENSION) {
@@ -394,6 +394,33 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		//System.out.println(s+" found: "+found+" ext: "+ext);
 		return ext;
 	}
+	
+	/**
+	 * Copied from WARCIndexer.java - https://github.com/ukwa/warc-discovery/blob/master/warc-indexer/src/main/java/uk/bl/wa/indexer/WARCIndexer.java#L657
+	 * @param fullUrl
+	 * @return extension
+	 */
+    private static String parseExtension( String fullUrl ) {
+        if( fullUrl.lastIndexOf( "/" ) != -1 ) {
+                String path = fullUrl.substring( fullUrl.lastIndexOf( "/" ) );
+                if( path.indexOf( "?" ) != -1 ) {
+                        path = path.substring( 0, path.indexOf( "?" ) );
+                }
+                if( path.indexOf( "&" ) != -1 ) {
+                        path = path.substring( 0, path.indexOf( "&" ) );
+                }
+                if( path.indexOf( "." ) != -1 ) {
+                        String ext = path.substring( path.lastIndexOf( "." ) );
+                        ext = ext.toLowerCase();
+                        // Avoid odd/malformed extensions:
+                        // if( ext.contains("%") )
+                        // ext = ext.substring(0, path.indexOf("%"));
+                        ext = ext.replaceAll( "[^0-9a-z]", "" );
+                        return ext;
+                }
+        }
+        return null;
+}
 	
 	/**
 	 * 
