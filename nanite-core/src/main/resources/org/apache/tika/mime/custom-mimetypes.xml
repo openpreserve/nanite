@@ -312,5 +312,57 @@ sl:generator="ibauthor"
     </magic>
     <glob pattern="*.tzx"/>
   </mime-type>
+  
+  <!-- 
+  Z80 Snapshots
+  Hard to identify, as they are machine-level snapshots.
+  @see http://www.shadowmagic.org.uk/cssfaq/reference/z80format.htm
+   -->
+  <mime-type type="application/x-spectrum-z80">
+    <acronym>Z80</acronym>
+    <_comment>ZX Spectrum .Z80 snapshot image format</_comment>
+    <glob pattern="*.z80"/>
+  </mime-type>
+
+
+  <!-- 
+  SNA Snapshots
+  Seem unlikely to be able to use magic identification as it's just a RAM dump.
+  @see http://worldofspectrum.org/faq/reference/formats.htm#File
+   -->
+  <mime-type type="application/x-spectrum-sna">
+    <acronym>TZX</acronym>
+    <_comment>ZX Spectrum SNA snapshot image format</_comment>
+    <glob pattern="*.sna"/>
+  </mime-type>
+
+  <!--
+       http://fileformats.archiveteam.org/wiki/CAS_(Atari)
+       <match value="FUJI" type="string" offset="0"/>
+       *.cas
+  -->
+  
+  <!-- Specific versions of VRML -->
+  
+  <mime-type type="model/vrml; version=1.0">
+    <sub-class-of type="model/vrml" />
+    <acronym>VRML 1.0</acronym>
+    <_comment>Virtual Reality Markup Language version 1.0</_comment>
+    <magic priority="50">
+      <match value="#VRML V1.0 ascii" type="string" offset="0">
+      </match>
+    </magic>
+  </mime-type>
+  
+  <mime-type type="model/vrml; version=2.0">
+    <sub-class-of type="model/vrml" />
+    <acronym>VRML 97</acronym>
+    <_comment>Virtual Reality Markup Language version 2.0 a.k.a. VRML 97</_comment>
+    <magic priority="50">
+      <match value="#VRML V2.0 utf8" type="string" offset="0">
+      </match>
+    </magic>
+  </mime-type>
+  
 
 </mime-info>

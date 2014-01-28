@@ -28,6 +28,7 @@ import uk.gov.nationalarchives.droid.container.ContainerSignatureDefinitions;
 import uk.gov.nationalarchives.droid.container.ContainerSignatureSaxParser;
 import uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier;
 import uk.gov.nationalarchives.droid.core.CustomResultPrinter;
+import uk.gov.nationalarchives.droid.core.DroidSigUtils;
 import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
@@ -35,6 +36,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollect
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.FileSystemIdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
+import uk.gov.nationalarchives.droid.core.signature.droid6.FFSignatureFile;
 
 /**
  * 
@@ -285,10 +287,11 @@ public class DroidDetector implements Detector {
 		RequestIdentifier identifier = new RequestIdentifier(URI.create("file:///./"+fileName));
 		identifier.setParentId(1L);
 
-		IdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
+		InputStreamIdentificationRequest request = new InputStreamIdentificationRequest(metaData, identifier, input);
 		try {
 			MediaType type = determineMediaType(request, input);
-			//request.disposeBuffer();
+			// We can do this because API change to CloseShieldInputStream so "input" parameter is not affected
+			request.disposeBuffer();
 			return type;
 		} catch (CommandExecutionException e) {
 			log.warning("Caught exception: "+e);
@@ -398,10 +401,29 @@ public class DroidDetector implements Detector {
 	}
 	
 	/**
-	 * @return
+	 * Get the version of the binary signature file
+	 * 
+	 * @return String version
 	 */
 	public String getBinarySignatureFileVersion() {
 		return resultPrinter.getBinarySignatureFileVersion();
+	}
+	
+	/**
+	 * Allow the binary signature file to be accessed directly.
+	 * 
+	 * @return FFSignatureFile
+	 */
+	public FFSignatureFile getBinarySignatures() {
+		return DroidSigUtils.getSigFile(binarySignatureIdentifier);
+	}
+	
+	/**
+	 * Allow the container signatures to be accessed directly.
+	 * @return ContainerSignatureDefinitions
+	 */
+	public ContainerSignatureDefinitions getContainerSignatures() {
+		return this.containerSignatureDefinitions;
 	}
 	
 	/* ----- ----- ----- ----- */
