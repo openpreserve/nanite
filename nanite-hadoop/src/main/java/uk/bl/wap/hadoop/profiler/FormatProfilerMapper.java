@@ -71,7 +71,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// Should we use libmagic?
 	private boolean USE_LIBMAGIC = false;
 	// Whether to ignore the year of harvest (if so, will set a default year)
-	private boolean IGNORE_WAYBACKYEAR = true;
+	private boolean INCLUDE_WAYBACKYEAR = false;
 	
 	//////////////////////////////////////////////////
 	// Global variables
@@ -111,35 +111,37 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
     		if(props.contains("INCLUDE_EXTENSION")) {
     			INCLUDE_EXTENSION = new Boolean(props.getProperty("INCLUDE_EXTENSION"));
-    			log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
     		}
 
     		if(props.contains("USE_DROID")) {
     			USE_DROID = new Boolean(props.getProperty("USE_DROID"));
-    			log.info("USE_DROID: "+USE_DROID);
     		}
 
     		if(props.contains("USE_TIKAPARSER")) {
     			USE_TIKAPARSER = new Boolean(props.getProperty("USE_TIKAPARSER"));
-    			log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
     		}
 
     		if(props.contains("USE_TIKADETECT")) {
     			USE_TIKADETECT = new Boolean(props.getProperty("USE_TIKADETECT"));
-    			log.info("USE_TIKADETECT: "+USE_TIKADETECT);
     		}
 
     		if(props.contains("USE_LIBMAGIC")) {
     			USE_LIBMAGIC = new Boolean(props.getProperty("USE_LIBMAGIC"));
-    			log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
     		}
 
-    		if(props.contains("IGNORE_WAYBACKYEAR")) {
-    			IGNORE_WAYBACKYEAR = new Boolean(props.getProperty("IGNORE_WAYBACKYEAR"));
-    			log.info("IGNORE_WAYBACKYEAR: "+IGNORE_WAYBACKYEAR);
+    		if(props.contains("INCLUDE_WAYBACKYEAR")) {
+    			INCLUDE_WAYBACKYEAR = new Boolean(props.getProperty("INCLUDE_WAYBACKYEAR"));
     		}
 
     	}
+    	
+		log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
+		log.info("USE_DROID: "+USE_DROID);
+		log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
+		log.info("USE_TIKADETECT: "+USE_TIKADETECT);
+		log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
+		log.info("INCLUDE_WAYBACKYEAR: "+INCLUDE_WAYBACKYEAR);
+
     }
 
 	@Override
@@ -185,10 +187,10 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Year and type from record:
 		String waybackYear = "";
-		if(IGNORE_WAYBACKYEAR) {
-			waybackYear = "2013";
-		} else {
+		if(INCLUDE_WAYBACKYEAR) {
 			waybackYear = getWaybackYear(value);
+		} else {
+			waybackYear = "na";
 		}
 		String serverType = getServerType(value);
 		log.debug("Server Type: "+serverType);
