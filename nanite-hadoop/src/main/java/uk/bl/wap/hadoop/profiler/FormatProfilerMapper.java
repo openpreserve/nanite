@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,6 +29,7 @@ import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
+
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
@@ -45,31 +47,31 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	//////////////////////////////////////////////////
 	// Global constants
 	//////////////////////////////////////////////////	
-	
-	// TODO: move these to a properties file?
-	
-	// Whether or not to include the extension in the output
-	final private boolean INCLUDE_EXTENSION = true;
 
-	// Should we use Droid?
-	final private boolean USE_DROID = true;
-	
-	// Should we use Tika (parser)?
-	final private boolean USE_TIKAPARSER = true;
-	
-	// Should we use Tika (detect)?
-	final private boolean USE_TIKADETECT = false;
-
-	// Should we use libmagic?
-	final private boolean USE_LIBMAGIC = false;
-		
-	final private boolean droidUseBinarySignaturesOnly = false;
-	
-	// Whether to ignore the year of harvest (if so, will set a default year)
-	final private boolean IGNORE_WAYBACKYEAR = true;
+	final private static boolean droidUseBinarySignaturesOnly = false;
 	
 	// Maximum buffer size
 	final private static int BUF_SIZE = 20*1024*1024;
+	
+	//////////////////////////////////////////////////
+	// Global properties
+	//////////////////////////////////////////////////	
+	
+	// NOTE: these settings may be overridden if FormatProfiler.properties exists as a resource
+	
+	private Properties props = null;
+	// Whether or not to include the extension in the output
+	private boolean INCLUDE_EXTENSION = true;
+	// Should we use Droid?
+	private boolean USE_DROID = true;
+	// Should we use Tika (parser)?
+	private boolean USE_TIKAPARSER = true;
+	// Should we use Tika (detect)?
+	private boolean USE_TIKADETECT = false;
+	// Should we use libmagic?
+	private boolean USE_LIBMAGIC = false;
+	// Whether to ignore the year of harvest (if so, will set a default year)
+	private boolean IGNORE_WAYBACKYEAR = true;
 	
 	//////////////////////////////////////////////////
 	// Global variables
@@ -89,10 +91,62 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     public FormatProfilerMapper() {
 
 	}
+    
+    private void loadConfig() {
+    	
+    	final String propertiesFile = "FormatProfiler.properties";
+    	
+    	// load properties
+    	InputStream p = FormatProfilerMapper.class.getResourceAsStream(propertiesFile);
+    	if(p!=null) {
+    		props = new Properties();
+    		try {
+				props.load(p);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    	
+    	log.info("Loaded properties from "+propertiesFile);
+
+    	if(props.contains("INCLUDE_EXTENSION")) {
+    		INCLUDE_EXTENSION = new Boolean(props.getProperty("INCLUDE_EXTENSION"));
+    		log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
+    	}
+    	
+    	if(props.contains("USE_DROID")) {
+    		USE_DROID = new Boolean(props.getProperty("USE_DROID"));
+    		log.info("USE_DROID: "+USE_DROID);
+    	}
+    	
+    	if(props.contains("USE_TIKAPARSER")) {
+    		USE_TIKAPARSER = new Boolean(props.getProperty("USE_TIKAPARSER"));
+    		log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
+    	}
+    	
+    	if(props.contains("USE_TIKADETECT")) {
+    		USE_TIKADETECT = new Boolean(props.getProperty("USE_TIKADETECT"));
+    		log.info("USE_TIKADETECT: "+USE_TIKADETECT);
+    	}
+    	
+    	if(props.contains("USE_LIBMAGIC")) {
+    		USE_LIBMAGIC = new Boolean(props.getProperty("USE_LIBMAGIC"));
+    		log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
+    	}
+    	
+    	if(props.contains("IGNORE_WAYBACKYEAR")) {
+    		IGNORE_WAYBACKYEAR = new Boolean(props.getProperty("IGNORE_WAYBACKYEAR"));
+    		log.info("IGNORE_WAYBACKYEAR: "+IGNORE_WAYBACKYEAR);
+    	}
+
+    }
 
 	@Override
 	public void configure( JobConf job ) {
 
+		loadConfig();
+		
 		// Set up Droid
 		if(USE_DROID) {
 			try {
