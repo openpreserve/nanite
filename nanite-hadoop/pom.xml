@@ -11,6 +11,7 @@
 
 	<properties>
 		<warc-hadoop-recordreaders.version>1.1.1-SNAPSHOT</warc-hadoop-recordreaders.version>
+		<mainClass>uk.bl.wap.hadoop.profiler.FormatProfiler</mainClass>
 	</properties>
 
 	<build>
@@ -32,6 +33,11 @@
 					<descriptors>
 						<descriptor>src/assembly/job.xml</descriptor>
 					</descriptors>
+					<archive>
+						<manifest>
+							<mainClass>${mainClass}</mainClass>
+						</manifest>
+					</archive>
 				</configuration>
 			</plugin>
 		</plugins>

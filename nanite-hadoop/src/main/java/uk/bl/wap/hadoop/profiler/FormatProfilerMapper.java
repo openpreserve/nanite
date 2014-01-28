@@ -101,45 +101,45 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     	if(p!=null) {
     		props = new Properties();
     		try {
-				props.load(p);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-    	}
-    	
-    	log.info("Loaded properties from "+propertiesFile);
+    			props.load(p);
+    		} catch (IOException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
 
-    	if(props.contains("INCLUDE_EXTENSION")) {
-    		INCLUDE_EXTENSION = new Boolean(props.getProperty("INCLUDE_EXTENSION"));
-    		log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
-    	}
-    	
-    	if(props.contains("USE_DROID")) {
-    		USE_DROID = new Boolean(props.getProperty("USE_DROID"));
-    		log.info("USE_DROID: "+USE_DROID);
-    	}
-    	
-    	if(props.contains("USE_TIKAPARSER")) {
-    		USE_TIKAPARSER = new Boolean(props.getProperty("USE_TIKAPARSER"));
-    		log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
-    	}
-    	
-    	if(props.contains("USE_TIKADETECT")) {
-    		USE_TIKADETECT = new Boolean(props.getProperty("USE_TIKADETECT"));
-    		log.info("USE_TIKADETECT: "+USE_TIKADETECT);
-    	}
-    	
-    	if(props.contains("USE_LIBMAGIC")) {
-    		USE_LIBMAGIC = new Boolean(props.getProperty("USE_LIBMAGIC"));
-    		log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
-    	}
-    	
-    	if(props.contains("IGNORE_WAYBACKYEAR")) {
-    		IGNORE_WAYBACKYEAR = new Boolean(props.getProperty("IGNORE_WAYBACKYEAR"));
-    		log.info("IGNORE_WAYBACKYEAR: "+IGNORE_WAYBACKYEAR);
-    	}
+    		log.info("Loaded properties from "+propertiesFile);
 
+    		if(props.contains("INCLUDE_EXTENSION")) {
+    			INCLUDE_EXTENSION = new Boolean(props.getProperty("INCLUDE_EXTENSION"));
+    			log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
+    		}
+
+    		if(props.contains("USE_DROID")) {
+    			USE_DROID = new Boolean(props.getProperty("USE_DROID"));
+    			log.info("USE_DROID: "+USE_DROID);
+    		}
+
+    		if(props.contains("USE_TIKAPARSER")) {
+    			USE_TIKAPARSER = new Boolean(props.getProperty("USE_TIKAPARSER"));
+    			log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
+    		}
+
+    		if(props.contains("USE_TIKADETECT")) {
+    			USE_TIKADETECT = new Boolean(props.getProperty("USE_TIKADETECT"));
+    			log.info("USE_TIKADETECT: "+USE_TIKADETECT);
+    		}
+
+    		if(props.contains("USE_LIBMAGIC")) {
+    			USE_LIBMAGIC = new Boolean(props.getProperty("USE_LIBMAGIC"));
+    			log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
+    		}
+
+    		if(props.contains("IGNORE_WAYBACKYEAR")) {
+    			IGNORE_WAYBACKYEAR = new Boolean(props.getProperty("IGNORE_WAYBACKYEAR"));
+    			log.info("IGNORE_WAYBACKYEAR: "+IGNORE_WAYBACKYEAR);
+    		}
+
+    	}
     }
 
 	@Override

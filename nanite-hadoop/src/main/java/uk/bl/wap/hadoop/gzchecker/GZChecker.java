@@ -31,7 +31,21 @@ import com.typesafe.config.ConfigFactory;
 public class GZChecker extends Configured implements Tool {
 	private static Logger log = Logger.getLogger(GZChecker.class.getName());
 	
+	/**
+	 * String for use in reducer outputs
+	 */
+	public static final String OK = "ok";
+	/**
+	 * String for use in reducer outputs
+	 */
+	public static final String FAIL = "fail";
 
+	/**
+	 * Set up the configuration for this job
+	 * @param conf
+	 * @param args
+	 * @throws IOException
+	 */
 	public void createJobConf(JobConf conf, String[] args) throws IOException {
 		log.info("Loading paths...");
 		// copy input file to hdfs
@@ -55,7 +69,7 @@ public class GZChecker extends Configured implements Tool {
 		FileOutputFormat.setOutputPath( conf, new Path( args[ 1 ] ) );
 		
 		//this.setProperties( conf );
-		conf.setJobName( args[ 0 ] + "_" + System.currentTimeMillis() );
+		conf.setJobName( "NaniteGZChecker-"+new File(args[ 0 ]).getName() + "_" + System.currentTimeMillis() );
 		conf.setInputFormat( NLineInputFormat.class );
 		conf.setInt("mapred.line.input.format.linespermap", 200);
 		
@@ -91,6 +105,11 @@ public class GZChecker extends Configured implements Tool {
 		return 0;
 	}
 
+	/**
+	 * Main method
+	 * @param args arguments
+	 * @throws Exception in case of an exception
+	 */
 	public static void main( String[] args ) throws Exception {
 		if( !( args.length > 0 ) ) {
 			System.out.println( "Need input file.list and output dir!" );

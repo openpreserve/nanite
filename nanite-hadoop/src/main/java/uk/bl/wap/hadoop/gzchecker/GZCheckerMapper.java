@@ -21,6 +21,9 @@ public class GZCheckerMapper extends MapReduceBase implements Mapper<LongWritabl
 
     private FileSystem gFS = null;
 	
+    /**
+     * Default constructor
+     */
     public GZCheckerMapper() {
     	
 	}
@@ -67,9 +70,9 @@ public class GZCheckerMapper extends MapReduceBase implements Mapper<LongWritabl
 			}
 
 			if(success) {
-				collector.collect(new Text("ok"), filename);
+				collector.collect(new Text(GZChecker.OK), filename);
 			} else {
-				collector.collect(new Text("fail"), filename);
+				collector.collect(new Text(GZChecker.FAIL), filename);
 			}
 			
 		} else {
