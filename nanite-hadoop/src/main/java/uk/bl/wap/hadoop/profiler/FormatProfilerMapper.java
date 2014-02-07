@@ -10,6 +10,11 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.SequenceFile.CompressionType;
+import org.apache.hadoop.io.SequenceFile.Writer;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -78,10 +83,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	//////////////////////////////////////////////////	
 
 	private DroidDetector droidDetector = null;
-    private Parser tikaParser = null;
+    private AutoDetectParser tikaParser = null;
+    private Writer tikaParserSeqFile = null;
+    private FileSystem gFS = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
 	private Tika tikaDetect = null;
 	
+	private JobConf gConf = null;
 	//private TikaDeepIdentifier tda = null;
 	//private Ohcount oh = null;
 
@@ -167,6 +175,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Set up Tika (parser)
 		if(USE_TIKAPARSER) {
 		    tikaParser = new AutoDetectParser();
+		    // store conf so it can be used to create a sequence file on HDFS
+		    gConf = job;
 		}
 
 		// Set up libMagic
@@ -178,12 +188,50 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 		
 	}
+	
+	private void initSequenceFile(Text pWarc) {
+
+	    try {
+	    // Set up HDFS for Tika Parser
+		gFS = FileSystem.get(gConf);
+		// Set the output sequence file's name
+		Path seqFile = new Path(gConf.get("mapred.output.dir")+"/"+pWarc+".tika.seqfile");
+	    tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.NONE),
+	    												   Writer.file(seqFile),
+	    												   Writer.keyClass(Text.class),
+	    												   Writer.valueClass(Text.class));
+	    } catch(IOException e) {
+	    	log.error("Can't create output sequence file");
+	    }
+	    
+	}
+
+	/* (non-Javadoc)
+	 * @see org.apache.hadoop.mapred.MapReduceBase#close()
+	 */
+	@Override
+	public void close() throws IOException {
+		// TODO Auto-generated method stub
+		super.close();
+		// tidy up
+		if(USE_TIKAPARSER) {
+			if(null!=tikaParserSeqFile) {
+				tikaParserSeqFile.close();
+			}
+		}
+	}
 
 	@Override
 	public void map( Text key, WritableArchiveRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
 
 		// log the file we are processing:
 		log.info("Processing record from: "+key);
+		
+		if(USE_TIKAPARSER) {
+			if(null==tikaParserSeqFile) {
+				initSequenceFile(key);
+			}
+		}
 
 		// Year and type from record:
 		String waybackYear = "";
@@ -270,10 +318,19 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
             	
             	log.trace("Using Tika parser...");
-    			BodyContentHandler handler = new BodyContentHandler();
-     			// This will parse all files to get meta data information
-    			tikaParser.parse(datastream, handler, metadata, new ParseContext());
+            	// TODO: generate an XML file or AVRO file per warc?
+    			BodyContentHandler handler = new BodyContentHandler(/* OutputStream or Writer here if we 
+    																   want the text content of the file */);
+     			// This will parse all files to get metadata information
+    			tikaParser.parse(datastream, handler, metadata);//, new ParseContext());
                 final String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
+                
+                //Store parser output in sequence file
+                String md = "";
+        		for(String k:metadata.names()) {
+        			md+=k+": "+metadata.get(k)+"\n";
+        		}
+        		tikaParserSeqFile.append(new Text(extURL), new Text(md));
                 
             	mapOutput += "\t\"" + parserTikaType + "\"";
             	

@@ -74,6 +74,10 @@ public class FormatProfiler extends Configured implements Tool {
 		conf.setOutputValueClass( Text.class );
 		conf.setMapOutputValueClass( Text.class );
 		
+		// search user classpath first- get rid of asm problems
+		//conf.setBoolean("mapreduce.user.classpath.first", true);
+		conf.setUserClassesTakesPrecedence(true);
+		
 		// Override the task timeout to cope with behaviour when processing malformed archive files:
 		// Actually, error indicates 20,000 seconds is the default here, which is 5.5 hrs!
 		//conf.set("mapred.task.timeout", "1800000");
