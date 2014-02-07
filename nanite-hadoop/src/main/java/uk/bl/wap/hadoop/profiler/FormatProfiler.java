@@ -74,8 +74,7 @@ public class FormatProfiler extends Configured implements Tool {
 		conf.setOutputValueClass( Text.class );
 		conf.setMapOutputValueClass( Text.class );
 		
-		// search user classpath first- get rid of asm problems
-		//conf.setBoolean("mapreduce.user.classpath.first", true);
+		// search our classpath first- otherwise we get dependency problems
 		conf.setUserClassesTakesPrecedence(true);
 		
 		// Override the task timeout to cope with behaviour when processing malformed archive files:
