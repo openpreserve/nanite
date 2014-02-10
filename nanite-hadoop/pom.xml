@@ -11,6 +11,7 @@
 
 	<properties>
 		<warc-hadoop-recordreaders.version>1.1.1-SNAPSHOT</warc-hadoop-recordreaders.version>
+		<mainClass>uk.bl.wap.hadoop.profiler.FormatProfiler</mainClass>
 	</properties>
 
 	<build>
@@ -32,6 +33,11 @@
 					<descriptors>
 						<descriptor>src/assembly/job.xml</descriptor>
 					</descriptors>
+					<archive>
+						<manifest>
+							<mainClass>${mainClass}</mainClass>
+						</manifest>
+					</archive>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -55,6 +61,16 @@
 			<groupId>eu.scape-project.nanite</groupId>
 			<artifactId>nanite-core</artifactId>
 			<version>1.0.72.2-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>commons-compress</artifactId>
+				</exclusion>				
+				<exclusion>
+					<groupId>asm</groupId>
+					<artifactId>asm</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- warc-hadoop-recordreaders moved to profile section due to library 
@@ -71,6 +87,32 @@
 			<artifactId>libmagic-jna-wrapper</artifactId>
 			<version>0.0.2-SNAPSHOT</version>
 		</dependency>
+
+		<!-- required for tika parser code -->
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-app</artifactId>
+			<version>1.4</version>
+			<exclusions>
+			<!-- 
+				<exclusion>
+					<groupId>org.ow2.asm</groupId>
+					<artifactId>asm-debug-all</artifactId>
+				</exclusion>
+				-->
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>commons-compress</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.7</version>
+		</dependency>
+
 	</dependencies>
 
 	<profiles>
@@ -88,6 +130,13 @@
 					<artifactId>hadoop-client</artifactId>
 					<version>${hadoop.version}</version>
 					<scope>provided</scope>
+					<exclusions>
+						<exclusion>
+							<groupId>asm</groupId>
+							<artifactId>asm</artifactId>
+						</exclusion>
+					</exclusions>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.hadoop</groupId>

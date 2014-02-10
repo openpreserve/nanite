@@ -14,6 +14,9 @@ import org.apache.hadoop.mapred.Reporter;
  */
 public class GZCheckerReducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
 	
+	/**
+	 * Default constructor
+	 */
 	public GZCheckerReducer() {
 	}
 

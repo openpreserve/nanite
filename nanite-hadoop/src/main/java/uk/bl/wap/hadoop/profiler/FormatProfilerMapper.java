@@ -6,9 +6,15 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.SequenceFile.CompressionType;
+import org.apache.hadoop.io.SequenceFile.Writer;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -28,6 +34,7 @@ import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
+
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
@@ -45,41 +52,44 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	//////////////////////////////////////////////////
 	// Global constants
 	//////////////////////////////////////////////////	
-	
-	// TODO: move these to a properties file?
-	
-	// Whether or not to include the extension in the output
-	final private boolean INCLUDE_EXTENSION = true;
 
-	// Should we use Droid?
-	final private boolean USE_DROID = true;
-	
-	// Should we use Tika (parser)?
-	final private boolean USE_TIKAPARSER = true;
-	
-	// Should we use Tika (detect)?
-	final private boolean USE_TIKADETECT = false;
-
-	// Should we use libmagic?
-	final private boolean USE_LIBMAGIC = false;
-		
-	final private boolean droidUseBinarySignaturesOnly = false;
-	
-	// Whether to ignore the year of harvest (if so, will set a default year)
-	final private boolean IGNORE_WAYBACKYEAR = true;
+	final private static boolean droidUseBinarySignaturesOnly = false;
 	
 	// Maximum buffer size
 	final private static int BUF_SIZE = 20*1024*1024;
+	
+	//////////////////////////////////////////////////
+	// Global properties
+	//////////////////////////////////////////////////	
+	
+	// NOTE: these settings may be overridden if FormatProfiler.properties exists as a resource
+	
+	private Properties props = null;
+	// Whether or not to include the extension in the output
+	private boolean INCLUDE_EXTENSION = true;
+	// Should we use Droid?
+	private boolean USE_DROID = true;
+	// Should we use Tika (parser)?
+	private boolean USE_TIKAPARSER = true;
+	// Should we use Tika (detect)?
+	private boolean USE_TIKADETECT = false;
+	// Should we use libmagic?
+	private boolean USE_LIBMAGIC = false;
+	// Whether to ignore the year of harvest (if so, will set a default year)
+	private boolean INCLUDE_WAYBACKYEAR = false;
 	
 	//////////////////////////////////////////////////
 	// Global variables
 	//////////////////////////////////////////////////	
 
 	private DroidDetector droidDetector = null;
-    private Parser tikaParser = null;
+    private AutoDetectParser tikaParser = null;
+    private Writer tikaParserSeqFile = null;
+    private FileSystem gFS = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
 	private Tika tikaDetect = null;
 	
+	private JobConf gConf = null;
 	//private TikaDeepIdentifier tda = null;
 	//private Ohcount oh = null;
 
@@ -89,10 +99,64 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     public FormatProfilerMapper() {
 
 	}
+    
+    private void loadConfig() {
+    	
+    	final String propertiesFile = "FormatProfiler.properties";
+    	
+    	// load properties
+    	InputStream p = FormatProfilerMapper.class.getResourceAsStream(propertiesFile);
+    	if(p!=null) {
+    		props = new Properties();
+    		try {
+    			props.load(p);
+    		} catch (IOException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
+
+    		log.info("Loaded properties from "+propertiesFile);
+
+    		if(props.contains("INCLUDE_EXTENSION")) {
+    			INCLUDE_EXTENSION = new Boolean(props.getProperty("INCLUDE_EXTENSION"));
+    		}
+
+    		if(props.contains("USE_DROID")) {
+    			USE_DROID = new Boolean(props.getProperty("USE_DROID"));
+    		}
+
+    		if(props.contains("USE_TIKAPARSER")) {
+    			USE_TIKAPARSER = new Boolean(props.getProperty("USE_TIKAPARSER"));
+    		}
+
+    		if(props.contains("USE_TIKADETECT")) {
+    			USE_TIKADETECT = new Boolean(props.getProperty("USE_TIKADETECT"));
+    		}
+
+    		if(props.contains("USE_LIBMAGIC")) {
+    			USE_LIBMAGIC = new Boolean(props.getProperty("USE_LIBMAGIC"));
+    		}
+
+    		if(props.contains("INCLUDE_WAYBACKYEAR")) {
+    			INCLUDE_WAYBACKYEAR = new Boolean(props.getProperty("INCLUDE_WAYBACKYEAR"));
+    		}
+
+    	}
+    	
+		log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
+		log.info("USE_DROID: "+USE_DROID);
+		log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
+		log.info("USE_TIKADETECT: "+USE_TIKADETECT);
+		log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
+		log.info("INCLUDE_WAYBACKYEAR: "+INCLUDE_WAYBACKYEAR);
+
+    }
 
 	@Override
 	public void configure( JobConf job ) {
 
+		loadConfig();
+		
 		// Set up Droid
 		if(USE_DROID) {
 			try {
@@ -111,6 +175,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Set up Tika (parser)
 		if(USE_TIKAPARSER) {
 		    tikaParser = new AutoDetectParser();
+		    // store conf so it can be used to create a sequence file on HDFS
+		    gConf = job;
 		}
 
 		// Set up libMagic
@@ -122,19 +188,57 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 		
 	}
+	
+	private void initSequenceFile(Text pWarc) {
+
+	    try {
+	    // Set up HDFS for Tika Parser
+		gFS = FileSystem.get(gConf);
+		// Set the output sequence file's name
+		Path seqFile = new Path(gConf.get("mapred.output.dir")+"/"+pWarc+".tika.seqfile");
+	    tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.BLOCK),
+	    												   Writer.file(seqFile),
+	    												   Writer.keyClass(Text.class),
+	    												   Writer.valueClass(Text.class));
+	    } catch(IOException e) {
+	    	log.error("Can't create output sequence file");
+	    }
+	    
+	}
+
+	/* (non-Javadoc)
+	 * @see org.apache.hadoop.mapred.MapReduceBase#close()
+	 */
+	@Override
+	public void close() throws IOException {
+		// TODO Auto-generated method stub
+		super.close();
+		// tidy up
+		if(USE_TIKAPARSER) {
+			if(null!=tikaParserSeqFile) {
+				tikaParserSeqFile.close();
+			}
+		}
+	}
 
 	@Override
 	public void map( Text key, WritableArchiveRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
 
 		// log the file we are processing:
 		log.info("Processing record from: "+key);
+		
+		if(USE_TIKAPARSER) {
+			if(null==tikaParserSeqFile) {
+				initSequenceFile(key);
+			}
+		}
 
 		// Year and type from record:
 		String waybackYear = "";
-		if(IGNORE_WAYBACKYEAR) {
-			waybackYear = "2013";
-		} else {
+		if(INCLUDE_WAYBACKYEAR) {
 			waybackYear = getWaybackYear(value);
+		} else {
+			waybackYear = "na";
 		}
 		String serverType = getServerType(value);
 		log.debug("Server Type: "+serverType);
@@ -169,7 +273,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			// Get file extension
 			String fileExt = "";
 			if (file.contains(".")) {
-				fileExt = getFileExt(file);
+				fileExt = parseExtension(file);
 			}
 			
 			if (INCLUDE_EXTENSION) {
@@ -214,10 +318,19 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
             	
             	log.trace("Using Tika parser...");
-    			BodyContentHandler handler = new BodyContentHandler();
-     			// This will parse all files to get meta data information
-    			tikaParser.parse(datastream, handler, metadata, new ParseContext());
+            	// TODO: generate an XML file or AVRO file per warc?
+    			BodyContentHandler handler = new BodyContentHandler(/* OutputStream or Writer here if we 
+    																   want the text content of the file */);
+     			// This will parse all files to get metadata information
+    			tikaParser.parse(datastream, handler, metadata);//, new ParseContext());
                 final String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
+                
+                //Store parser output in sequence file
+                String md = "";
+        		for(String k:metadata.names()) {
+        			md+=k+": "+metadata.get(k)+"\n";
+        		}
+        		tikaParserSeqFile.append(new Text(extURL), new Text(md));
                 
             	mapOutput += "\t\"" + parserTikaType + "\"";
             	
@@ -338,6 +451,33 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		//System.out.println(s+" found: "+found+" ext: "+ext);
 		return ext;
 	}
+	
+	/**
+	 * Copied from WARCIndexer.java - https://github.com/ukwa/warc-discovery/blob/master/warc-indexer/src/main/java/uk/bl/wa/indexer/WARCIndexer.java#L657
+	 * @param fullUrl
+	 * @return extension
+	 */
+    private static String parseExtension( String fullUrl ) {
+        if( fullUrl.lastIndexOf( "/" ) != -1 ) {
+                String path = fullUrl.substring( fullUrl.lastIndexOf( "/" ) );
+                if( path.indexOf( "?" ) != -1 ) {
+                        path = path.substring( 0, path.indexOf( "?" ) );
+                }
+                if( path.indexOf( "&" ) != -1 ) {
+                        path = path.substring( 0, path.indexOf( "&" ) );
+                }
+                if( path.indexOf( "." ) != -1 ) {
+                        String ext = path.substring( path.lastIndexOf( "." ) );
+                        ext = ext.toLowerCase();
+                        // Avoid odd/malformed extensions:
+                        // if( ext.contains("%") )
+                        // ext = ext.substring(0, path.indexOf("%"));
+                        ext = ext.replaceAll( "[^0-9a-z]", "" );
+                        return ext;
+                }
+        }
+        return null;
+}
 	
 	/**
 	 * 
