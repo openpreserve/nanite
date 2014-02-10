@@ -196,7 +196,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		gFS = FileSystem.get(gConf);
 		// Set the output sequence file's name
 		Path seqFile = new Path(gConf.get("mapred.output.dir")+"/"+pWarc+".tika.seqfile");
-	    tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.NONE),
+	    tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.BLOCK),
 	    												   Writer.file(seqFile),
 	    												   Writer.keyClass(Text.class),
 	    												   Writer.valueClass(Text.class));
