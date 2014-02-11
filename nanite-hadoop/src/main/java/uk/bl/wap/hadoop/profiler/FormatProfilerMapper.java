@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +28,7 @@ import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.EmptyParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
@@ -34,6 +36,10 @@ import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
+import org.xml.sax.Attributes;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.Locator;
+import org.xml.sax.SAXException;
 
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
@@ -175,6 +181,17 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Set up Tika (parser)
 		if(USE_TIKAPARSER) {
 		    tikaParser = new AutoDetectParser();
+		    
+        	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers have problems with certain files
+			Map<MediaType, Parser> parsers = tikaParser.getParsers();
+		    log.info("Disabling parsing of audio/mpeg files");
+		    // Hangs
+			parsers.put(MediaType.audio("mpeg"), new EmptyParser());
+		    log.info("Disabling parsing of image/png files");
+		    // Runs out of heap space at com.sun.imageio.plugins.png.PNGImageReader (JDK6)
+			parsers.put(MediaType.image("png"), new EmptyParser());
+			tikaParser.setParsers(parsers);
+			
 		    // store conf so it can be used to create a sequence file on HDFS
 		    gConf = job;
 		}
@@ -226,6 +243,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// log the file we are processing:
 		log.info("Processing record from: "+key);
+		log.info("                   URL: "+value.getRecord().getHeader().getUrl());
 		
 		if(USE_TIKAPARSER) {
 			if(null==tikaParserSeqFile) {
@@ -313,16 +331,60 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			}
             
             if (USE_TIKAPARSER) {
+            	
             	// Type according to Tika parser
             	Metadata metadata = new Metadata();
             	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
             	
             	log.trace("Using Tika parser...");
-            	// TODO: generate an XML file or AVRO file per warc?
-    			BodyContentHandler handler = new BodyContentHandler(/* OutputStream or Writer here if we 
-    																   want the text content of the file */);
+    			//BodyContentHandler handler = new BodyContentHandler(/* OutputStream or Writer here if we 
+    			//													   want the text content of the file */);
+    			// A do-absolutely-nothing ContentHandler
+    			ContentHandler nullHandler = new ContentHandler() {
+					@Override
+					public void characters(char[] arg0, int arg1, int arg2)
+							throws SAXException { }
+
+					@Override
+					public void endDocument() throws SAXException { }
+
+					@Override
+					public void endElement(String arg0, String arg1, String arg2)
+							throws SAXException { }
+
+					@Override
+					public void endPrefixMapping(String arg0)
+							throws SAXException { }
+
+					@Override
+					public void ignorableWhitespace(char[] arg0, int arg1,
+							int arg2) throws SAXException { }
+
+					@Override
+					public void processingInstruction(String arg0, String arg1)
+							throws SAXException { }
+
+					@Override
+					public void setDocumentLocator(Locator arg0) { }
+
+					@Override
+					public void skippedEntity(String arg0) throws SAXException { }
+
+					@Override
+					public void startDocument() throws SAXException { }
+
+					@Override
+					public void startElement(String arg0, String arg1,
+							String arg2, Attributes arg3) throws SAXException { }
+
+					@Override
+					public void startPrefixMapping(String arg0, String arg1)
+							throws SAXException { }
+					
+    			};
+    			
      			// This will parse all files to get metadata information
-    			tikaParser.parse(datastream, handler, metadata);//, new ParseContext());
+    			tikaParser.parse(datastream, nullHandler, metadata);
                 final String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
                 
                 //Store parser output in sequence file
