@@ -6,7 +6,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
@@ -34,20 +38,20 @@ public class TimeoutParser extends AbstractParser {
 	 * Internal class for running the parser in a background thread
 	 * @author wpalmer
 	 */
-	private class TikaRunnable implements Runnable {
+	private class TikaCallable implements Callable<Integer> {
 		private InputStream gIS = null; 
 		private ContentHandler gCH = null;
 		private Metadata gMD = null;
 		private ParseContext gPC = null;
 		private Exception gException = null;
-		public TikaRunnable(InputStream pIS, ContentHandler pCH, Metadata pMD, ParseContext pPC) {
+		public TikaCallable(InputStream pIS, ContentHandler pCH, Metadata pMD, ParseContext pPC) {
 			gIS = pIS;
 			gCH = pCH;
 			gMD = pMD;
 			gPC = pPC;
 		}
 		@Override
-		public void run() {
+		public Integer call() {
 			try {
 				gParser.parse(gIS, gCH, gMD, gPC);
 				// exceptions are cached and rethrown
@@ -58,6 +62,7 @@ public class TimeoutParser extends AbstractParser {
 			} catch (TikaException e) {
 				gException = e;
 			}
+			return null;
 		}
 		public Exception getException() {
 			return gException;
@@ -112,55 +117,36 @@ public class TimeoutParser extends AbstractParser {
 	public void parse(InputStream pInputStream, ContentHandler pContentHandler, Metadata pMetadata,
 			ParseContext pParseContext) throws IOException, SAXException, TikaException {
 		
-		TikaRunnable tikaRunnable = new TikaRunnable(pInputStream, pContentHandler, pMetadata, pParseContext);
-		Thread parserThread = new Thread(tikaRunnable);
+		TikaCallable tikaCallable = new TikaCallable(pInputStream, pContentHandler, pMetadata, pParseContext);
+		FutureTask<Integer> tikaTask = new FutureTask<Integer>(tikaCallable);
+		Thread parserThread = new Thread(tikaTask);
 		
 		parserThread.setName("TimeoutParser:"+gParser.getClass().getSimpleName()+":"+System.currentTimeMillis());
 		parserThread.start();
 		
-		long msToAllow = gTimeoutLength;
-
-		// check for finished execution every so often so we don't hold things up unnecessarily 
-		final int step = 20;
-		while(msToAllow>0) {
-			if(parserThread.isAlive()) {
-				msToAllow-=step;
-			} else {
-				break;
-			}
-			// sleep for step
-			try {
-				Thread.sleep(step);
-			} catch (InterruptedException e) {
-				//e.printStackTrace();
-			}
-		}
+		boolean terminated = false;
 		
-		boolean addedTimeoutMetadata = false;
-		
-		// Kill the thread if it's still running
-		while(parserThread.isAlive()) {
-
-			// Add a metadata key that indicates we terminated the parsing
-			if(!addedTimeoutMetadata) {
-				pMetadata.add(TIMEOUTKEY, "true");
-				addedTimeoutMetadata = true;
-			}
-
-			parserThread.interrupt();
+		try {
+			tikaTask.get(gTimeoutLength, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
 			// FIXME: deprecated API call
 			parserThread.stop();
+			terminated = true;
+		} catch (TimeoutException e) {
+			// FIXME: deprecated API call
+			parserThread.stop();
+			terminated = true;
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		} 
 
-			try {
-				Thread.sleep(step);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		if(terminated) {
+			// Add a metadata key that indicates the parsing was terminated
+			pMetadata.add(TIMEOUTKEY, "true");
 		}
 		
-		if(tikaRunnable.getException()!=null) {
-			Exception e = tikaRunnable.getException(); 
+		if(tikaCallable.getException()!=null) {
+			Exception e = tikaCallable.getException(); 
 			if(e instanceof IOException) {
 				throw (IOException)e;
 			}
@@ -174,7 +160,8 @@ public class TimeoutParser extends AbstractParser {
 			e.printStackTrace();
 		}
 		
-		tikaRunnable = null;
+		tikaCallable = null;
+		tikaTask = null;
 		parserThread = null;
 		
 	}
