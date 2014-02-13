@@ -23,6 +23,7 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
+import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
@@ -89,7 +90,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	//////////////////////////////////////////////////	
 
 	private DroidDetector droidDetector = null;
-    private AutoDetectParser tikaParser = null;
+    private Parser tikaParser = null;
     private Writer tikaParserSeqFile = null;
     private FileSystem gFS = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
@@ -180,20 +181,33 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Set up Tika (parser)
 		if(USE_TIKAPARSER) {
-		    tikaParser = new AutoDetectParser();
-		    
-        	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers have problems with certain files
-			Map<MediaType, Parser> parsers = tikaParser.getParsers();
-		    log.info("Disabling parsing of audio/mpeg files");
-		    // Hangs
-			parsers.put(MediaType.audio("mpeg"), new EmptyParser());
-		    log.info("Disabling parsing of image/png files");
-		    // Runs out of heap space at com.sun.imageio.plugins.png.PNGImageReader (JDK6)
-			parsers.put(MediaType.image("png"), new EmptyParser());
-			tikaParser.setParsers(parsers);
-			
 		    // store conf so it can be used to create a sequence file on HDFS
 		    gConf = job;
+
+		    // Configure the AutoDetectParser before we wrap it in a TimeoutParser
+		    
+			AutoDetectParser parser = new AutoDetectParser();
+		    
+        	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers (and their dependencies) have problems with certain files
+			Map<MediaType, Parser> parsers = parser.getParsers();
+			
+		    // Hangs
+		    //log.info("Disabling parsing of audio/mpeg files");
+			//parsers.put(MediaType.audio("mpeg"), new EmptyParser());
+			
+		    // Runs out of heap space at com.sun.imageio.plugins.png.PNGImageReader (JDK6)
+		    log.info("Disabling parsing of image/png files");
+			parsers.put(MediaType.image("png"), new EmptyParser());
+			
+		    // java.lang.OutOfMemoryError (JDK6)
+		    log.info("Disabling parsing of video/mp4 files");
+			parsers.put(MediaType.video("mp4"), new EmptyParser());
+			
+			parser.setParsers(parsers);
+			
+			// wrap the parser in a TimeoutParser and use the default timeout value
+			tikaParser = new TimeoutParser(parser);
+			
 		}
 
 		// Set up libMagic
@@ -337,9 +351,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
             	
             	log.trace("Using Tika parser...");
-    			//BodyContentHandler handler = new BodyContentHandler(/* OutputStream or Writer here if we 
-    			//													   want the text content of the file */);
-    			// A do-absolutely-nothing ContentHandler
+
+            	// A do-absolutely-nothing ContentHandler
     			ContentHandler nullHandler = new ContentHandler() {
 					@Override
 					public void characters(char[] arg0, int arg1, int arg2)
@@ -383,19 +396,25 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 					
     			};
     			
-     			// This will parse all files to get metadata information
-    			tikaParser.parse(datastream, nullHandler, metadata);
-                final String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
-                
-                //Store parser output in sequence file
-                String md = "";
-        		for(String k:metadata.names()) {
-        			md+=k+": "+metadata.get(k)+"\n";
-        		}
-        		tikaParserSeqFile.append(new Text(extURL), new Text(md));
-                
-            	mapOutput += "\t\"" + parserTikaType + "\"";
-            	
+    			tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
+
+    			String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
+    			
+    			if(metadata.get(TimeoutParser.TIMEOUTKEY)!=null) {
+    				// indicate the parser timed out in the reduce output
+    				parserTikaType = "tikaParserTimeout";
+    			}
+
+    			//Store parser output in sequence file
+    			String md = "";
+    			for(String k:metadata.names()) {
+    				md+=k+": "+metadata.get(k)+"\n";
+    			}
+    			tikaParserSeqFile.append(new Text(extURL), new Text(md));
+
+    			mapOutput += "\t\"" + parserTikaType + "\"";
+
+    			
            		// Reset the datastream for reuse
            		datastream.reset();
            		
