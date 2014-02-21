@@ -143,6 +143,9 @@ public class TimeoutParser extends AbstractParser {
 		if(terminated) {
 			// Add a metadata key that indicates the parsing was terminated
 			pMetadata.add(TIMEOUTKEY, "true");
+			
+			// FIXME: Should we force the parser to null here?
+			
 		}
 		
 		if(tikaCallable.getException()!=null) {
@@ -172,7 +175,9 @@ public class TimeoutParser extends AbstractParser {
 	}
 	
 	private static void parse(File pFile) {
+		long time = System.currentTimeMillis();
 		Parser parser = new TimeoutParser(new AutoDetectParser());//, 10, TimeUnit.SECONDS);
+		System.out.println("Parser init ms: "+(System.currentTimeMillis()-time));
 		Metadata metadata = new Metadata();
 		metadata.set(Metadata.RESOURCE_NAME_KEY, pFile.getAbsolutePath());
 		
@@ -206,7 +211,9 @@ public class TimeoutParser extends AbstractParser {
 	public static void main(String[] args) {
 	
 		//parse(new File("odt.odt"));
-		parse(new File("corrupt.mp3"));
+		//parse(new File("corrupt.mp3"));
+		parse(new File("v1.pdf"));
+		parse(new File("pdfa.pdf"));
 		
 	}
 

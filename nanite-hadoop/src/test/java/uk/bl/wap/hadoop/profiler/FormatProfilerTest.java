@@ -35,6 +35,7 @@ import com.typesafe.config.ConfigFactory;
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
  */
+@SuppressWarnings({"deprecation", "javadoc"})
 public class FormatProfilerTest {
 
 	private static final Log log = LogFactory.getLog(FormatProfiler.class);
@@ -118,6 +119,7 @@ public class FormatProfilerTest {
 		String[] args = {"src/test/resources/test-inputs.txt", this.output.getName()};
 		
 		// Set up the config and tool
+		@SuppressWarnings("unused")
 		Config config = ConfigFactory.load();
 		FormatProfiler wir = new FormatProfiler();
 

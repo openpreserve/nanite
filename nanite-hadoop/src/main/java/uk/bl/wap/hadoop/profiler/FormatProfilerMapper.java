@@ -11,7 +11,6 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
@@ -23,7 +22,6 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
-import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
@@ -32,16 +30,11 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.EmptyParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
-import org.apache.tika.sax.BodyContentHandler;
 import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
-import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
-import org.xml.sax.Locator;
-import org.xml.sax.SAXException;
-
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
@@ -92,13 +85,14 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private DroidDetector droidDetector = null;
     private Parser tikaParser = null;
     private Writer tikaParserSeqFile = null;
-    private FileSystem gFS = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
 	private Tika tikaDetect = null;
 	
 	private JobConf gConf = null;
-	//private TikaDeepIdentifier tda = null;
-	//private Ohcount oh = null;
+
+	//////////////////////////////////////////////////
+	// Constructors
+	//////////////////////////////////////////////////	
 
 	/**
 	 * Default constructor
@@ -107,6 +101,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 	}
     
+	//////////////////////////////////////////////////
+	// Private methods
+	//////////////////////////////////////////////////	
+
+    /**
+     * Load configuration from the properties file
+     */
     private void loadConfig() {
     	
     	final String propertiesFile = "FormatProfiler.properties";
@@ -159,6 +160,160 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
     }
 
+    /**
+     * Initialise the Tika Parser
+     */
+    private void initTikaParser() {
+	    // Configure the AutoDetectParser before we wrap it in a TimeoutParser
+		AutoDetectParser parser = new AutoDetectParser();
+	    
+    	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers (and their dependencies) have problems with certain files
+		Map<MediaType, Parser> parsers = parser.getParsers();
+		
+	    // Hangs
+	    //log.info("Disabling parsing of audio/mpeg files");
+		//parsers.put(MediaType.audio("mpeg"), new EmptyParser());
+		
+	    // java.lang.OutOfMemoryError: Java heap space @ com.sun.imageio.plugins.png.PNGImageReader (JDK6)
+	    log.info("Disabling parsing of image/png files");
+		parsers.put(MediaType.image("png"), new EmptyParser());
+		
+	    // java.lang.OutOfMemoryError: Java heap space @ com.coremedia.iso.ChannelHelper.readFully (JDK6)
+	    log.info("Disabling parsing of video/mp4 files");
+		parsers.put(MediaType.video("mp4"), new EmptyParser());
+		
+		parser.setParsers(parsers);
+		
+		// wrap the parser in a TimeoutParser and use the default timeout value
+		tikaParser = new TimeoutParser(parser);
+		
+    }
+    
+	/**
+	 * Initialise a sequence file that will contain the Tika outputs
+	 * @param pWarc
+	 */
+	private void initSequenceFile(Text pWarc) {
+
+	    try {
+		// Set the output sequence file's name
+		Path seqFile = new Path(gConf.get("mapred.output.dir")+"/"+pWarc+".tika.seqfile");
+	    tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.BLOCK),
+	    												   Writer.file(seqFile),
+	    												   Writer.keyClass(Text.class),
+	    												   Writer.valueClass(Text.class));
+	    } catch(IOException e) {
+	    	log.error("Can't create output sequence file");
+	    }
+	    
+	}
+	
+	/**
+	 * Convenience method for getting the file extension from a URI
+	 * @param s path
+	 * @return file extension
+	 */
+	@SuppressWarnings("unused")
+	private String getFileExt(String s) {
+		String shortenedToExt = s.toLowerCase();
+		if(s.contains(".")) {
+			try {
+				//try and remove as much additional as possible after the path
+				shortenedToExt = new URI(s).getPath().toLowerCase();
+			} catch (URISyntaxException e) {
+			}
+			// We assume that the last . is now before the file extension
+			if (shortenedToExt.contains(";")) {
+				//Removing remaining string after ";" assuming that this interferes with actual extension in some cases 
+				shortenedToExt = shortenedToExt.substring(0, shortenedToExt.indexOf(';') + 1);
+			}
+			shortenedToExt = shortenedToExt.substring(shortenedToExt.lastIndexOf('.') + 1);
+		}
+		Pattern p = Pattern.compile("^([a-zA-Z0-9]*).*$");
+		Matcher m = p.matcher(shortenedToExt);
+		boolean found = m.find();
+		String ext = "";
+		if(found) {
+			//m.group(0) is full pattern match, then (1)(2)(3)... for the above pattern
+			ext = m.group(1);
+		}
+		//System.out.println(s+" found: "+found+" ext: "+ext);
+		return ext;
+	}
+	
+	/**
+	 * Copied from WARCIndexer.java - https://github.com/ukwa/warc-discovery/blob/master/warc-indexer/src/main/java/uk/bl/wa/indexer/WARCIndexer.java#L657
+	 * @param fullUrl
+	 * @return extension
+	 */
+    private String parseExtension( String fullUrl ) {
+        if( fullUrl.lastIndexOf( "/" ) != -1 ) {
+                String path = fullUrl.substring( fullUrl.lastIndexOf( "/" ) );
+                if( path.indexOf( "?" ) != -1 ) {
+                        path = path.substring( 0, path.indexOf( "?" ) );
+                }
+                if( path.indexOf( "&" ) != -1 ) {
+                        path = path.substring( 0, path.indexOf( "&" ) );
+                }
+                if( path.indexOf( "." ) != -1 ) {
+                        String ext = path.substring( path.lastIndexOf( "." ) );
+                        ext = ext.toLowerCase();
+                        // Avoid odd/malformed extensions:
+                        // if( ext.contains("%") )
+                        // ext = ext.substring(0, path.indexOf("%"));
+                        ext = ext.replaceAll( "[^0-9a-z]", "" );
+                        return ext;
+                }
+        }
+        return null;
+    }
+	
+	/**
+	 * 
+	 * @param value
+	 * @return
+	 */
+	private String getServerType(WritableArchiveRecord value) {
+		String serverType = "application/x-unknown";
+		ArchiveRecordHeader header = value.getRecord().getHeader();
+		// Get the server header data:
+		if( !header.getHeaderFields().isEmpty() ) {
+			// Type according to server:
+			serverType = header.getMimetype();
+			if( serverType == null ) {
+				log.warn("LOG: Server Content-Type is null.");
+			}
+		} else {
+			log.warn("LOG: Empty header fields.");
+		}
+		return serverType;
+	}
+	
+	/**
+	 * 
+	 * @param value
+	 * @return
+	 */
+	private String getWaybackYear(WritableArchiveRecord value) {
+		String waybackYear = "unknown";
+		ArchiveRecordHeader header = value.getRecord().getHeader();
+		// Get the server header data:
+		if( !header.getHeaderFields().isEmpty() ) {
+			// The crawl year:
+			String waybackDate = ( ( String ) header.getDate() ).replaceAll( "[^0-9]", "" );
+			if( waybackDate != null ) 
+				waybackYear = waybackDate.substring(0,waybackDate.length()<4?waybackDate.length():4);
+
+		} else {
+			log.warn("LOG: Empty header fields!");
+		}
+		return waybackYear;
+	}
+
+	//////////////////////////////////////////////////
+	// Mapper methods
+	//////////////////////////////////////////////////	
+
 	@Override
 	public void configure( JobConf job ) {
 
@@ -184,30 +339,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		    // store conf so it can be used to create a sequence file on HDFS
 		    gConf = job;
 
-		    // Configure the AutoDetectParser before we wrap it in a TimeoutParser
-		    
-			AutoDetectParser parser = new AutoDetectParser();
-		    
-        	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers (and their dependencies) have problems with certain files
-			Map<MediaType, Parser> parsers = parser.getParsers();
-			
-		    // Hangs
-		    //log.info("Disabling parsing of audio/mpeg files");
-			//parsers.put(MediaType.audio("mpeg"), new EmptyParser());
-			
-		    // Runs out of heap space at com.sun.imageio.plugins.png.PNGImageReader (JDK6)
-		    log.info("Disabling parsing of image/png files");
-			parsers.put(MediaType.image("png"), new EmptyParser());
-			
-		    // java.lang.OutOfMemoryError (JDK6)
-		    log.info("Disabling parsing of video/mp4 files");
-			parsers.put(MediaType.video("mp4"), new EmptyParser());
-			
-			parser.setParsers(parsers);
-			
-			// wrap the parser in a TimeoutParser and use the default timeout value
-			tikaParser = new TimeoutParser(parser);
-			
+		    // Do this in a method so we can call it again if we need to re-initialise
+		    initTikaParser();
 		}
 
 		// Set up libMagic
@@ -218,23 +351,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			libMagicWrapper.loadCompiledMagic();
 		}
 		
-	}
-	
-	private void initSequenceFile(Text pWarc) {
-
-	    try {
-	    // Set up HDFS for Tika Parser
-		gFS = FileSystem.get(gConf);
-		// Set the output sequence file's name
-		Path seqFile = new Path(gConf.get("mapred.output.dir")+"/"+pWarc+".tika.seqfile");
-	    tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.BLOCK),
-	    												   Writer.file(seqFile),
-	    												   Writer.keyClass(Text.class),
-	    												   Writer.valueClass(Text.class));
-	    } catch(IOException e) {
-	    	log.error("Can't create output sequence file");
-	    }
-	    
 	}
 
 	/* (non-Javadoc)
@@ -353,48 +469,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	log.trace("Using Tika parser...");
 
             	// A do-absolutely-nothing ContentHandler
-    			ContentHandler nullHandler = new ContentHandler() {
-					@Override
-					public void characters(char[] arg0, int arg1, int arg2)
-							throws SAXException { }
-
-					@Override
-					public void endDocument() throws SAXException { }
-
-					@Override
-					public void endElement(String arg0, String arg1, String arg2)
-							throws SAXException { }
-
-					@Override
-					public void endPrefixMapping(String arg0)
-							throws SAXException { }
-
-					@Override
-					public void ignorableWhitespace(char[] arg0, int arg1,
-							int arg2) throws SAXException { }
-
-					@Override
-					public void processingInstruction(String arg0, String arg1)
-							throws SAXException { }
-
-					@Override
-					public void setDocumentLocator(Locator arg0) { }
-
-					@Override
-					public void skippedEntity(String arg0) throws SAXException { }
-
-					@Override
-					public void startDocument() throws SAXException { }
-
-					@Override
-					public void startElement(String arg0, String arg1,
-							String arg2, Attributes arg3) throws SAXException { }
-
-					@Override
-					public void startPrefixMapping(String arg0, String arg1)
-							throws SAXException { }
-					
-    			};
+    			ContentHandler nullHandler = new NullContentHandler();
     			
     			tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
 
@@ -403,9 +478,15 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			if(metadata.get(TimeoutParser.TIMEOUTKEY)!=null) {
     				// indicate the parser timed out in the reduce output
     				parserTikaType = "tikaParserTimeout";
+    				
+    				// Re-initialise the parser due to a forced Thread stop, just in case
+    				// NOTE: even reinitialising might still leave problems
+    				tikaParser = null;
+    				initTikaParser();
     			}
 
-    			//Store parser output in sequence file
+    			// Store parser output in sequence file
+    			// FIXME: better formatting? Make this compatible with c3po
     			String md = "";
     			for(String k:metadata.names()) {
     				md+=k+": "+metadata.get(k)+"\n";
@@ -413,7 +494,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			tikaParserSeqFile.append(new Text(extURL), new Text(md));
 
     			mapOutput += "\t\"" + parserTikaType + "\"";
-
     			
            		// Reset the datastream for reuse
            		datastream.reset();
@@ -499,107 +579,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				datastream = null;
 			}
 		}
-	}
-	
-	/**
-	 * Convenience method for getting the file extension from a URI
-	 * @param s path
-	 * @return file extension
-	 */
-	public String getFileExt(String s) {
-		String shortenedToExt = s.toLowerCase();
-		if(s.contains(".")) {
-			try {
-				//try and remove as much additional as possible after the path
-				shortenedToExt = new URI(s).getPath().toLowerCase();
-			} catch (URISyntaxException e) {
-			}
-			// We assume that the last . is now before the file extension
-			if (shortenedToExt.contains(";")) {
-				//Removing remaining string after ";" assuming that this interferes with actual extension in some cases 
-				shortenedToExt = shortenedToExt.substring(0, shortenedToExt.indexOf(';') + 1);
-			}
-			shortenedToExt = shortenedToExt.substring(shortenedToExt.lastIndexOf('.') + 1);
-		}
-		Pattern p = Pattern.compile("^([a-zA-Z0-9]*).*$");
-		Matcher m = p.matcher(shortenedToExt);
-		boolean found = m.find();
-		String ext = "";
-		if(found) {
-			//m.group(0) is full pattern match, then (1)(2)(3)... for the above pattern
-			ext = m.group(1);
-		}
-		//System.out.println(s+" found: "+found+" ext: "+ext);
-		return ext;
-	}
-	
-	/**
-	 * Copied from WARCIndexer.java - https://github.com/ukwa/warc-discovery/blob/master/warc-indexer/src/main/java/uk/bl/wa/indexer/WARCIndexer.java#L657
-	 * @param fullUrl
-	 * @return extension
-	 */
-    private static String parseExtension( String fullUrl ) {
-        if( fullUrl.lastIndexOf( "/" ) != -1 ) {
-                String path = fullUrl.substring( fullUrl.lastIndexOf( "/" ) );
-                if( path.indexOf( "?" ) != -1 ) {
-                        path = path.substring( 0, path.indexOf( "?" ) );
-                }
-                if( path.indexOf( "&" ) != -1 ) {
-                        path = path.substring( 0, path.indexOf( "&" ) );
-                }
-                if( path.indexOf( "." ) != -1 ) {
-                        String ext = path.substring( path.lastIndexOf( "." ) );
-                        ext = ext.toLowerCase();
-                        // Avoid odd/malformed extensions:
-                        // if( ext.contains("%") )
-                        // ext = ext.substring(0, path.indexOf("%"));
-                        ext = ext.replaceAll( "[^0-9a-z]", "" );
-                        return ext;
-                }
-        }
-        return null;
-}
-	
-	/**
-	 * 
-	 * @param value
-	 * @return
-	 */
-	private String getServerType(WritableArchiveRecord value) {
-		String serverType = "application/x-unknown";
-		ArchiveRecordHeader header = value.getRecord().getHeader();
-		// Get the server header data:
-		if( !header.getHeaderFields().isEmpty() ) {
-			// Type according to server:
-			serverType = header.getMimetype();
-			if( serverType == null ) {
-				log.warn("LOG: Server Content-Type is null.");
-			}
-		} else {
-			log.warn("LOG: Empty header fields.");
-		}
-		return serverType;
-	}
-	
-	/**
-	 * 
-	 * @param value
-	 * @return
-	 */
-	private String getWaybackYear(WritableArchiveRecord value) {
-		String waybackYear = "unknown";
-		ArchiveRecordHeader header = value.getRecord().getHeader();
-		// Get the server header data:
-		if( !header.getHeaderFields().isEmpty() ) {
-			// The crawl year:
-			String waybackDate = ( ( String ) header.getDate() ).replaceAll( "[^0-9]", "" );
-			if( waybackDate != null ) 
-				waybackYear = waybackDate.substring(0,waybackDate.length()<4?waybackDate.length():4);
-
-		} else {
-			log.warn("LOG: Empty header fields!");
-		}
-		return waybackYear;
 	}
 	
 }

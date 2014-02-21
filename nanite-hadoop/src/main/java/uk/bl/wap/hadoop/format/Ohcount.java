@@ -12,6 +12,7 @@ import org.apache.log4j.Logger;
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
  */
+@SuppressWarnings("javadoc")
 public class Ohcount {
 	private static Logger log = Logger.getLogger(Ohcount.class.getName());
 	
