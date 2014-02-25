@@ -36,6 +36,7 @@ import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
 import org.xml.sax.ContentHandler;
 
+import uk.bl.dpt.qa.ProcessIsolatedTika;
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
@@ -85,6 +86,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 	private DroidDetector droidDetector = null;
     private Parser tikaParser = null;
+	private ProcessIsolatedTika isolatedTikaParser = null;
     private Writer tikaParserSeqFile = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
 	private Tika tikaDetect = null;
@@ -359,11 +361,14 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 		// Set up Tika (parser)
 		if(USE_TIKAPARSER) {
+			
 		    // store conf so it can be used to create a sequence file on HDFS
 		    gConf = job;
-
+			
+			isolatedTikaParser = new ProcessIsolatedTika();
+			
 		    // Do this in a method so we can call it again if we need to re-initialise
-		    initTikaParser();
+		    //initTikaParser();
 		}
 
 		// Set up libMagic
@@ -387,6 +392,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		if(USE_TIKAPARSER) {
 			if(null!=tikaParserSeqFile) {
 				tikaParserSeqFile.close();
+			}
+			if(null!=isolatedTikaParser) {
+				isolatedTikaParser.stop();
 			}
 		}
 	}
@@ -494,9 +502,14 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	// A do-absolutely-nothing ContentHandler
     			ContentHandler nullHandler = new NullContentHandler();
     			
-    			tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
+    			//tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
+    			boolean success = isolatedTikaParser.parse(datastream, metadata);
 
     			String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
+    			
+    			if(!success) {
+    				parserTikaType = "tikaParserTimeout";
+    			}
     			
     			if(metadata.get(TimeoutParser.TIMEOUTKEY)!=null) {
     				// indicate the parser timed out in the reduce output
