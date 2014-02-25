@@ -28,14 +28,11 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.EmptyParser;
-import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
-import org.xml.sax.ContentHandler;
-
 import uk.bl.dpt.qa.ProcessIsolatedTika;
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
@@ -85,7 +82,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	//////////////////////////////////////////////////	
 
 	private DroidDetector droidDetector = null;
-    private Parser tikaParser = null;
+    @SuppressWarnings("unused")
+	private Parser tikaParser = null;
 	private ProcessIsolatedTika isolatedTikaParser = null;
     private Writer tikaParserSeqFile = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
@@ -167,7 +165,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     /**
      * Initialise the Tika Parser
      */
-    private void initTikaParser() {
+    @SuppressWarnings("unused")
+	private void initTikaParser() {
 		AutoDetectParser parser = null;
    		parser = new AutoDetectParser();
     	
@@ -479,7 +478,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	log.trace("Using Tika parser...");
 
             	// A do-absolutely-nothing ContentHandler
-    			ContentHandler nullHandler = new NullContentHandler();
+    			//ContentHandler nullHandler = new NullContentHandler();
     			
     			//tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
     			boolean success = isolatedTikaParser.parse(datastream, metadata);
