@@ -2,6 +2,7 @@ package uk.bl.wap.hadoop.gzchecker;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -92,6 +93,7 @@ public class GZChecker extends Configured implements Tool {
 		//Hadoop has default time out for 600S secinds which doesn't seems to be enough, so changed it to 30 minutes.
 		conf.set("mapred.task.timeout", Integer.toString(360*60*1000));
 		// Manually set a large number of reducers:
+		@SuppressWarnings("unused")
 		Config config = ConfigFactory.load();
 //		conf.setNumReduceTasks(config.getInt("warc.hadoop.num_reducers"));
 		conf.setNumReduceTasks(1);
