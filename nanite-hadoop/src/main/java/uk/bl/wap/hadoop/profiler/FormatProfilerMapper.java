@@ -169,28 +169,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
      */
     private void initTikaParser() {
 		AutoDetectParser parser = null;
-//    	if(gTikaAlreadyInitialised) {
-//		    // Create a new ClassLoader and re-load the AutoDetectParser; we have to do this fresh each time to ensure
-//	    	// that the static state is not corrupted upon Thread.stop()
-//			// Ensure that the parent classloader is null		
-//	    	URLClassLoader classLoader = new URLClassLoader(((URLClassLoader)System.class.getClassLoader()).getURLs(), null);
-//			try {
-//				parser = (AutoDetectParser)Class.forName("org.apache.tika.parser.AutoDetectParser", true, classLoader).newInstance();
-//			} catch (InstantiationException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			} catch (IllegalAccessException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			} catch (ClassNotFoundException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//			gTikaAlreadyInitialised = true;
-//    	} else {
-    		// For the first time we can use the system ClassLoader
-    		parser = new AutoDetectParser();
-//    	}
+   		parser = new AutoDetectParser();
     	
     	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers (and their dependencies) have problems with certain files
 		Map<MediaType, Parser> parsers = parser.getParsers();

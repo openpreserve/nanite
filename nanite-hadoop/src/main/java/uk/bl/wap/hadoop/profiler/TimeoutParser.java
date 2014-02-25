@@ -175,57 +175,6 @@ public class TimeoutParser extends AbstractParser {
 		return gParser.getSupportedTypes(pParseContext);
 	}
 
-	/**
-	 * Example method for creating a new ClassLoader to load the Parser from, for use when
-	 * we have had to use Thread.stop()
-	 * @param pFile
-	 */
-	// FIXME: this won't work as classes loaded from different classloaders are not compatible and we 
-	// would rely on this re-loading a compatible set of classes for Tika and its dependencies
-//	private static void parseFromNewLoader(File pFile) {
-//		long time = System.currentTimeMillis();
-//		URLClassLoader classLoader = new URLClassLoader(((URLClassLoader)TimeoutParser.class.getClassLoader()).getURLs());
-//		Parser parser = null;
-//		try {
-//			parser = (AutoDetectParser)Class.forName("org.apache.tika.parser.AutoDetectParser", true, classLoader).newInstance();
-//		} catch (InstantiationException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (IllegalAccessException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (ClassNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		parser = new TimeoutParser(parser);
-//		System.out.println("Parser init ms: "+(System.currentTimeMillis()-time));
-//		Metadata metadata = new Metadata();
-//		metadata.set(Metadata.RESOURCE_NAME_KEY, pFile.getAbsolutePath());
-//		
-//		try {
-//			parser.parse(new FileInputStream(pFile), new BodyContentHandler(), metadata, new ParseContext());
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (SAXException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (TikaException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		System.out.println("Metadata keys: "+metadata.names().length);
-//		for(String k:metadata.names()) {
-//			System.out.println(k+": "+metadata.get(k));
-//		}
-//		
-//	}
-
 	private static void parse(File pFile) {
 		long time = System.currentTimeMillis();
 		Parser parser = new TimeoutParser(new AutoDetectParser());//, 10, TimeUnit.SECONDS);
