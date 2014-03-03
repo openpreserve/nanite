@@ -77,9 +77,11 @@ public class FormatProfiler extends Configured implements Tool {
 		// search our classpath first- otherwise we get dependency problems
 		conf.setUserClassesTakesPrecedence(true);
 		
-		// Override the task timeout to cope with behaviour when processing malformed archive files:
-		// Actually, error indicates 20,000 seconds is the default here, which is 5.5 hrs!
-		//conf.set("mapred.task.timeout", "1800000");
+		// Override the task timeout to cope with behaviour when processing malformed archive files
+		// Value set in MS.  Default value is 600,000ms (i.e. 10 mins)
+		// Set this to 30 minutes
+		int timeoutMins = 30;
+		conf.setInt("mapred.task.timeout", timeoutMins*60*1000);
 		
 		// Override the maxiumum JobConf size so very large lists of files can be processed:
 		// Default mapred.user.jobconf.limit=5242880 (5M), bump to 100 megabytes = 104857600 bytes.

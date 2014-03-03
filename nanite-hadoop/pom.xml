@@ -40,6 +40,15 @@
 					</archive>
 				</configuration>
 			</plugin>
+						<!-- this prevents maven trying to be smart -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<version>2.9</version>
+				<configuration>
+					<useProjectReferences>false</useProjectReferences>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -65,7 +74,7 @@
 				<exclusion>
 					<groupId>org.apache.commons</groupId>
 					<artifactId>commons-compress</artifactId>
-				</exclusion>				
+				</exclusion>
 				<exclusion>
 					<groupId>asm</groupId>
 					<artifactId>asm</artifactId>
@@ -92,14 +101,10 @@
 		<dependency>
 			<groupId>org.apache.tika</groupId>
 			<artifactId>tika-app</artifactId>
-			<version>1.4</version>
+			<version>1.5</version>
 			<exclusions>
-			<!-- 
-				<exclusion>
-					<groupId>org.ow2.asm</groupId>
-					<artifactId>asm-debug-all</artifactId>
-				</exclusion>
-				-->
+				<!-- <exclusion> <groupId>org.ow2.asm</groupId> <artifactId>asm-debug-all</artifactId> 
+					</exclusion> -->
 				<exclusion>
 					<groupId>org.apache.commons</groupId>
 					<artifactId>commons-compress</artifactId>
@@ -111,6 +116,12 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-compress</artifactId>
 			<version>1.7</version>
+		</dependency>
+
+		<dependency>
+			<groupId>uk.bl.dpt.qa</groupId>
+			<artifactId>processisolatedtika</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
 	</dependencies>
@@ -136,7 +147,7 @@
 							<artifactId>asm</artifactId>
 						</exclusion>
 					</exclusions>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.hadoop</groupId>
@@ -222,6 +233,16 @@
 			<name>Internet Archive Maven Repository</name>
 			<url>http://builds.archive.org:8080/maven2</url>
 			<layout>default</layout>
+		</repository>
+		<repository>
+			<id>apache snapshots</id>
+			<url>http://repository.apache.org/snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
 		</repository>
 	</repositories>
 
