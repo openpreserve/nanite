@@ -117,7 +117,7 @@
 			<artifactId>commons-compress</artifactId>
 			<version>1.7</version>
 		</dependency>
-
+		<!-- Install from here: https://github.com/willp-bl/ProcessIsolatedTika -->
 		<dependency>
 			<groupId>uk.bl.dpt.qa</groupId>
 			<artifactId>processisolatedtika</artifactId>
