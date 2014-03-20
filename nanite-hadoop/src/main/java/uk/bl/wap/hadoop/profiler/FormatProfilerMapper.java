@@ -22,8 +22,8 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
-import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.Tika;
+import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
@@ -33,6 +33,7 @@ import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
 import org.opf_labs.LibmagicJnaWrapper;
+
 import uk.bl.dpt.qa.ProcessIsolatedTika;
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
@@ -249,7 +250,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	 * @param fullUrl
 	 * @return extension
 	 */
-    private String parseExtension( String fullUrl ) {
+    private static String parseExtension( String fullUrl ) {
         if( fullUrl.lastIndexOf( "/" ) != -1 ) {
                 String path = fullUrl.substring( fullUrl.lastIndexOf( "/" ) );
                 if( path.indexOf( "?" ) != -1 ) {
@@ -265,6 +266,14 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
                         // if( ext.contains("%") )
                         // ext = ext.substring(0, path.indexOf("%"));
                         ext = ext.replaceAll( "[^0-9a-z]", "" );
+                        
+                        // try and sanitize some extensions
+                        String e = "";
+                        e = "html"; if(ext.startsWith(e)) { ext = e; }
+                        e = "jpg"; if(ext.startsWith(e)) { ext = e; }
+                        e = "jpeg"; if(ext.startsWith(e)) { ext = e; }
+                        e = "png"; if(ext.startsWith(e)) { ext = e; }
+                        
                         return ext;
                 }
         }
@@ -381,8 +390,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	public void map( Text key, WritableArchiveRecord value, OutputCollector<Text, Text> output, Reporter reporter ) throws IOException {
 
 		// log the file we are processing:
-		log.info("Processing record from: "+key);
-		log.info("                   URL: "+value.getRecord().getHeader().getUrl());
+		//log.info("Processing record from: "+key);
+		//log.info("                   URL: "+value.getRecord().getHeader().getUrl());
 		
 		if(USE_TIKAPARSER) {
 			if(null==tikaParserSeqFile) {
@@ -407,37 +416,48 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		InputStream datastream = null;
 		try {
 			
-			// Make sure we have something to turn in to a URL!
-			if (extURL != null && extURL.length() > 0) {
-				extURL = URLEncoder.encode(extURL, "UTF-8");
-			} else {
-				extURL = "";
-			}
-			
-			// Remove directories
-			String file = value.getRecord().getHeader().getUrl();
-			if (file != null) {
-				final int lastIndexSlash = file.lastIndexOf('/');
-				if (lastIndexSlash > 0 & (lastIndexSlash < file.length())) {
-					file = file.substring(lastIndexSlash + 1);
-				}
-			} else {
-				file = "";
-			}
-
 			String mapOutput = "\"" + serverType + "\"";
 			
-			// Get file extension
-			String fileExt = "";
-			if (file.contains(".")) {
-				fileExt = parseExtension(file);
-			}
-			
 			if (INCLUDE_EXTENSION) {
+				// Make sure we have something to turn in to a URL!
+//				if (extURL != null && extURL.length() > 0) {
+//					extURL = URLEncoder.encode(extURL, "UTF-8");
+//				} else {
+//					extURL = "";
+//				}
+
+				// Remove directories
+//				String file = extURL;//value.getRecord().getHeader().getUrl();
+//				if (file != null) {
+//					final int lastIndexSlash = file.lastIndexOf('/');
+//					if (lastIndexSlash > 0 & (lastIndexSlash < file.length())) {
+//						file = file.substring(lastIndexSlash + 1);
+//					}
+//				} else {
+//					file = "";
+//				}
+
+
+				// Get file extension
+//				String fileExt = "";
+//				if (file.contains(".")) {
+//					fileExt = parseExtension(file);
+//				}
+				
+				String fileExt = "";
+				if (extURL != null && extURL.length() > 0) {
+					// Don't normalise the URL using URLEncoder for this method
+					fileExt = parseExtension(extURL);
+				} 
 				mapOutput = "\"" + fileExt + "\"\t" + mapOutput;
 			}
 			
-			log.debug("file: "+file+", ext: "+fileExt);
+			// Sanitize the URL for use by the detectors
+			if (extURL != null && extURL.length() > 0) {
+				extURL = URLEncoder.encode(extURL, "UTF-8");
+			} 
+			
+//			log.debug("file: "+file+", ext: "+fileExt);
 			
 			// Need to consume the headers.
 			ArchiveRecord record = value.getRecord();
@@ -481,9 +501,11 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			//ContentHandler nullHandler = new NullContentHandler();
     			
     			//tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
-    			boolean success = isolatedTikaParser.parse(datastream, metadata);
+    			final boolean success = isolatedTikaParser.parse(datastream, metadata);
 
     			String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
+
+    			log.debug("ProcessIsolatedTikaType: "+parserTikaType+", success: "+success);
     			
     			if(!success) {
     				parserTikaType = "tikaParserTimeout";
