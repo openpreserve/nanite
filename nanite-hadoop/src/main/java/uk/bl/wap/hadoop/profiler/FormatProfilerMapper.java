@@ -72,7 +72,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// Should we use Tika (parser)?
 	private boolean USE_TIKAPARSER = true;
 	// Should we use Tika (detect)?
-	private boolean USE_TIKADETECT = false;
+	private boolean USE_TIKADETECT = true;
 	// Should we use libmagic?
 	private boolean USE_LIBMAGIC = false;
 	// Whether to ignore the year of harvest (if so, will set a default year)
@@ -116,7 +116,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     	final String propertiesFile = "FormatProfiler.properties";
     	
     	// load properties
-    	InputStream p = FormatProfilerMapper.class.getResourceAsStream(propertiesFile);
+    	InputStream p = FormatProfilerMapper.class.getClassLoader().getResourceAsStream(propertiesFile);
     	if(p!=null) {
     		props = new Properties();
     		try {
