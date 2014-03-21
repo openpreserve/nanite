@@ -136,12 +136,16 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			USE_DROID = new Boolean(props.getProperty("USE_DROID"));
     		}
 
-    		if(props.contains("USE_TIKAPARSER")) {
-    			USE_TIKAPARSER = new Boolean(props.getProperty("USE_TIKAPARSER"));
-    		}
-
     		if(props.contains("USE_TIKADETECT")) {
     			USE_TIKADETECT = new Boolean(props.getProperty("USE_TIKADETECT"));
+    		}
+
+    		if(props.contains("USE_TIKAPARSER")) {
+    			USE_TIKAPARSER = new Boolean(props.getProperty("USE_TIKAPARSER"));
+    			// We need the parser
+    			if(USE_TIKAPARSER) {
+    				USE_TIKADETECT = true;
+    			}
     		}
 
     		if(props.contains("USE_LIBMAGIC")) {
@@ -156,8 +160,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     	
 		log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
 		log.info("USE_DROID: "+USE_DROID);
-		log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
 		log.info("USE_TIKADETECT: "+USE_TIKADETECT);
+		log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
 		log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
 		log.info("INCLUDE_WAYBACKYEAR: "+INCLUDE_WAYBACKYEAR);
 
@@ -489,11 +493,32 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 			}
             
+			
+			String tdaTikaType = "";
+            if (USE_TIKADETECT) {
+            	// Type according to Tika detect
+            	Metadata metadata = new Metadata();
+            	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+            	
+            	log.trace("Using Tika detect...");
+            	tdaTikaType = tikaDetect.detect(datastream, metadata);
+
+            	mapOutput += "\t\"" + tdaTikaType + "\"";
+            	
+           		// Reset the datastream for reuse
+           		datastream.reset();
+
+            }
+			
             if (USE_TIKAPARSER) {
             	
             	// Type according to Tika parser
             	Metadata metadata = new Metadata();
             	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+            	// Set the mimetype to the one from Tika detect() so we can inform the Tika parser() 
+            	// what data to expect - we do this as we cannot pass a metadata object or the filename 
+            	// to the isolated Tika parser
+            	metadata.set(Metadata.CONTENT_TYPE, tdaTikaType);
             	
             	log.trace("Using Tika parser...");
 
@@ -538,22 +563,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
            		datastream.reset();
            		
             }
-			
-            if (USE_TIKADETECT) {
-            	// Type according to Tika detect
-            	Metadata metadata = new Metadata();
-            	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
-            	
-            	log.trace("Using Tika detect...");
-            	final String tdaTikaType = tikaDetect.detect(datastream, metadata);
 
-            	mapOutput += "\t\"" + tdaTikaType + "\"";
-            	
-           		// Reset the datastream for reuse
-           		datastream.reset();
-
-            }
-			
             if (USE_LIBMAGIC) {
 
             	// Use libmagic-jna-wrapper to identify the file
