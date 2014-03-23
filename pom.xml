@@ -45,7 +45,6 @@
    </properties>  
   <modules>
   	<module>nanite-core</module>
-  	<module>nanite-ext</module>
   	<module>nanite-cli</module>
   	<module>nanite-hadoop</module>
   </modules>
