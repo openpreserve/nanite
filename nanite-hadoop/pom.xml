@@ -180,10 +180,10 @@
 			<activation>
 				<activeByDefault>false</activeByDefault>
 				<!-- enable this profile on Travis -->
-				<property>
+				<!-- <property>
 					<name>env.TRAVIS</name>
 					<value>true</value>
-				</property>
+				</property> -->
 			</activation>
 			<properties>
 				<hadoop.version>0.20.205.0</hadoop.version>
