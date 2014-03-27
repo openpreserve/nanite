@@ -33,7 +33,7 @@ public class InputStreamByteReader implements ByteReader {
 	 */
 	public InputStreamByteReader( CloseShieldInputStream in ) {
 		// Set up a large buffer for the input stream, wrapping for random access if mark/reset are not supported:
-		if( ! this.in.markSupported() ) {
+		if( ! in.markSupported() ) {
 			this.in = new BufferedInputStream(in, BUFFER_SIZE);
 		}
 		// The 'reset' logic will fail if the buffer is not big enough.
