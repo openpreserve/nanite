@@ -3,6 +3,15 @@ jdk:
   - oraclejdk7
   - openjdk7
   - openjdk6
+before_install:
+ - git clone https://github.com/willp-bl/ProcessIsolatedTika.git
+ - cd ProcessIsolatedTika
+ - mvn clean install -DskipTests=true
+ - cd ..
+ - git clone https://github.com/openplanets/libmagic-jna-wrapper
+ - cd libmagic-jna-wrapper
+ - mvn clean install -DskipTests=true
+ - cd ..
 before_script:
  - "echo $JAVA_OPTS"
  - "export JAVA_OPTS=-Xmx1024m"
