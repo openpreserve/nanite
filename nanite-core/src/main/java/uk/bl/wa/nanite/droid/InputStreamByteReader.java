@@ -32,8 +32,10 @@ public class InputStreamByteReader implements ByteReader {
 	 * @param in Force use of a CloseShieldInputStream so we can safely dispose of any buffers we create
 	 */
 	public InputStreamByteReader( CloseShieldInputStream in ) {
-		// Set up a large buffer for the input stream, allowing random access:
-		this.in = new BufferedInputStream(in, BUFFER_SIZE);
+		// Set up a large buffer for the input stream, wrapping for random access if mark/reset are not supported:
+		if( ! this.in.markSupported() ) {
+			this.in = new BufferedInputStream(in, BUFFER_SIZE);
+		}
 		// The 'reset' logic will fail if the buffer is not big enough.
 		this.in.mark(BUFFER_SIZE);
 		this.nextpos = 0;
