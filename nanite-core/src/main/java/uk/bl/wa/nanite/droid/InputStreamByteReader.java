@@ -25,13 +25,14 @@ public class InputStreamByteReader implements ByteReader {
 	private static Logger log = Logger.getLogger(InputStreamByteReader.class);
 	
 	private long nextpos = 0;
-	private BufferedInputStream in = null;
+	private InputStream in = null;
 	static int BUFFER_SIZE = 10*1024*1024; // Items larger than this likely to fail identification;
 
 	/**
 	 * @param in Force use of a CloseShieldInputStream so we can safely dispose of any buffers we create
 	 */
 	public InputStreamByteReader( CloseShieldInputStream in ) {
+		this.in = in;
 		// Set up a large buffer for the input stream, wrapping for random access if mark/reset are not supported:
 		if( ! this.in.markSupported() ) {
 			this.in = new BufferedInputStream(in, BUFFER_SIZE);

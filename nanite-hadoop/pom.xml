@@ -10,7 +10,7 @@
 	<artifactId>nanite-hadoop</artifactId>
 
 	<properties>
-		<warc-hadoop-recordreaders.version>1.1.1-SNAPSHOT</warc-hadoop-recordreaders.version>
+		<warc-hadoop-recordreaders.version>1.1.1</warc-hadoop-recordreaders.version>
 		<mainClass>uk.bl.wap.hadoop.profiler.FormatProfiler</mainClass>
 	</properties>
 
@@ -180,10 +180,10 @@
 			<activation>
 				<activeByDefault>false</activeByDefault>
 				<!-- enable this profile on Travis -->
-				<property>
+				<!-- <property>
 					<name>env.TRAVIS</name>
 					<value>true</value>
-				</property>
+				</property> -->
 			</activation>
 			<properties>
 				<hadoop.version>0.20.205.0</hadoop.version>
