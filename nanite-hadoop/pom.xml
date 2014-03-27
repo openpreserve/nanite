@@ -69,7 +69,7 @@
 		<dependency>
 			<groupId>eu.scape-project.nanite</groupId>
 			<artifactId>nanite-core</artifactId>
-			<version>1.0.72.2-SNAPSHOT</version>
+			<version>1.0.72.3-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.apache.commons</groupId>
