@@ -105,7 +105,7 @@ public class DroidDetector implements Detector {
 	private static Logger log = Logger.getLogger(DroidDetector.class.getName());
 
     //static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V100069.xml";
-	static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V73.xml";
+	static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V74.xml";
     static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
     
 	static final String DROID_SIG_FILE = "" + DROID_SIG_RESOURCE;

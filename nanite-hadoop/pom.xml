@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.scape-project.nanite</groupId>
 		<artifactId>nanite</artifactId>
-		<version>1.0.73.4-SNAPSHOT</version>
+		<version>1.1.4-74-SNAPSHOT</version>
 		<relativePath>..</relativePath>
 	</parent>
 	<artifactId>nanite-hadoop</artifactId>
