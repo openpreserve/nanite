@@ -7,6 +7,7 @@
       <artifactId>nanite</artifactId>
    </parent>
    <artifactId>nanite-core</artifactId>
+   <version>1.1.4-74-SNAPSHOT</version>
    <build>
       <plugins>
          <plugin>
@@ -68,9 +69,7 @@
       <dependency>
          <groupId>log4j</groupId>
          <artifactId>log4j</artifactId>
-         <version>1.2.14</version>
-         <type>jar</type>
-         <scope>compile</scope>
+         <version>1.2.16</version>
       </dependency>
       <dependency>
          <groupId>uk.gov.nationalarchives</groupId>
@@ -78,5 +77,4 @@
          <version>6.1.3</version>
       </dependency>
    </dependencies>
-   <version>1.1.4-74-SNAPSHOT</version>
 </project>

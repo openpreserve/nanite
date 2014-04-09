@@ -3,7 +3,7 @@
  */
 package uk.bl.wa.nanite.droid;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,8 +15,6 @@ import org.apache.tika.mime.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import uk.bl.wa.nanite.droid.DroidDetector;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
