@@ -1,13 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
    <modelVersion>4.0.0</modelVersion>
    <parent>
-      <version>1.1.5-74-SNAPSHOT</version>
+      <version>${nanite.version}</version>
       <relativePath>..</relativePath>
       <groupId>eu.scape-project.nanite</groupId>
       <artifactId>nanite</artifactId>
    </parent>
    <artifactId>nanite-core</artifactId>
-   <version>1.1.5-74-SNAPSHOT</version>
+   <version>${nanite.version}</version>
    <build>
       <plugins>
          <plugin>
@@ -15,8 +15,8 @@
             <artifactId>maven-compiler-plugin</artifactId>
             <version>2.3.2</version>
             <configuration>
-               <source>1.6</source>
-               <target>1.6</target>
+               <source>${jdk.version}</source>
+               <target>${jdk.version}</target>
             </configuration>
          </plugin>
          <plugin>
@@ -74,7 +74,7 @@
       <dependency>
          <groupId>uk.gov.nationalarchives</groupId>
          <artifactId>droid-command-line</artifactId>
-         <version>6.1.3</version>
+         <version>${droid.version}</version>
       </dependency>
    </dependencies>
 </project>

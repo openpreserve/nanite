@@ -3,7 +3,7 @@
 	<parent>
 	   <groupId>eu.scape-project.nanite</groupId>
 	   <artifactId>nanite</artifactId>
-	   <version>1.1.5-74-SNAPSHOT</version>
+	   <version>${nanite.version}</version>
 	   <relativePath>..</relativePath>
 	</parent>
   	<name>nanite-cli</name>
@@ -19,8 +19,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>2.0.2</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>${jdk.version}</source>
+					<target>${jdk.version}</target>
 				</configuration>
 			</plugin>
 	<plugin>
