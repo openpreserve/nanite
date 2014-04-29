@@ -1,8 +1,10 @@
 package uk.bl.wap.hadoop.profiler;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -11,6 +13,7 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
@@ -549,13 +552,16 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 //    				initTikaParser();
     			}
 
-    			// Store parser output in sequence file
-    			// FIXME: better formatting? Make this compatible with c3po
-    			String md = "";
-    			for(String k:metadata.names()) {
-    				md+=k+": "+metadata.get(k)+"\n";
-    			}
-    			tikaParserSeqFile.append(new Text(extURL), new Text(md));
+    			// Store serialized metadata object in the sequence file
+    			// c3po can use this object and reconstruct an xml file
+    			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    			ObjectOutputStream oos = new ObjectOutputStream(baos);
+    			oos.writeObject(metadata);
+    			oos.close();
+    			// encode object in base64
+    			String mdString = new String(Base64.encodeBase64(baos.toByteArray()));
+    			
+    			tikaParserSeqFile.append(new Text(extURL), new Text(mdString));
 
     			mapOutput += "\t\"" + parserTikaType + "\"";
     			
