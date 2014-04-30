@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -17,6 +18,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.httpclient.Header;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
@@ -526,12 +528,19 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             // PMD TODO: Could be interesting to preserve the ARC header data like harvest time,
             // web server, and reported MIME type
 			ArchiveRecord record = value.getRecord();
+            Map<String, String> httpHeaders = new HashMap<String,String>();
 			if (record instanceof ARCRecord) {
 				ARCRecord arc = (ARCRecord) record;
-				arc.skipHttpHeader();
+                for (Header h: arc.getHttpHeaders()) {
+                    if (   h.getName().equals("Server")
+                        || h.getName().equals("Date")
+                        || h.getName().equals("Content-Type")
+                        || h.getName().equals("Last-Modified"))  httpHeaders.put(h.getName(),h.getValue());
+                }
+				arc.skipHttpHeader(); // TODO: Is this still nessecary after the above loop?
 			}
 
-			// Initialise a buffered input stream
+                // Initialise a buffered input stream
 			// - don't pass BUF_SIZE as a parameter here, testing indicates it dramatically slows down the processing
 			datastream = new BufferedInputStream(new CloseShieldInputStream(value.getPayloadAsStream()));
 			// Mark the datastream so we can re-use it
@@ -596,7 +605,11 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			if(!success) {
     				parserTikaType = "tikaParserTimeout";
     			}
-    			
+
+                for (Map.Entry<String, String> t: httpHeaders.entrySet()) {
+                    metadata.set("ARC-"+t.getKey(),t.getValue());
+                }
+
     			if(metadata.get(TimeoutParser.TIMEOUTKEY)!=null) {
     				// indicate the parser timed out in the reduce output
     				parserTikaType = "tikaParserTimeout";
@@ -655,7 +668,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			
 			// Return the output for collation
 			output.collect(new Text(mapOutput), new Text(waybackYear));
-			log.info("OUTPUT "+mapOutput+" "+waybackYear);
+			//log.info("OUTPUT " + mapOutput + " " + waybackYear);
 			
 		} catch (IOException e) {
 			log.error("Failed to identify due to IOException:" + e);
