@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -12,8 +13,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
@@ -89,13 +93,16 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     @SuppressWarnings("unused")
 	private Parser tikaParser = null;
 	private ProcessIsolatedTika isolatedTikaParser = null;
-    private Writer tikaParserSeqFile = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
 	private Tika tikaDetect = null;
 //	private boolean gTikaAlreadyInitialised = false;
 	
 	private JobConf gConf = null;
 
+    private Writer tikaParserSeqFile = null;
+    private ZipOutputStream tikaC3poZip = null;
+    private int zipEntryCount = 0;
+    
 	//////////////////////////////////////////////////
 	// Constructors
 	//////////////////////////////////////////////////	
@@ -207,12 +214,22 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private void initSequenceFile(Text pWarc) {
 
 	    try {
-		// Set the output sequence file's name
-		Path seqFile = new Path(gConf.get("mapred.output.dir")+"/"+pWarc+".tika.seqfile");
-	    tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.BLOCK),
-	    												   Writer.file(seqFile),
-	    												   Writer.keyClass(Text.class),
-	    												   Writer.valueClass(Text.class));
+	    	
+	    	String filePrefix = gConf.get("mapred.output.dir")+"/"+pWarc; 
+
+	    	// Set the output sequence file's name
+	    	Path seqFile = new Path(filePrefix+".tika.seqfile");
+	    	tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.BLOCK),
+	    			Writer.file(seqFile),
+	    			Writer.keyClass(Text.class),
+	    			Writer.valueClass(Text.class));
+	    	
+	    	// Zip file output
+	    	FileSystem fs = FileSystem.get(gConf);
+	    	Path zip = new Path(filePrefix+".tika.zip");
+	    	tikaC3poZip = new ZipOutputStream(fs.create(zip));
+	    	//fs.close();
+	    	
 	    } catch(IOException e) {
 	    	log.error("Can't create output sequence file");
 	    }
@@ -328,6 +345,40 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 		return waybackYear;
 	}
+	
+
+	/**
+	 * Add metadata to the zip file, in a format c3po can use
+	 * @param metadata
+	 */
+	private void addMetadataToZip(Metadata metadata) {
+		
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintWriter pw = new PrintWriter(baos);
+		
+		// This output format mimics "java -jar tika-app.jar -m file" as that is what c3po expects
+		String[] names = metadata.names();
+		for(String name : names) {
+			for(String value : metadata.getValues(name)) {
+				pw.println(name+": "+value);
+			}
+		}
+		
+		pw.close();
+		
+		ZipEntry entry = new ZipEntry(String.format("%08d", zipEntryCount)+".txt");
+		zipEntryCount++;
+		
+		try {
+			tikaC3poZip.putNextEntry(entry);
+			tikaC3poZip.write(baos.toByteArray());
+			tikaC3poZip.closeEntry();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
 
 	//////////////////////////////////////////////////
 	// Mapper methods
@@ -390,6 +441,10 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			if(null!=isolatedTikaParser) {
 				isolatedTikaParser.stop();
 			}
+			if(null!=tikaC3poZip) {
+				tikaC3poZip.finish();
+				tikaC3poZip.close();
+			}
 		}
 	}
 
@@ -400,6 +455,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		//log.info("Processing record from: "+key);
 		//log.info("                   URL: "+value.getRecord().getHeader().getUrl());
 		
+		// This is here instead of configure() as we want to use "key"
 		if(USE_TIKAPARSER) {
 			if(null==tikaParserSeqFile) {
 				initSequenceFile(key);
@@ -560,9 +616,11 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			oos.close();
     			// encode object in base64
     			String mdString = new String(Base64.encodeBase64(baos.toByteArray()));
-    			
     			tikaParserSeqFile.append(new Text(extURL), new Text(mdString));
 
+    			// Store in the zip in c3po format
+    			addMetadataToZip(metadata);
+    			
     			mapOutput += "\t\"" + parserTikaType + "\"";
     			
            		// Reset the datastream for reuse
@@ -635,5 +693,5 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			}
 		}
 	}
-	
+
 }
