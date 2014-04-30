@@ -360,7 +360,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		String[] names = metadata.names();
 		for(String name : names) {
 			for(String value : metadata.getValues(name)) {
-				pw.println(name+": "+value);
+				pw.println(name+": "+value.replace("\n"," ");
 			}
 		}
 		
@@ -523,6 +523,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 //			log.debug("file: "+file+", ext: "+fileExt);
 			
 			// Need to consume the headers.
+            // PMD TODO: Could be interesting to preserve the ARC header data like harvest time,
+            // web server, and reported MIME type
 			ArchiveRecord record = value.getRecord();
 			if (record instanceof ARCRecord) {
 				ARCRecord arc = (ARCRecord) record;
