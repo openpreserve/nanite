@@ -74,9 +74,6 @@ public class FormatProfiler extends Configured implements Tool {
 		conf.setOutputValueClass( Text.class );
 		conf.setMapOutputValueClass( Text.class );
 		
-		// search our classpath first- otherwise we get dependency problems
-		conf.setUserClassesTakesPrecedence(true);
-		
 		// Override the task timeout to cope with behaviour when processing malformed archive files
 		// Value set in MS.  Default value is 600,000ms (i.e. 10 mins)
 		// Set this to 30 minutes
