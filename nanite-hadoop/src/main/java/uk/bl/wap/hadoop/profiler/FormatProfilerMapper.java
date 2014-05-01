@@ -86,6 +86,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private boolean USE_LIBMAGIC = false;
 	// Whether to ignore the year of harvest (if so, will set a default year)
 	private boolean INCLUDE_WAYBACKYEAR = false;
+    // whether to include the ARC header information in the output
+    private boolean INCLUDE_ARC_HEADERS = true;
 	
 	//////////////////////////////////////////////////
 	// Global variables
@@ -126,7 +128,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     private void loadConfig() {
     	
     	final String propertiesFile = "FormatProfiler.properties";
-    	
+
     	// load properties
     	InputStream p = FormatProfilerMapper.class.getClassLoader().getResourceAsStream(propertiesFile);
     	if(p!=null) {
@@ -140,33 +142,39 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
     		log.info("Loaded properties from "+propertiesFile);
 
-    		if(props.contains("INCLUDE_EXTENSION")) {
-    			INCLUDE_EXTENSION = new Boolean(props.getProperty("INCLUDE_EXTENSION"));
+    		if(props.containsKey("INCLUDE_EXTENSION")) {
+    			INCLUDE_EXTENSION = Boolean.valueOf(props.getProperty("INCLUDE_EXTENSION"));
     		}
 
-    		if(props.contains("USE_DROID")) {
-    			USE_DROID = new Boolean(props.getProperty("USE_DROID"));
+    		if(props.containsKey("USE_DROID")) {
+    			USE_DROID = Boolean.valueOf(props.getProperty("USE_DROID"));
     		}
 
-    		if(props.contains("USE_TIKADETECT")) {
-    			USE_TIKADETECT = new Boolean(props.getProperty("USE_TIKADETECT"));
+    		if(props.containsKey("USE_TIKADETECT")) {
+    			USE_TIKADETECT = Boolean.valueOf(props.getProperty("USE_TIKADETECT"));
     		}
 
-    		if(props.contains("USE_TIKAPARSER")) {
-    			USE_TIKAPARSER = new Boolean(props.getProperty("USE_TIKAPARSER"));
+    		if(props.containsKey("USE_TIKAPARSER")) {
+    			USE_TIKAPARSER = Boolean.valueOf(props.getProperty("USE_TIKAPARSER"));
     			// We need the parser
     			if(USE_TIKAPARSER) {
     				USE_TIKADETECT = true;
     			}
     		}
 
-    		if(props.contains("USE_LIBMAGIC")) {
-    			USE_LIBMAGIC = new Boolean(props.getProperty("USE_LIBMAGIC"));
+    		if(props.containsKey("USE_LIBMAGIC")) {
+    			USE_LIBMAGIC = Boolean.valueOf(props.getProperty("USE_LIBMAGIC"));
     		}
 
-    		if(props.contains("INCLUDE_WAYBACKYEAR")) {
-    			INCLUDE_WAYBACKYEAR = new Boolean(props.getProperty("INCLUDE_WAYBACKYEAR"));
+    		if(props.containsKey("INCLUDE_WAYBACKYEAR")) {
+    			INCLUDE_WAYBACKYEAR = Boolean.valueOf(props.getProperty("INCLUDE_WAYBACKYEAR"));
     		}
+
+            if (props.containsKey("INCLUDE_ARC_HEADERS")) {
+                INCLUDE_ARC_HEADERS = Boolean.valueOf(props.getProperty("INCLUDE_ARC_HEADERS"));
+            }
+
+            // TODO: add zip/seq-file as a configuration
 
     	}
     	
@@ -176,6 +184,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
 		log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
 		log.info("INCLUDE_WAYBACKYEAR: "+INCLUDE_WAYBACKYEAR);
+        log.info("INCLUDE_ARC_HEADERS: "+INCLUDE_ARC_HEADERS);
 
     }
 
@@ -528,16 +537,18 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             // PMD TODO: Could be interesting to preserve the ARC header data like harvest time,
             // web server, and reported MIME type
 			ArchiveRecord record = value.getRecord();
-            Map<String, String> httpHeaders = new HashMap<String,String>();
+            Map<String, String> arcHttpHeaders = new HashMap<String,String>();
 			if (record instanceof ARCRecord) {
 				ARCRecord arc = (ARCRecord) record;
-                for (Header h: arc.getHttpHeaders()) {
-                    if (   h.getName().equals("Server")
-                        || h.getName().equals("Date")
-                        || h.getName().equals("Content-Type")
-                        || h.getName().equals("Last-Modified"))  httpHeaders.put(h.getName(),h.getValue());
+                if (INCLUDE_ARC_HEADERS) {
+                    for (Header h: arc.getHttpHeaders()) {
+                        if (   h.getName().equals("Server")
+                            || h.getName().equals("Date")
+                            || h.getName().equals("Content-Type")
+                            || h.getName().equals("Last-Modified"))  arcHttpHeaders.put(h.getName(),h.getValue());
+                    }
                 }
-				arc.skipHttpHeader(); // TODO: Is this still nessecary after the above loop?
+				arc.skipHttpHeader(); // TODO: Is this still necessary after the above loop?
 			}
 
                 // Initialise a buffered input stream
@@ -606,7 +617,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     				parserTikaType = "tikaParserTimeout";
     			}
 
-                for (Map.Entry<String, String> t: httpHeaders.entrySet()) {
+                for (Map.Entry<String, String> t: arcHttpHeaders.entrySet()) {
                     metadata.set("ARC-"+t.getKey(),t.getValue());
                 }
 
