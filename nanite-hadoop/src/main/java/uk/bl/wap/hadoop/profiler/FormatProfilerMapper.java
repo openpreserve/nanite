@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -17,6 +18,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.httpclient.Header;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
@@ -88,7 +90,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private boolean GENERATE_C3PO_ZIP = true;
 	// Whether or not to generate a sequencefile per input arc containing serialized Tika parser Metadata objects
 	private boolean GENERATE_SEQUENCEFILE = true;
-
+    // whether to include the ARC header information in the output
+    private boolean INCLUDE_ARC_HEADERS = true;
+	
 	//////////////////////////////////////////////////
 	// Global variables
 	//////////////////////////////////////////////////	
@@ -186,6 +190,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			GENERATE_C3PO_ZIP = new Boolean(props.getProperty(GENERATE_C3PO_ZIP_KEY));
     		}
 
+            if (props.containsKey("INCLUDE_ARC_HEADERS")) {
+                INCLUDE_ARC_HEADERS = Boolean.valueOf(props.getProperty("INCLUDE_ARC_HEADERS"));
+            }
     	}
     	
 		log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
@@ -196,6 +203,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		log.info("INCLUDE_WAYBACKYEAR: "+INCLUDE_WAYBACKYEAR);
 		log.info("GENERATE_SEQUENCEFILE: "+GENERATE_SEQUENCEFILE);
 		log.info("GENERATE_C3PO_ZIP: "+GENERATE_C3PO_ZIP);
+        log.info("INCLUDE_ARC_HEADERS: "+INCLUDE_ARC_HEADERS);
 
     }
 
@@ -385,7 +393,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		String[] names = metadata.names();
 		for(String name : names) {
 			for(String value : metadata.getValues(name)) {
-				pw.println(name+": "+value);
+				pw.println(name+": "+value.replace("\n"," "));
 			}
 		}
 		
@@ -560,9 +568,15 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			
 			// Need to consume the headers.
 			ArchiveRecord record = value.getRecord();
+            Map<String, String> arcHttpHeaders = new HashMap<String,String>();
 			if (record instanceof ARCRecord) {
 				ARCRecord arc = (ARCRecord) record;
-				arc.skipHttpHeader();
+                if (INCLUDE_ARC_HEADERS) {
+                    for (Header h: arc.getHttpHeaders()) {
+                        arcHttpHeaders.put(h.getName(),h.getValue());
+                    }
+                }
+				arc.skipHttpHeader(); // TODO: Is this still necessary after the above loop?
 			}
 
 			// Initialise a buffered input stream
@@ -630,7 +644,11 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			if(!success) {
     				parserTikaType = "tikaParserTimeout";
     			}
-    			
+
+                for (Map.Entry<String, String> t: arcHttpHeaders.entrySet()) {
+                    metadata.set("ARC-"+t.getKey(),t.getValue());
+                }
+
     			if(metadata.get(TimeoutParser.TIMEOUTKEY)!=null) {
     				// indicate the parser timed out in the reduce output
     				parserTikaType = "tikaParserTimeout";
@@ -693,7 +711,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			
 			// Return the output for collation
 			output.collect(new Text(mapOutput), new Text(waybackYear));
-			log.info("OUTPUT "+mapOutput+" "+waybackYear);
+			log.trace("OUTPUT " + mapOutput + " " + waybackYear);
 			
 		} catch (IOException e) {
 			log.error("Failed to identify due to IOException:" + e);
