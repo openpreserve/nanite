@@ -542,10 +542,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				ARCRecord arc = (ARCRecord) record;
                 if (INCLUDE_ARC_HEADERS) {
                     for (Header h: arc.getHttpHeaders()) {
-                        if (   h.getName().equals("Server")
-                            || h.getName().equals("Date")
-                            || h.getName().equals("Content-Type")
-                            || h.getName().equals("Last-Modified"))  arcHttpHeaders.put(h.getName(),h.getValue());
+                        arcHttpHeaders.put(h.getName(),h.getValue());
                     }
                 }
 				arc.skipHttpHeader(); // TODO: Is this still necessary after the above loop?
