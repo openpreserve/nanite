@@ -423,7 +423,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		String[] names = metadata.names();
 		for(String name : names) {
 			for(String value : metadata.getValues(name)) {
-				pw.println(name+": "+value.replace("\n"," "));
+				pw.println(name+": "+value.replaceAll("[\n\r]"," "));
 			}
 		}
 		
