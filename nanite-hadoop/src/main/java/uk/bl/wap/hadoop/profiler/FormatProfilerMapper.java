@@ -21,6 +21,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
@@ -662,7 +663,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
                     }
                 }
 				arc.skipHttpHeader(); // TODO: Is this still necessary after the above loop?
-			}
+			} 
 
 			// Initialise a buffered input stream
 			// - don't pass BUF_SIZE as a parameter here, testing indicates it dramatically slows down the processing
@@ -720,7 +721,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			//ContentHandler nullHandler = new NullContentHandler();
     			
     			//tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
-    			final boolean success = isolatedTikaParser.parse(datastream, metadata);
+            	
+            	// Wrap the inputstream in a boundedinputstream to prevent overreading (and attempts to reset to an invalid mark)
+    			final boolean success = isolatedTikaParser.parse(new BoundedInputStream(datastream, BUF_SIZE-1), metadata);
 
     			String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
 
@@ -804,6 +807,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			
 		} catch (IOException e) {
 			log.error("Failed to identify due to IOException:" + e);
+			e.printStackTrace();
 			try {
 				// Output a result so we can see how many records fail to process
 				output.collect(new Text("IOException\t\""+key+"\""), new Text(waybackYear));
