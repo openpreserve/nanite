@@ -110,7 +110,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private ProcessIsolatedTika isolatedTikaParser = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
 	private Tika tikaDetect = null;
-//	private boolean gTikaAlreadyInitialised = false;
 	
 	private JobConf gConf = null;
 
@@ -723,11 +722,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             	metadata.set(Metadata.CONTENT_TYPE, tdaTikaType);
             	
             	log.trace("Using Tika parser...");
-
-            	// A do-absolutely-nothing ContentHandler
-    			//ContentHandler nullHandler = new NullContentHandler();
-    			
-    			//tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
             	
     			final boolean success = isolatedTikaParser.parse(datastream, metadata);
 
@@ -739,21 +733,15 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     				parserTikaType = "tikaParserTimeout";
     			}
 
-                for (Map.Entry<String, String> t: arcHttpHeaders.entrySet()) {
-                    metadata.set("ARC-"+t.getKey(),t.getValue());
-                }
+    			if(INCLUDE_ARC_HEADERS) {
+    				for (Map.Entry<String, String> t: arcHttpHeaders.entrySet()) {
+    					metadata.set("ARC-"+t.getKey(),t.getValue());
+    				}
+    			}
 
     			if(metadata.get(TimeoutParser.TIMEOUTKEY)!=null) {
     				// indicate the parser timed out in the reduce output
     				parserTikaType = "tikaParserTimeout";
-    				
-    				// Re-initialise the parser due to a forced Thread stop, just in case
-    				// NOTE: even reinitialising might still leave problems
-    				
-    				// FIXME: classes loaded from different classloaders cannot be mixed
-    				
-//    				tikaParser = null;
-//    				initTikaParser();
     			}
 
     			String mdString = null;
