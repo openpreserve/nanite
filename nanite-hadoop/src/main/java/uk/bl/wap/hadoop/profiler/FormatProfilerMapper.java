@@ -594,13 +594,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		} else {
 			waybackYear = "na";
 		}
-		String serverType = getServerType(value);
+		final String serverType = getServerType(value);
 		log.debug("Server Type: "+serverType);
 
 		// Get filename and separate the extension of the file
 		// Use URLEncoder as some URLs cause URISyntaxException in DroidDetector
 		String extURL = value.getRecord().getHeader().getUrl();
-		
+
 		InputStream datastream = null;
 		try {
 			
@@ -664,13 +664,20 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
                 }
 				arc.skipHttpHeader(); // TODO: Is this still necessary after the above loop?
 			} 
-
-			// Initialise a buffered input stream
-			// - don't pass BUF_SIZE as a parameter here, testing indicates it dramatically slows down the processing
-			datastream = new BufferedInputStream(new CloseShieldInputStream(value.getPayloadAsStream()));
+			
+			// record.getHeader().getLength() contains the length of the headers, too so
+			// use available() instead (although this is also not the length of the payload)
+			final long dataLength = record.available();
+			final long maxBytesToRead = dataLength<BUF_SIZE?dataLength:BUF_SIZE;
+			
+			// Initialise a buffered input stream - the size parameter must be here, otherwise mark() fails on 
+			// streams longer than 64kb (may be JVM specific)
+			// NOTE: we don't use value.getPayloadAsStream() as data may already be buffered in the record
+			datastream = new BoundedInputStream(new BufferedInputStream(new CloseShieldInputStream(record), (int)maxBytesToRead+1), maxBytesToRead);
+			
 			// Mark the datastream so we can re-use it
 			// NOTE: this code will fail if >BUF_SIZE bytes are read
-			datastream.mark(BUF_SIZE);
+			datastream.mark((int)maxBytesToRead);
 
 			if (USE_DROID) {
 				// Type according to DroidDetector
@@ -678,7 +685,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
 				
 				log.trace("Using DroidDetector...");
-				droidDetector.setMaxBytesToScan(BUF_SIZE);
+				droidDetector.setMaxBytesToScan(maxBytesToRead);
 				final MediaType droidType = droidDetector.detect(datastream, metadata);
 
 				mapOutput += "\t\"" + droidType + "\"";
@@ -722,8 +729,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			
     			//tikaParser.parse(datastream, nullHandler, metadata, new ParseContext());
             	
-            	// Wrap the inputstream in a boundedinputstream to prevent overreading (and attempts to reset to an invalid mark)
-    			final boolean success = isolatedTikaParser.parse(new BoundedInputStream(datastream, BUF_SIZE-1), metadata);
+    			final boolean success = isolatedTikaParser.parse(datastream, metadata);
 
     			String parserTikaType = metadata.get(Metadata.CONTENT_TYPE);
 
