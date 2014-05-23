@@ -21,7 +21,6 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
-import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
@@ -99,7 +98,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	private boolean GENERATE_SEQUENCEFILE = true;
     // whether to include the ARC header information in the output
     private boolean INCLUDE_ARC_HEADERS = true;
-	
+	// dump the payload contents into a zip file in hdfs
+    private boolean DUMP_FILES_IN_HDFS = false;
+    
 	//////////////////////////////////////////////////
 	// Global variables
 	//////////////////////////////////////////////////	
@@ -116,6 +117,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     private Writer tikaParserSeqFile = null;
     private ZipOutputStream tikaParserMetadataZip = null;
     private ZipOutputStream tikaC3poZip = null;
+    private ZipOutputStream zipOutputFiles = null;
     private int zipEntryCount = 0;
     
 	//////////////////////////////////////////////////
@@ -277,7 +279,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
     		FileSystem fs = null;
     		
-    		if(GENERATE_METADATA_ZIP||GENERATE_C3PO_ZIP) {
+    		if(GENERATE_METADATA_ZIP||GENERATE_C3PO_ZIP||DUMP_FILES_IN_HDFS) {
     			fs = FileSystem.get(gConf);
     		}
 
@@ -291,6 +293,12 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	    		// Zip file output
 	    		Path zip = new Path(filePrefix+".tika.zip");
 	    		tikaC3poZip = new ZipOutputStream(fs.create(zip));
+	    	}
+	    	
+	    	if(DUMP_FILES_IN_HDFS) {
+	    		// Zip file output
+	    		Path zip = new Path(filePrefix+".dump.zip");
+	    		zipOutputFiles = new ZipOutputStream(fs.create(zip));
 	    	}
 	    	
 	    } catch(IOException e) {
@@ -570,6 +578,12 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				tikaParserMetadataZip.close();
 			}
 		}
+		if(DUMP_FILES_IN_HDFS) {	
+			if(null!=zipOutputFiles) {
+				zipOutputFiles.finish();
+				zipOutputFiles.close();
+			}
+		}
 	}
 
 	@Override
@@ -582,6 +596,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// These is here instead of configure() as we want to use "key"
 		if((GENERATE_SEQUENCEFILE&(null==tikaParserSeqFile))||
 		   (GENERATE_C3PO_ZIP    &(null==tikaC3poZip))||
+		   (DUMP_FILES_IN_HDFS   &(null==zipOutputFiles))||
 		   (GENERATE_METADATA_ZIP&(null==tikaParserMetadataZip))) {
 				initOutputFiles(key);
 		}
@@ -666,25 +681,45 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			
 			// record.getHeader().getLength() contains the length of the headers, too so
 			// use available() instead (although this is also not the length of the payload)
-			final long dataLength = record.available();
-			final long maxBytesToRead = dataLength<BUF_SIZE?dataLength:BUF_SIZE;
+			//final long dataLength = record.available();
+			//final long maxBytesToRead = dataLength<BUF_SIZE?dataLength:BUF_SIZE;
 			
 			// Initialise a buffered input stream - the size parameter must be here, otherwise mark() fails on 
 			// streams longer than 64kb (may be JVM specific)
 			// NOTE: we don't use value.getPayloadAsStream() as data may already be buffered in the record
-			datastream = new BoundedInputStream(new BufferedInputStream(new CloseShieldInputStream(record), (int)maxBytesToRead+1), maxBytesToRead);
+			//datastream = new BoundedInputStream(new BufferedInputStream(new CloseShieldInputStream(record), (int)maxBytesToRead+1), maxBytesToRead);
+			datastream = new BufferedInputStream(new CloseShieldInputStream(record), BUF_SIZE);//(int)maxBytesToRead+1);
 			
 			// Mark the datastream so we can re-use it
 			// NOTE: this code will fail if >BUF_SIZE bytes are read
-			datastream.mark((int)maxBytesToRead);
+			datastream.mark((int)BUF_SIZE);
 
+			if(DUMP_FILES_IN_HDFS) {
+				
+				ZipEntry entry = new ZipEntry(String.format("%08d", zipEntryCount)+".bin");
+				
+				try {
+					zipOutputFiles.putNextEntry(entry);
+					byte[] buf = new byte[(int)BUF_SIZE];
+					int len = datastream.read(buf);
+					zipOutputFiles.write(buf, 0, len);
+					zipOutputFiles.closeEntry();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				datastream.reset();
+				
+			}
+			
 			if (USE_DROID) {
 				// Type according to DroidDetector
 				Metadata metadata = new Metadata();
 				metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
 				
 				log.trace("Using DroidDetector...");
-				droidDetector.setMaxBytesToScan(maxBytesToRead);
+				droidDetector.setMaxBytesToScan(BUF_SIZE);
 				final MediaType droidType = droidDetector.detect(datastream, metadata);
 
 				mapOutput += "\t\"" + droidType + "\"";
@@ -693,7 +728,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				datastream.reset();
 
 			}
-            
 			
 			String tdaTikaType = "";
             if (USE_TIKADETECT) {
