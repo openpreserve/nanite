@@ -3,20 +3,13 @@ package uk.bl.wap.hadoop.profiler;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.GlobFilter;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -32,7 +25,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 import uk.bl.wa.hadoop.ArchiveFileInputFormat;
-import uk.bl.wap.hadoop.gzchecker.GZChecker;
 
 
 /**

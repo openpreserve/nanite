@@ -16,6 +16,9 @@ import org.apache.hadoop.util.ToolRunner;
 import uk.bl.wap.hadoop.gzchecker.GZChecker;
 import uk.bl.wap.hadoop.profiler.FormatProfiler;
 
+/**
+ *
+ */
 public class NaniteHadoop {
 	
 	/**
