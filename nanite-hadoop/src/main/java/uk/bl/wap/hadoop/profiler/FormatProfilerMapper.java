@@ -101,6 +101,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// dump the payload contents into a zip file in hdfs
     private boolean DUMP_FILES_IN_HDFS = false;
     
+    private boolean DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP = false;
+    
 	//////////////////////////////////////////////////
 	// Global variables
 	//////////////////////////////////////////////////	
@@ -437,7 +439,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		
 		pw.close();
 		
-		addFileToZip(zipFile, baos.toByteArray(), zipEntryCount);
+		byte[] data = baos.toByteArray();
+		
+		addFileToZip(zipFile, data, data.length, zipEntryCount, "txt");
 		
 	}
 	
@@ -445,13 +449,13 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	 * Add metadata to the zip file, in a format c3po can use
 	 * @param metadata
 	 */
-	private void addFileToZip(ZipOutputStream zipFile, byte[] data, int zipEntryCount) {
+	private void addFileToZip(ZipOutputStream zipFile, byte[] data, int len, int zipEntryCount, String ext) {
 		
-		ZipEntry entry = new ZipEntry(String.format("%08d", zipEntryCount)+".txt");
+		ZipEntry entry = new ZipEntry(String.format("%08d", zipEntryCount)+"."+ext);
 		
 		try {
 			zipFile.putNextEntry(entry);
-			zipFile.write(data);
+			zipFile.write(data, 0, len);
 			zipFile.closeEntry();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -695,19 +699,10 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			datastream.mark((int)BUF_SIZE);
 
 			if(DUMP_FILES_IN_HDFS) {
-				
-				ZipEntry entry = new ZipEntry(String.format("%08d", zipEntryCount)+".bin");
-				
-				try {
-					zipOutputFiles.putNextEntry(entry);
-					byte[] buf = new byte[(int)BUF_SIZE];
-					int len = datastream.read(buf);
-					zipOutputFiles.write(buf, 0, len);
-					zipOutputFiles.closeEntry();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+
+				byte[] buf = new byte[(int)BUF_SIZE];
+				int len = datastream.read(buf);
+				addFileToZip(tikaParserMetadataZip, buf, len, zipEntryCount, "bin");
 				
 				datastream.reset();
 				
@@ -776,6 +771,12 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			if(metadata.get(TimeoutParser.TIMEOUTKEY)!=null) {
     				// indicate the parser timed out in the reduce output
     				parserTikaType = "tikaParserTimeout";
+    				if(DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP&GENERATE_C3PO_ZIP) {
+    					byte[] buf = new byte[(int)BUF_SIZE];
+    					int len = datastream.read(buf);
+    					// FIXME: different zip file??
+    					addFileToZip(tikaC3poZip, buf, len, zipEntryCount, "err");
+    				}
     			}
 
     			String mdString = null;
@@ -789,7 +790,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     				if(null==mdString) {
     					mdString = serialize(metadata);
     				}
-    				addFileToZip(tikaParserMetadataZip, mdString.getBytes(), zipEntryCount);
+    				addFileToZip(tikaParserMetadataZip, mdString.getBytes(), mdString.getBytes().length, zipEntryCount, "txt");
     			}
 
     			if(GENERATE_C3PO_ZIP) {
