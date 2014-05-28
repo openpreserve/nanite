@@ -73,35 +73,55 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	// Global properties
 	//////////////////////////////////////////////////	
 	
-	// NOTE: these settings may be overridden if FormatProfiler.properties exists as a resource
+	final static String propertiesFile = 			"FormatProfiler.properties";
+	final static String INCLUDE_EXTENSION = 		"INCLUDE_EXTENSION";
+	final static String INCLUDE_SERVERTYPE = 		"INCLUDE_SERVERTYPE";
+	final static String USE_DROID = 				"USE_DROID";
+	final static String USE_TIKADETECT = 			"USE_TIKADETECT";
+	final static String USE_TIKAPARSER = 			"USE_TIKAPARSER";
+	final static String USE_LIBMAGIC = 				"USE_LIBMAGIC";
+	final static String INCLUDE_WAYBACKYEAR = 		"INCLUDE_WAYBACKYEAR";
+	final static String GENERATE_SEQUENCEFILE = 	"GENERATE_SEQUENCEFILE";
+	final static String GENERATE_METADATA_ZIP = 	"GENERATE_METADATA_ZIP";
+	final static String GENERATE_C3PO_ZIP = 		"GENERATE_C3PO_ZIP";
+	final static String INCLUDE_ARC_HEADERS = 		"INCLUDE_ARC_HEADERS";
+	final static String DUMP_FILES_IN_HDFS =		"DUMP_FILES_IN_HDFS";
+	final static String DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP = "DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP";
 	
-	private Properties props = null;
-	// Whether or not to include the extension in the output
-	private boolean INCLUDE_EXTENSION = true;
-	// Whether or not to report the server type
-	private boolean INCLUDE_SERVERTYPE = true;
-	// Should we use Droid?
-	private boolean USE_DROID = true;
-	// Should we use Tika (parser)?
-	private boolean USE_TIKAPARSER = true;
-	// Should we use Tika (detect)?
-	private boolean USE_TIKADETECT = true;
-	// Should we use libmagic?
-	private boolean USE_LIBMAGIC = false;
-	// Whether to ignore the year of harvest (if so, will set a default year)
-	private boolean INCLUDE_WAYBACKYEAR = false;
-	// Whether to generate a c3po compatible zip per input arc (Tika parser required)
-	private boolean GENERATE_C3PO_ZIP = true;
-	// Whether to generate a zip containing serialized metadata objects; one per input arc (Tika parser required)
-	private boolean GENERATE_METADATA_ZIP = true;
-	// Whether or not to generate a sequencefile per input arc containing serialized Tika parser Metadata objects
-	private boolean GENERATE_SEQUENCEFILE = true;
-    // whether to include the ARC header information in the output
-    private boolean INCLUDE_ARC_HEADERS = true;
-	// dump the payload contents into a zip file in hdfs
-    private boolean DUMP_FILES_IN_HDFS = false;
-    
-    private boolean DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP = false;
+	// NOTE: these default settings may be overridden if FormatProfiler.properties exists as a resource
+	private Map<String, Boolean> gProps = new HashMap<String, Boolean>() {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -2539902167731664733L;
+	{
+		// Whether or not to include the extension in the output
+		put(INCLUDE_EXTENSION, Boolean.TRUE);
+		// Whether or not to report the server type
+		put(INCLUDE_SERVERTYPE, Boolean.TRUE);
+		// Should we use Droid?
+		put(USE_DROID, Boolean.TRUE);
+		// Should we use Tika (parser)?
+		put(USE_TIKAPARSER, Boolean.TRUE);
+		// Should we use Tika (detect)?
+		put(USE_TIKADETECT, Boolean.TRUE);
+		// Should we use libmagic?
+		put(USE_LIBMAGIC, Boolean.FALSE);
+		// Whether to ignore the year of harvest (if so, will set a default year)
+		put(INCLUDE_WAYBACKYEAR, Boolean.FALSE);
+		// Whether to generate a c3po compatible zip per input arc (Tika parser required)
+		put(GENERATE_C3PO_ZIP, Boolean.TRUE);
+		// Whether to generate a zip containing serialized metadata objects; one per input arc (Tika parser required)
+		put(GENERATE_METADATA_ZIP, Boolean.TRUE);
+		// Whether or not to generate a sequencefile per input arc containing serialized Tika parser Metadata objects
+		put(GENERATE_SEQUENCEFILE, Boolean.TRUE);
+	    // whether to include the ARC header information in the output
+	    put(INCLUDE_ARC_HEADERS, Boolean.TRUE);
+		// dump the payload contents into a zip file in hdfs
+	    put(DUMP_FILES_IN_HDFS, Boolean.FALSE);
+	    // dump any files that cause a parser timeout into the c3po zip file
+	    put(DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP, Boolean.FALSE);
+	}};
     
 	//////////////////////////////////////////////////
 	// Global variables
@@ -142,23 +162,10 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
      */
     private void loadConfig() {
     	
-    	final String propertiesFile = 				"FormatProfiler.properties";
-    	final String INCLUDE_EXTENSION_KEY = 		"INCLUDE_EXTENSION";
-    	final String INCLUDE_SERVERTYPE_KEY = 		"INCLUDE_SERVERTYPE";
-    	final String USE_DROID_KEY = 				"USE_DROID";
-    	final String USE_TIKADETECT_KEY = 			"USE_TIKADETECT";
-    	final String USE_TIKAPARSER_KEY = 			"USE_TIKAPARSER";
-    	final String USE_LIBMAGIC_KEY = 			"USE_LIBMAGIC";
-    	final String INCLUDE_WAYBACKYEAR_KEY = 		"INCLUDE_WAYBACKYEAR";
-    	final String GENERATE_SEQUENCEFILE_KEY = 	"GENERATE_SEQUENCEFILE";
-    	final String GENERATE_METADATA_ZIP_KEY = 	"GENERATE_METADATA_ZIP";
-    	final String GENERATE_C3PO_ZIP_KEY = 		"GENERATE_C3PO_ZIP";
-    	final String INCLUDE_ARC_HEADERS_KEY = 		"INCLUDE_ARC_HEADERS";
-    	
     	// load properties
     	InputStream p = FormatProfilerMapper.class.getClassLoader().getResourceAsStream(propertiesFile);
     	if(p!=null) {
-    		props = new Properties();
+    		Properties props = new Properties();
     		try {
     			props.load(p);
     		} catch (IOException e) {
@@ -168,65 +175,28 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
     		log.info("Loaded properties from "+propertiesFile);
 
-    		if(props.containsKey(INCLUDE_EXTENSION_KEY)) {
-    			INCLUDE_EXTENSION = new Boolean(props.getProperty(INCLUDE_EXTENSION_KEY));
+    		// Iterate on the options and load the default from the class properties on errors
+    		for(Object key:props.keySet()) {
+    			if(key instanceof String) {
+    				if(gProps.containsKey(key)) {
+    					String k = (String)key;
+    					gProps.put(k, Boolean.valueOf(props.getProperty(k, gProps.get(k).toString())));
+    				}
+    			}
     		}
-
-    		if(props.containsKey(INCLUDE_SERVERTYPE_KEY)) {
-    			INCLUDE_SERVERTYPE = new Boolean(props.getProperty(INCLUDE_SERVERTYPE_KEY));
-    		}
-
-    		if(props.containsKey(USE_DROID_KEY)) {
-    			USE_DROID = new Boolean(props.getProperty(USE_DROID_KEY));
-    		}
-
-    		if(props.containsKey(USE_TIKADETECT_KEY)) {
-    			USE_TIKADETECT = new Boolean(props.getProperty(USE_TIKADETECT_KEY));
-    		}
-
-    		if(props.containsKey(USE_TIKAPARSER_KEY)) {
-    			USE_TIKAPARSER = new Boolean(props.getProperty(USE_TIKAPARSER_KEY));
+    		
+    		if(gProps.containsKey(USE_TIKAPARSER)) {
     			// We need the parser
-    			if(USE_TIKAPARSER) {
-    				USE_TIKADETECT = true;
+    			if(new Boolean(gProps.get(USE_TIKAPARSER)).booleanValue()) {
+    				gProps.put(USE_TIKADETECT, Boolean.TRUE);
     			}
     		}
 
-    		if(props.containsKey(USE_LIBMAGIC_KEY)) {
-    			USE_LIBMAGIC = new Boolean(props.getProperty(USE_LIBMAGIC_KEY));
-    		}
-
-    		if(props.containsKey(INCLUDE_WAYBACKYEAR_KEY)) {
-    			INCLUDE_WAYBACKYEAR = new Boolean(props.getProperty(INCLUDE_WAYBACKYEAR_KEY));
-    		}
-    		
-    		if(props.containsKey(GENERATE_SEQUENCEFILE_KEY)) {
-    			GENERATE_SEQUENCEFILE = new Boolean(props.getProperty(GENERATE_SEQUENCEFILE_KEY));
-    		}
-    		
-    		if(props.containsKey(GENERATE_C3PO_ZIP_KEY)) {
-    			GENERATE_C3PO_ZIP = new Boolean(props.getProperty(GENERATE_C3PO_ZIP_KEY));
-    		}
-    		
-    		if(props.containsKey(GENERATE_METADATA_ZIP_KEY)) {
-    			GENERATE_METADATA_ZIP = new Boolean(props.getProperty(GENERATE_METADATA_ZIP_KEY));
-    		}
-
-            if (props.containsKey(INCLUDE_ARC_HEADERS_KEY)) {
-                INCLUDE_ARC_HEADERS = Boolean.valueOf(props.getProperty(INCLUDE_ARC_HEADERS_KEY));
-            }
     	}
     	
-		log.info("INCLUDE_EXTENSION: "+INCLUDE_EXTENSION);
-		log.info("INCLUDE_SERVERTYPE: "+INCLUDE_SERVERTYPE);
-		log.info("USE_DROID: "+USE_DROID);
-		log.info("USE_TIKADETECT: "+USE_TIKADETECT);
-		log.info("USE_TIKAPARSER: "+USE_TIKAPARSER);
-		log.info("USE_LIBMAGIC: "+USE_LIBMAGIC);
-		log.info("INCLUDE_WAYBACKYEAR: "+INCLUDE_WAYBACKYEAR);
-		log.info("GENERATE_SEQUENCEFILE: "+GENERATE_SEQUENCEFILE);
-		log.info("GENERATE_C3PO_ZIP: "+GENERATE_C3PO_ZIP);
-        log.info("INCLUDE_ARC_HEADERS: "+INCLUDE_ARC_HEADERS);
+		for(String key:gProps.keySet()) {
+			log.info(key+": "+gProps.get(key));
+		}
 
     }
 
@@ -270,7 +240,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	    	
 	    	String filePrefix = gConf.get("mapred.output.dir")+"/"+pWarc; 
 
-	    	if(GENERATE_SEQUENCEFILE) {
+	    	if(gProps.get(GENERATE_SEQUENCEFILE)) {
 	    		// Set the output sequence file's name
 	    		Path seqFile = new Path(filePrefix+".tika.seqfile");
 	    		tikaParserSeqFile = SequenceFile.createWriter(gConf, Writer.compression(CompressionType.BLOCK),
@@ -281,23 +251,25 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
     		FileSystem fs = null;
     		
-    		if(GENERATE_METADATA_ZIP||GENERATE_C3PO_ZIP||DUMP_FILES_IN_HDFS) {
+    		if(gProps.get(GENERATE_METADATA_ZIP)||
+    		   gProps.get(GENERATE_C3PO_ZIP)||
+    		   gProps.get(DUMP_FILES_IN_HDFS)) {
     			fs = FileSystem.get(gConf);
     		}
 
-	    	if(GENERATE_METADATA_ZIP) {
+	    	if(gProps.get(GENERATE_METADATA_ZIP)) {
 	    		// Zip file output
 	    		Path zip = new Path(filePrefix+".tika-obj.zip");
 	    		tikaParserMetadataZip = new ZipOutputStream(fs.create(zip));	    		
 	    	}
 	    	
-	    	if(GENERATE_C3PO_ZIP) {
+	    	if(gProps.get(GENERATE_C3PO_ZIP)) {
 	    		// Zip file output
 	    		Path zip = new Path(filePrefix+".tika.zip");
 	    		tikaC3poZip = new ZipOutputStream(fs.create(zip));
 	    	}
 	    	
-	    	if(DUMP_FILES_IN_HDFS) {
+	    	if(gProps.get(DUMP_FILES_IN_HDFS)) {
 	    		// Zip file output
 	    		Path zip = new Path(filePrefix+".dump.zip");
 	    		zipOutputFiles = new ZipOutputStream(fs.create(zip));
@@ -516,7 +488,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		loadConfig();
 		
 		// Set up Droid
-		if(USE_DROID) {
+		if(gProps.get(USE_DROID)) {
 			try {
 				droidDetector = new DroidDetector();
 				droidDetector.setBinarySignaturesOnly( droidUseBinarySignaturesOnly );
@@ -526,12 +498,12 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 		
 		// Set up Tika (detect)
-		if(USE_TIKADETECT) {
+		if(gProps.get(USE_TIKADETECT)) {
 			tikaDetect = new Tika();
 		}
 
 		// Set up Tika (parser)
-		if(USE_TIKAPARSER) {
+		if(gProps.get(USE_TIKAPARSER)) {
 			
 		    // store conf so it can be used to create a sequence file on HDFS
 		    gConf = job;
@@ -543,7 +515,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 
 		// Set up libMagic
-		if(USE_LIBMAGIC) {
+		if(gProps.get(USE_LIBMAGIC)) {
 			// Set up libMagicWrapper
 			libMagicWrapper = new LibmagicJnaWrapper();
 			// Load default magic file
@@ -560,29 +532,29 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// TODO Auto-generated method stub
 		super.close();
 		// tidy up
-		if(USE_TIKAPARSER) {
+		if(gProps.get(USE_TIKAPARSER)) {
 			if(null!=isolatedTikaParser) {
 				isolatedTikaParser.stop();
 			}
 		}
-		if(GENERATE_SEQUENCEFILE) {
+		if(gProps.get(GENERATE_SEQUENCEFILE)) {
 			if(null!=tikaParserSeqFile) {
 				tikaParserSeqFile.close();
 			}
 		}
-		if(GENERATE_C3PO_ZIP) {	
+		if(gProps.get(GENERATE_C3PO_ZIP)) {	
 			if(null!=tikaC3poZip) {
 				tikaC3poZip.finish();
 				tikaC3poZip.close();
 			}
 		}
-		if(GENERATE_METADATA_ZIP) {	
+		if(gProps.get(GENERATE_METADATA_ZIP)) {	
 			if(null!=tikaParserMetadataZip) {
 				tikaParserMetadataZip.finish();
 				tikaParserMetadataZip.close();
 			}
 		}
-		if(DUMP_FILES_IN_HDFS) {	
+		if(gProps.get(DUMP_FILES_IN_HDFS)) {	
 			if(null!=zipOutputFiles) {
 				zipOutputFiles.finish();
 				zipOutputFiles.close();
@@ -598,16 +570,16 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		//log.info("                   URL: "+value.getRecord().getHeader().getUrl());
 		
 		// These is here instead of configure() as we want to use "key"
-		if((GENERATE_SEQUENCEFILE&(null==tikaParserSeqFile))||
-		   (GENERATE_C3PO_ZIP    &(null==tikaC3poZip))||
-		   (DUMP_FILES_IN_HDFS   &(null==zipOutputFiles))||
-		   (GENERATE_METADATA_ZIP&(null==tikaParserMetadataZip))) {
+		if((gProps.get(GENERATE_SEQUENCEFILE)&(null==tikaParserSeqFile))||
+		   (gProps.get(GENERATE_C3PO_ZIP)    &(null==tikaC3poZip))||
+		   (gProps.get(DUMP_FILES_IN_HDFS)   &(null==zipOutputFiles))||
+		   (gProps.get(GENERATE_METADATA_ZIP)&(null==tikaParserMetadataZip))) {
 				initOutputFiles(key);
 		}
 
 		// Year and type from record:
 		String waybackYear = "";
-		if(INCLUDE_WAYBACKYEAR) {
+		if(gProps.get(INCLUDE_WAYBACKYEAR)) {
 			waybackYear = getWaybackYear(value);
 		} else {
 			waybackYear = "na";
@@ -624,7 +596,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			
 			String mapOutput = "";
 
-			if (INCLUDE_EXTENSION) {
+			if (gProps.get(INCLUDE_EXTENSION)) {
 				// Make sure we have something to turn in to a URL!
 //				if (extURL != null && extURL.length() > 0) {
 //					extURL = URLEncoder.encode(extURL, "UTF-8");
@@ -659,7 +631,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			}
 			
 			
-			if (INCLUDE_SERVERTYPE) {
+			if (gProps.get(INCLUDE_SERVERTYPE)) {
 				mapOutput += "\t\"" + serverType + "\"";
 			}
 			
@@ -675,7 +647,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
             Map<String, String> arcHttpHeaders = new HashMap<String,String>();
 			if (record instanceof ARCRecord) {
 				ARCRecord arc = (ARCRecord) record;
-                if (INCLUDE_ARC_HEADERS) {
+                if (gProps.get(INCLUDE_ARC_HEADERS)) {
                     for (Header h: arc.getHttpHeaders()) {
                         arcHttpHeaders.put(h.getName(),h.getValue());
                     }
@@ -698,7 +670,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			// NOTE: this code will fail if >BUF_SIZE bytes are read
 			datastream.mark((int)BUF_SIZE);
 
-			if(DUMP_FILES_IN_HDFS) {
+			if(gProps.get(DUMP_FILES_IN_HDFS)) {
 
 				byte[] buf = new byte[(int)BUF_SIZE];
 				int len = datastream.read(buf);
@@ -708,7 +680,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				
 			}
 			
-			if (USE_DROID) {
+			if (gProps.get(USE_DROID)) {
 				// Type according to DroidDetector
 				Metadata metadata = new Metadata();
 				metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
@@ -725,7 +697,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			}
 			
 			String tdaTikaType = "";
-            if (USE_TIKADETECT) {
+            if (gProps.get(USE_TIKADETECT)) {
             	// Type according to Tika detect
             	Metadata metadata = new Metadata();
             	metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
@@ -740,7 +712,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
             }
 			
-            if (USE_TIKAPARSER) {
+            if (gProps.get(USE_TIKAPARSER)) {
             	
             	// Type according to Tika parser
             	Metadata metadata = new Metadata();
@@ -762,7 +734,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     				parserTikaType = "tikaParserTimeout";
     			}
 
-    			if(INCLUDE_ARC_HEADERS) {
+    			if(gProps.get(INCLUDE_ARC_HEADERS)) {
     				for (Map.Entry<String, String> t: arcHttpHeaders.entrySet()) {
     					metadata.set("ARC-"+t.getKey(),t.getValue());
     				}
@@ -771,7 +743,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			if(metadata.get(TimeoutParser.TIMEOUTKEY)!=null) {
     				// indicate the parser timed out in the reduce output
     				parserTikaType = "tikaParserTimeout";
-    				if(DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP&GENERATE_C3PO_ZIP) {
+    				if(gProps.get(DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP)&gProps.get(GENERATE_C3PO_ZIP)) {
     					byte[] buf = new byte[(int)BUF_SIZE];
     					int len = datastream.read(buf);
     					// FIXME: different zip file??
@@ -781,19 +753,19 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
     			String mdString = null;
     			
-    			if(GENERATE_SEQUENCEFILE) {
+    			if(gProps.get(GENERATE_SEQUENCEFILE)) {
     				mdString = serialize(metadata);
     				tikaParserSeqFile.append(new Text(extURL), new Text(mdString));
     			}
     			
-    			if(GENERATE_METADATA_ZIP) {
+    			if(gProps.get(GENERATE_METADATA_ZIP)) {
     				if(null==mdString) {
     					mdString = serialize(metadata);
     				}
     				addFileToZip(tikaParserMetadataZip, mdString.getBytes(), mdString.getBytes().length, zipEntryCount, "txt");
     			}
 
-    			if(GENERATE_C3PO_ZIP) {
+    			if(gProps.get(GENERATE_C3PO_ZIP)) {
     				// Store in the zip in c3po format
     				addMetadataToZip(tikaC3poZip, metadata, zipEntryCount);
     			}
@@ -807,7 +779,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
            		
             }
 
-            if (USE_LIBMAGIC) {
+            if (gProps.get(USE_LIBMAGIC)) {
 
             	// Use libmagic-jna-wrapper to identify the file
             	// You need to manually install this to your local maven repo - see pom for download url
@@ -872,6 +844,10 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				datastream = null;
 			}
 		}
+	}
+	
+	public static void main(String[] args) {
+		new FormatProfilerMapper().loadConfig();
 	}
 
 }
