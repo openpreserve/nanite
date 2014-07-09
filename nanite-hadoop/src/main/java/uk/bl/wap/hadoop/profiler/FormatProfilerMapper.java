@@ -37,9 +37,6 @@ import org.apache.tika.Tika;
 import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.EmptyParser;
-import org.apache.tika.parser.Parser;
 import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.io.arc.ARCRecord;
@@ -129,7 +126,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 
 	private DroidDetector droidDetector = null;
     @SuppressWarnings("unused")
-	private Parser tikaParser = null;
 	private ProcessIsolatedTika isolatedTikaParser = null;
     private LibmagicJnaWrapper libMagicWrapper = null;
 	private Tika tikaDetect = null;
@@ -187,7 +183,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     		
     		if(gProps.containsKey(USE_TIKAPARSER)) {
     			// We need the parser
-    			if(new Boolean(gProps.get(USE_TIKAPARSER)).booleanValue()) {
+    			if(gProps.get(USE_TIKAPARSER)) {
     				gProps.put(USE_TIKADETECT, Boolean.TRUE);
     			}
     		}
@@ -204,31 +200,31 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
      * Initialise the Tika Parser
      */
     @SuppressWarnings("unused")
-	private void initTikaParser() {
-		AutoDetectParser parser = null;
-   		parser = new AutoDetectParser();
-    	
-    	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers (and their dependencies) have problems with certain files
-		Map<MediaType, Parser> parsers = parser.getParsers();
-		
-	    // Hangs
-	    //log.info("Disabling parsing of audio/mpeg files");
-		//parsers.put(MediaType.audio("mpeg"), new EmptyParser());
-		
-	    // java.lang.OutOfMemoryError: Java heap space @ com.sun.imageio.plugins.png.PNGImageReader (JDK6)
-	    log.info("Disabling parsing of image/png files");
-		parsers.put(MediaType.image("png"), new EmptyParser());
-		
-	    // java.lang.OutOfMemoryError: Java heap space @ com.coremedia.iso.ChannelHelper.readFully (JDK6)
-	    log.info("Disabling parsing of video/mp4 files");
-		parsers.put(MediaType.video("mp4"), new EmptyParser());
-		
-		parser.setParsers(parsers);
-		
-		// wrap the parser in a TimeoutParser and use the default timeout value
-		tikaParser = new TimeoutParser(parser);
-		
-    }
+//	private void initTikaParser() {
+//		AutoDetectParser parser = null;
+//   		parser = new AutoDetectParser();
+//
+//    	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers (and their dependencies) have problems with certain files
+//		Map<MediaType, Parser> parsers = parser.getParsers();
+//
+//	    // Hangs
+//	    //log.info("Disabling parsing of audio/mpeg files");
+//		//parsers.put(MediaType.audio("mpeg"), new EmptyParser());
+//
+//	    // java.lang.OutOfMemoryError: Java heap space @ com.sun.imageio.plugins.png.PNGImageReader (JDK6)
+//	    log.info("Disabling parsing of image/png files");
+//		parsers.put(MediaType.image("png"), new EmptyParser());
+//
+//	    // java.lang.OutOfMemoryError: Java heap space @ com.coremedia.iso.ChannelHelper.readFully (JDK6)
+//	    log.info("Disabling parsing of video/mp4 files");
+//		parsers.put(MediaType.video("mp4"), new EmptyParser());
+//
+//		parser.setParsers(parsers);
+//
+//		// wrap the parser in a TimeoutParser and use the default timeout value
+//		tikaParser = new TimeoutParser(parser);
+//
+//    }
     
 	/**
 	 * Initialise a sequence file that will contain the Tika outputs
@@ -294,6 +290,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 				//try and remove as much additional as possible after the path
 				shortenedToExt = new URI(s).getPath().toLowerCase();
 			} catch (URISyntaxException e) {
+                //
 			}
 			// We assume that the last . is now before the file extension
 			if (shortenedToExt.contains(";")) {
@@ -337,7 +334,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
                         ext = ext.replaceAll( "[^0-9a-z]", "" );
                         
                         // try and sanitize some extensions
-                        String e = "";
+                        String e;// = "";
                         e = "html"; if(ext.startsWith(e)) { ext = e; }
                         e = "jpg"; if(ext.startsWith(e)) { ext = e; }
                         e = "jpeg"; if(ext.startsWith(e)) { ext = e; }
@@ -381,7 +378,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Get the server header data:
 		if( !header.getHeaderFields().isEmpty() ) {
 			// The crawl year:
-			String waybackDate = ( ( String ) header.getDate() ).replaceAll( "[^0-9]", "" );
+			String waybackDate = ( header.getDate() ).replaceAll( "[^0-9]", "" );
 			if( waybackDate != null ) 
 				waybackYear = waybackDate.substring(0,waybackDate.length()<4?waybackDate.length():4);
 
@@ -419,7 +416,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 	
 	/**
 	 * Add metadata to the zip file, in a format c3po can use
-	 * @param metadata
 	 */
 	private void addFileToZip(ZipOutputStream zipFile, byte[] data, int len, int zipEntryCount, String ext) {
 		
@@ -578,7 +574,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 
 		// Year and type from record:
-		String waybackYear = "";
+		String waybackYear;// = "";
 		if(gProps.get(INCLUDE_WAYBACKYEAR)) {
 			waybackYear = getWaybackYear(value);
 		} else {
@@ -668,11 +664,11 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			
 			// Mark the datastream so we can re-use it
 			// NOTE: this code will fail if >BUF_SIZE bytes are read
-			datastream.mark((int)BUF_SIZE);
+			datastream.mark(BUF_SIZE);
 
 			if(gProps.get(DUMP_FILES_IN_HDFS)) {
 
-				byte[] buf = new byte[(int)BUF_SIZE];
+				byte[] buf = new byte[BUF_SIZE];
 				int len = datastream.read(buf);
 				addFileToZip(tikaParserMetadataZip, buf, len, zipEntryCount, "bin");
 				
@@ -744,7 +740,7 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     				// indicate the parser timed out in the reduce output
     				parserTikaType = "tikaParserTimeout";
     				if(gProps.get(DUMP_TIKA_PARSER_TIMEOUT_FILES_IN_C3PO_ZIP)&gProps.get(GENERATE_C3PO_ZIP)) {
-    					byte[] buf = new byte[(int)BUF_SIZE];
+    					byte[] buf = new byte[BUF_SIZE];
     					int len = datastream.read(buf);
     					// FIXME: different zip file??
     					addFileToZip(tikaC3poZip, buf, len, zipEntryCount, "err");
