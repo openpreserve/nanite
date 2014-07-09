@@ -195,36 +195,6 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		}
 
     }
-
-    /**
-     * Initialise the Tika Parser
-     */
-    @SuppressWarnings("unused")
-//	private void initTikaParser() {
-//		AutoDetectParser parser = null;
-//   		parser = new AutoDetectParser();
-//
-//    	// NOTE: Tika 1.4 & 1.5-SNAPSHOT parsers (and their dependencies) have problems with certain files
-//		Map<MediaType, Parser> parsers = parser.getParsers();
-//
-//	    // Hangs
-//	    //log.info("Disabling parsing of audio/mpeg files");
-//		//parsers.put(MediaType.audio("mpeg"), new EmptyParser());
-//
-//	    // java.lang.OutOfMemoryError: Java heap space @ com.sun.imageio.plugins.png.PNGImageReader (JDK6)
-//	    log.info("Disabling parsing of image/png files");
-//		parsers.put(MediaType.image("png"), new EmptyParser());
-//
-//	    // java.lang.OutOfMemoryError: Java heap space @ com.coremedia.iso.ChannelHelper.readFully (JDK6)
-//	    log.info("Disabling parsing of video/mp4 files");
-//		parsers.put(MediaType.video("mp4"), new EmptyParser());
-//
-//		parser.setParsers(parsers);
-//
-//		// wrap the parser in a TimeoutParser and use the default timeout value
-//		tikaParser = new TimeoutParser(parser);
-//
-//    }
     
 	/**
 	 * Initialise a sequence file that will contain the Tika outputs
