@@ -732,6 +732,14 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
     			}
 
     			if(gProps.get(GENERATE_C3PO_ZIP)) {
+    				// add filesize to the metadata object so c3po can process it
+    				// see: tika_property_mapping.properties
+    				final String CONTENT_LENGTH = "content-length";
+    				if(null==metadata.get(CONTENT_LENGTH)) {
+        				// note that this is the size of the whole record, including the size of the header
+    					final long recordSize = value.getRecord().getHeader().getLength();
+    					metadata.add(CONTENT_LENGTH, Long.toString(recordSize));
+    				}
     				// Store in the zip in c3po format
     				addMetadataToZip(tikaC3poZip, metadata, zipEntryCount);
     			}
