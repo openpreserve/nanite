@@ -810,10 +810,9 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 			}			
 		} finally {
 			if (datastream != null) {
-				// Closing the datastream causes a NumberFormatException in 
-				// ArchiveRecord/ARCRecordMetaData, so don't directly close the input stream.
-				// The source InputStream is now wrapped in a CloseShieldInputStream, will see 
-				// if it makes a difference
+				// The source InputStream is now wrapped in a CloseShieldInputStream, as
+				// without it closing the datastream causes a NumberFormatException in 
+				// ArchiveRecord/ARCRecordMetaData
 				datastream.close();
 				datastream = null;
 			}
