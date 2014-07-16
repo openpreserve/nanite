@@ -1,3 +1,0 @@
-CC0
-https://github.com/openplanets/format-corpus/blob/master/office/wordprocessing/wpd/TOPOPREC.WPD?raw=true
-
