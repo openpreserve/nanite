@@ -16,6 +16,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
+
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
  *
@@ -61,6 +63,29 @@ public class DroidDetectorTest {
 		type = dd.detect(new FileInputStream(f), metadata);
 		System.out.println("Got via InputStream: "+type);
 		assertEquals("application/vnd.wordperfect",type.getBaseType().toString());
+	}
+
+	/**
+	 * 
+	 * @throws IOException
+	 * @throws CommandExecutionException
+	 */
+	@Test
+	public void testBasicDetection() throws IOException,
+			CommandExecutionException {
+
+		File file = new File("src/test/resources/trkd.mp3");
+
+		FileInputStream in = new FileInputStream(file);
+
+		DroidDetector dd = new DroidDetector();
+
+		Metadata metadata = new Metadata();
+		metadata.set(Metadata.RESOURCE_NAME_KEY, file.getName());
+
+		// Results:
+		System.out.println("As InputStream: " + dd.detect(in, metadata));
+		System.out.println("As File       : " + dd.detect(file));
 	}
 
 }
