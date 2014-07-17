@@ -3,7 +3,7 @@
 	<parent>
 	   <groupId>eu.scape-project.nanite</groupId>
 	   <artifactId>nanite</artifactId>
-	   <version>1.1.6-75-SNAPSHOT</version>
+	   <version>1.1.5-74-SNAPSHOT</version>
 	   <relativePath>..</relativePath>
 	</parent>
   	<name>nanite-cli</name>
