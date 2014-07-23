@@ -45,7 +45,6 @@
    </properties>  
   <modules>
   	<module>nanite-core</module>
-  	<module>nanite-cli</module>
         <module>nanite-hadoop</module>
   </modules>
   <name>Nanite - a friendly swarm of format-identifying robots
