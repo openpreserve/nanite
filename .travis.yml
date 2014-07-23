@@ -1,5 +1,6 @@
 language: java
 jdk:
+ - oraclejdk8
  - oraclejdk7
  - openjdk7
  - openjdk6
@@ -7,6 +8,11 @@ before_install:
  - git clone https://github.com/willp-bl/ProcessIsolatedTika.git
  - cd ProcessIsolatedTika
  - mvn clean install -DskipTests=true
+ - cd ..
+ - git clone https://github.com/ukwa/webarchive-discovery.git
+ - cd webarchive-discovery
+ - git checkout 1.1.x-bugfix-branch
+ - mvn clean install -DskipTests=true -el warc-solr-test-server
  - cd ..
 before_script:
  - "echo $JAVA_OPTS"
