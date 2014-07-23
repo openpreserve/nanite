@@ -1,73 +1,43 @@
 Nanite Hadoop
 =============
 
-This project brings together the various Nanite identifiers as a Hadoop job, allowing them to be run 
-on a set of ARC or WARC web archive files and compare and combine the results from different tools.
+This project brings together nanite-core and other identification/characterisation libraries as a Hadoop job, allowing them to be run on a set of ARC or WARC web archive files.
 
 It depends on the wap-recordreader packages from the WAP codebase.
 
-Running
+There are currently two main MapReduce programs included in Nanite Hadoop:
 
-<code>
-$ mvn assembly:assembly
-</code>
+ * GZChecker: this MapReduce program will ensure that all input files can be opened (if they are GZ compressed) and can automatically remove any problematic files for input into the FormatProfiler. This can quickly help identify some problem files instead of allowing them to cause a problem in the FormatProfiler after it has been running for several hours.
+ * FormatProfiler: this is the main Nanite Hadoop program and it contains several options for different outputs.  These options can be configured via a properties file within the nanite-hadoop jar, no recompilation required.
 
-will build a Hadoop JAR, with the required dependencies packaged in a lib folder inside the 
-main JAR file, e.g. 'target/nanite-hadoop-0.0.1-SNAPSHOT-job.jar'.
+There is a MapReduce program that chains the above two programs => NaniteHadoop.java
 
+FormatProfiler configuration options
+------------------------------------
+
+The following options can be turned off and on as required
+
+ * Include the file extension in the output (if possible)
+ * Include the mimetype reported by the web server when harvested
+ * Use nanite-core/DROID for identification (mimetype only)
+ * Use Apache Tika for identification (mimetype only)
+ * Use Apache Tika for characterisation (detailed information i.e. exif data, page count etc)
+ * Use libmagic for identification (mimetype only)
+ * Include the year of harvest (if not, will set a default year e.g. 2013 for all records)
+ * Generate a c3po compatible zip per input (W)ARC (Tika characterisation required)
+ * Generate a SequenceFile per input (W)ARC containing serialized Tika parser Metadata objects (Tika characterisation required)
+ * Generate a ZIP file containing serialized Metadata objects; one per input (W)ARC (Tika characterisation required)
+ * Include the (W)ARC record headers in the Metadata output
+
+Building an executable JAR
+--------------------------
+
+    $ mvn assembly:assembly
+
+The above command will build an executable Hadoop JAR, that contains all the required dependencies inside the main JAR file, e.g. 'target/nanite-hadoop-1.1.7-77-SNAPSHOT-job.jar'.
 
 TODO
 ----
 
-* Mega bonus points: Add new tika detector for plain text that uses a Weka Baysian filter to spot scripts/code/markup.
-* Alternative text analysis by running against multiple parser/grammers - mildly forgiving yet, but then how to determine partial/full parse success?
-
-http://stackoverflow.com/questions/1513587/looking-for-a-css-parser-in-java
-http://stackoverflow.com/questions/6511556/javascript-parser-for-java
-http://stackoverflow.com/questions/3033202/robust-javascript-parser-in-java
-http://stackoverflow.com/questions/200609/can-you-recommend-a-java-library-for-reading-and-possibly-writing-csv-files
-
-* Extreme mega bonus points: Extend tika to run http://cmusphinx.sourceforge.net/ and extract text from audio/video.
-
-
-[anjackson@explorer ~]$ ohcount-3.0.0-static -i apps/ohcount-3.0.0/test/src_licenses/gpl_t1.c
-Examining 1 file(s)
-                              Ohloh Line Count
-Language               Code    Comment  Comment %      Blank      Total  File
-----------------  ---------  ---------  ---------  ---------  ---------  -----------------------------------------------
-c                         0          1     100.0%          0          1  gpl_t1.c
-
-[anjackson@explorer ~]$ ohcount-3.0.0-static -l apps/ohcount-3.0.0/test/src_licenses/gpl_t1.c
-gpl gpl_t1.c
-
-[anjackson@explorer ~]$ ohcount-3.0.0-static -d apps/ohcount-3.0.0/test/src_licenses/gpl_t1.c
-c       apps/ohcount-3.0.0/test/src_licenses/gpl_t1.c
-
-
-Notes
-=====
-
-There was an occasional error, perhaps due to two versions of POI on the classpath:
-
-<code>
-java.lang.NoSuchFieldError: SMALLER_BIG_BLOCK_SIZE_DETAILS
-        at org.apache.poi.poifs.filesystem.NPOIFSFileSystem.<init>(NPOIFSFileSystem.java:93)
-        at org.apache.poi.poifs.filesystem.NPOIFSFileSystem.<init>(NPOIFSFileSystem.java:190)
-        at org.apache.poi.poifs.filesystem.NPOIFSFileSystem.<init>(NPOIFSFileSystem.java:184)
-        at org.apache.tika.parser.microsoft.POIFSContainerDetector.getTopLevelNames(POIFSContainerDetector.java:338)
-        at org.apache.tika.parser.microsoft.POIFSContainerDetector.detect(POIFSContainerDetector.java:152)
-        at org.apache.tika.detect.CompositeDetector.detect(CompositeDetector.java:61)
-        at org.apache.tika.Tika.detect(Tika.java:133)
-        at org.apache.tika.Tika.detect(Tika.java:180)
-        at org.apache.tika.Tika.detect(Tika.java:227)
-        at uk.bl.wap.hadoop.profiler.FormatProfilerMapper.map(FormatProfilerMapper.java:128)
-        at uk.bl.wap.hadoop.profiler.FormatProfilerMapper.map(FormatProfilerMapper.java:1)
-        at org.apache.hadoop.mapred.MapRunner.run(MapRunner.java:50)
-        at org.apache.hadoop.mapred.MapTask.runOldMapper(MapTask.java:391)
-        at org.apache.hadoop.mapred.MapTask.run(MapTask.java:325)
-        at org.apache.hadoop.mapred.LocalJobRunner$Job.run(LocalJobRunner.java:210)
-</code>
-
-I modified the assembly of the Hadoop job JAR to exclude the old version of POI that Heritrix 3.1.0 was bringing in,
-which the record-readers depend on. This indicates that the Heritrix jar is probably doing too much! Just using 
-the (W)ARC readers should not need bring in that kind of dependencies.
+* Add a MapReduce program for validating the input (W)ARC files, whether they are compressed or not
+* Check if the first entry passed to the Map is for the (W)ARC files themselves
