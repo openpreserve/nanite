@@ -3,7 +3,7 @@ Nanite - a friendly swarm of format-identifying robots
 
 [![Build Status](https://travis-ci.org/openplanets/nanite.png?branch=master)](https://travis-ci.org/openplanets/nanite)
 
-<img src="docs/nanite_logo.png" alt="Nanite logo" width="200px" />
+<img src="https://github.com/openplanets/nanite/raw/master/docs/nanite_logo.png" alt="Nanite logo" width="200px" />
 
 The Nanite project builds on DROID and Apache Tika to provide a rich format identification and characterization system. It aims to make it easier to run identification and characterisation at scale, and helps compare and combine the results of different tools.
 
