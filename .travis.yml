@@ -12,7 +12,7 @@ before_install:
  - git clone https://github.com/ukwa/webarchive-discovery.git
  - cd webarchive-discovery
  - git checkout 1.1.x-bugfix-branch
- - mvn clean install -el warc-solr-test-server -DskipTests=true 
+ - mvn -el warc-solr-test-server clean install -DskipTests=true 
  - cd ..
 before_script:
  - "echo $JAVA_OPTS"
