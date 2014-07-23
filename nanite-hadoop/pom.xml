@@ -10,6 +10,7 @@
 	<artifactId>nanite-hadoop</artifactId>
 
 	<properties>
+		<nanite-core.version>${parent.version}</nanite-core.version>
 		<warc-hadoop-recordreaders.version>1.1.2-SNAPSHOT</warc-hadoop-recordreaders.version>
 		<mainClass>uk.bl.wap.hadoop.profiler.FormatProfiler</mainClass>
 	</properties>
@@ -69,7 +70,7 @@
 		<dependency>
 			<groupId>eu.scape-project.nanite</groupId>
 			<artifactId>nanite-core</artifactId>
-			<version>1.1.6-77-SNAPSHOT</version>
+			<version>${nanite-core.version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.apache.commons</groupId>
