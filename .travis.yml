@@ -9,14 +9,11 @@ before_install:
  - cd ProcessIsolatedTika
  - mvn clean install -DskipTests=true
  - cd ..
- - pushd .
- # Get around parent pom issue when building in nanite/ dir
- - mkdir ../webarchive-discovery/ && cd ../webarchive-discovery/
  - git clone https://github.com/ukwa/webarchive-discovery.git
  - cd webarchive-discovery
  - git checkout 1.1.x-bugfix-branch
- - mvn clean install -DskipTests=true -el warc-solr-test-server
- - popd
+ - mvn clean install -el warc-solr-test-server -DskipTests=true 
+ - cd ..
 before_script:
  - "echo $JAVA_OPTS"
  - "export JAVA_OPTS=-Xmx1024m"
