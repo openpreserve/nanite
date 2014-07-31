@@ -327,7 +327,8 @@ public class FormatProfilerMapper extends MapReduceBase implements Mapper<Text, 
 		// Get the server header data:
 		if( !header.getHeaderFields().isEmpty() ) {
 			// Type according to server:
-			serverType = header.getMimetype();
+			// force lower case
+			serverType = header.getMimetype().toLowerCase();
 			if( serverType == null ) {
 				log.warn("LOG: Server Content-Type is null.");
 			}
