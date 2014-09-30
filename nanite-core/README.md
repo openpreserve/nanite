@@ -6,7 +6,7 @@ This code re-implements the [DROID](https://github.com/digital-preservation/droi
 Example usage
 -------------
 
-First add the ```nanite-core``` dependency to your Java project, e.g. for Maven:
+First add the ```nanite-core``` [dependency](http://search.maven.org/#artifactdetails|eu.scape-project.nanite|nanite-core|1.1.6-77|jar) to your Java project, e.g. for Maven:
 
     <dependency>
         <groupId>eu.scape-project.nanite</groupId>
