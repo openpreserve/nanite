@@ -6,10 +6,22 @@ This code re-implements the [DROID](https://github.com/digital-preservation/droi
 Example usage
 -------------
 
+First add the ```nanite-core``` dependency to your Java project, e.g. for Maven:
+
+    <dependency>
+        <groupId>eu.scape-project.nanite</groupId>
+        <artifactId>nanite-core</artifactId>
+        <version>1.1.6-77</version>
+    </dependency>
+
+Then from your code, you can use this:
+
     DroidDetector droidDetector = new DroidDetector();
-    droidDetector.setBinarySignaturesOnly( droidUseBinarySignaturesOnly );
-    droidDetector.setMaxBytesToScan(BUF_SIZE);
     Metadata metadata = new Metadata();
     metadata.set(Metadata.RESOURCE_NAME_KEY, "filename");
     MediaType droidType = droidDetector.detect(datastream, metadata);
 
+You can also tweak the DROID configuration if you wish. e.g. this config only uses binary signatures, but allows DROID to scan all the bytes in the bytestream:
+
+    droidDetector.setBinarySignaturesOnly( true ); 
+    droidDetector.setMaxBytesToScan( -1 );
