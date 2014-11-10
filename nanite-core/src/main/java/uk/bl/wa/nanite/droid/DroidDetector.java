@@ -115,7 +115,7 @@ public class DroidDetector implements Detector {
 
 	// static final String DROID_SIGNATURE_FILE =
 	// "DROID_SignatureFile_V100069.xml";
-	static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V78.xml";
+	static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V79.xml";
 	static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
 
 	static final String DROID_SIG_FILE = "" + DROID_SIG_RESOURCE;
