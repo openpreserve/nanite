@@ -232,7 +232,6 @@ sl:generator="ibauthor"
   ZX Spectrum tape format .tap 
   Based on /usr/share/file/magic/spectrum 
   $File: spectrum,v 1.6 2009/09/19 16:28:12 christos Exp $
-  -->
   <mime-type type="application/x-spectrum-tap">
     <acronym>TAP</acronym>
     <_comment>ZX Spectrum .TAP tape image format</_comment>
@@ -246,6 +245,7 @@ sl:generator="ibauthor"
     </magic>
     <glob pattern="*.tap"/>
   </mime-type>
+  -->
   
   <mime-type type="application/x-spectrum-tap; version=basic">
     <sub-class-of type="iapplication/x-spectrum-tap" />
