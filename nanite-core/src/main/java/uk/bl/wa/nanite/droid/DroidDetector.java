@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBException;
@@ -165,7 +166,12 @@ public class DroidDetector implements Detector {
 		try {
 			binarySignatureIdentifier.init();
 		} catch (SignatureParseException e) {
-			throw new CommandExecutionException("Can't parse signature file");
+			log.log(Level.SEVERE, "Error '" + e.getMessage()
+					+ "' when parsing "
+					+ DROID_SIG_FILE + " unpacked to "
+					+ fileSignaturesFile, e);
+			throw new CommandExecutionException("Can't parse signature file! "
+					+ e.getMessage());
 		}
 		binarySignatureIdentifier.setMaxBytesToScan(maxBytesToScan);
 		String path = fileSignaturesFile.getAbsolutePath();
