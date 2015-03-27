@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>eu.scape-project.nanite</groupId>
   <artifactId>nanite</artifactId>
-  <version>1.1.6-82</version>
+  <version>1.1.6-83-SNAPSHOT</version>
   <packaging>pom</packaging>
    <organization>
       <name>The Open Planets Foundation</name>
