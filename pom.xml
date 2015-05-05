@@ -30,12 +30,12 @@
    </developers>
    <issueManagement>
       <system>GitHub Issues</system>
-      <url>https://github.com/openplanets/nanite/issues</url>
+      <url>https://github.com/openpreserve/nanite/issues</url>
    </issueManagement>
    <scm>
-      <connection>scm:git:git@github.com:openplanets/nanite.git</connection>
-      <developerConnection>scm:git:git@github.com:openplanets/nanite.git</developerConnection>
-      <url>git@github.com:openplanets/nanite.git</url>
+      <connection>scm:git:git@github.com:openpreserve/nanite.git</connection>
+      <developerConnection>scm:git:git@github.com:openpreserve/nanite.git</developerConnection>
+      <url>git@github.com:openpreserve/nanite.git</url>
    </scm>
    <properties>
       <jdk.version>1.6</jdk.version>
