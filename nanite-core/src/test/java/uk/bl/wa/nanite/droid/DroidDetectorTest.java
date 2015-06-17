@@ -4,6 +4,7 @@
 package uk.bl.wa.nanite.droid;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,6 +18,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import uk.gov.nationalarchives.droid.core.interfaces.IdentificationMethod;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 
 /**
@@ -25,14 +27,18 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
  */
 public class DroidDetectorTest {
 
-	private DroidDetector dd;
+	private DroidDetector ddc;
+	private DroidDetector ddb;
 
 	/**
 	 * @throws java.lang.Exception
 	 */
 	@Before
 	public void setUp() throws Exception {
-		dd = new DroidDetector();
+		ddc = new DroidDetector();
+		// Another, with only binary sigs:
+		ddb = new DroidDetector();
+		ddb.setBinarySignaturesOnly(true);
 	}
 
 	/**
@@ -50,21 +56,41 @@ public class DroidDetectorTest {
 	@Test
 	public void testDetectInputStreamMetadata() throws FileNotFoundException, IOException {
 		// Test a WPD
-		innerTestDetectInputStreamMetadata(
+		innerTestDetectInputStreamMetadata(ddc,
 				"src/test/resources/wpd/TOPOPREC.WPD",
 				"application/vnd.wordperfect");
 		// Test a WPD
-		innerTestDetectInputStreamMetadata("src/test/resources/cc0.mp3",
+		innerTestDetectInputStreamMetadata(ddc, "src/test/resources/cc0.mp3",
 				"audio/mpeg");
 		// Test a WPD
-		innerTestDetectInputStreamMetadata("src/test/resources/simple.pdf",
+		innerTestDetectInputStreamMetadata(ddc,
+				"src/test/resources/simple.pdf", "application/pdf");
+		// Test a DOC
+		innerTestDetectInputStreamMetadata(ddc,
+				"src/test/resources/lorem-ipsum.doc", "application/msword");
+
+		// --- Binary sigs only:
+
+		// Test a WPD
+		innerTestDetectInputStreamMetadata(ddb,
+				"src/test/resources/wpd/TOPOPREC.WPD",
+				"application/vnd.wordperfect");
+		// Test a WPD
+		innerTestDetectInputStreamMetadata(ddb, "src/test/resources/cc0.mp3",
+				"audio/mpeg");
+		// Test a WPD
+		innerTestDetectInputStreamMetadata(ddb,
+				"src/test/resources/simple.pdf",
 				"application/pdf");
 		// Test a DOC
-		innerTestDetectInputStreamMetadata(
-				"src/test/resources/lorem-ipsum.doc", "application/msword");
+		innerTestDetectInputStreamMetadata(ddb,
+				"src/test/resources/lorem-ipsum.doc",
+				"application/x-puid-fmt-111");
+
 	}
 
-	private void innerTestDetectInputStreamMetadata(String filepath,
+	private void innerTestDetectInputStreamMetadata(DroidDetector dd,
+			String filepath,
 			String expectedMime) throws FileNotFoundException, IOException {
 		File f = new File(filepath);
 		//File f = new File("src/test/resources/simple.pdf");
@@ -88,23 +114,41 @@ public class DroidDetectorTest {
 	 */
 	@Test
 	public void testPUIDs() {
-		innerTestPUIDs("src/test/resources/wpd/TOPOPREC.WPD", "x-fmt/44");
-		innerTestPUIDs("src/test/resources/cc0.mp3", "fmt/134");
-		innerTestPUIDs("src/test/resources/simple.pdf", "fmt/18");
-		innerTestPUIDs("src/test/resources/lorem-ipsum.doc", "fmt/40");
+		innerTestPUIDs(ddc, "src/test/resources/wpd/TOPOPREC.WPD", "x-fmt/44",
+				IdentificationMethod.BINARY_SIGNATURE);
+		innerTestPUIDs(ddc, "src/test/resources/cc0.mp3", "fmt/134",
+				IdentificationMethod.BINARY_SIGNATURE);
+		innerTestPUIDs(ddc, "src/test/resources/simple.pdf", "fmt/18",
+				IdentificationMethod.BINARY_SIGNATURE);
+		innerTestPUIDs(ddc, "src/test/resources/lorem-ipsum.doc", "fmt/40",
+				IdentificationMethod.CONTAINER);
+
+		// --- Binary sigs only:
+
+		innerTestPUIDs(ddb, "src/test/resources/wpd/TOPOPREC.WPD", "x-fmt/44",
+				IdentificationMethod.BINARY_SIGNATURE);
+		innerTestPUIDs(ddb, "src/test/resources/cc0.mp3", "fmt/134",
+				IdentificationMethod.BINARY_SIGNATURE);
+		innerTestPUIDs(ddb, "src/test/resources/simple.pdf", "fmt/18",
+				IdentificationMethod.BINARY_SIGNATURE);
+		innerTestPUIDs(ddb, "src/test/resources/lorem-ipsum.doc", "fmt/111",
+				IdentificationMethod.BINARY_SIGNATURE);
 	}
 
-	private void innerTestPUIDs(String testFile, String expectedPUID) {
+	private void innerTestPUIDs(DroidDetector dd, String testFile,
+			String expectedPUID,
+			IdentificationMethod method) {
 		// Get the PUID results:
 		List<IdentificationResult> lir = dd.detectPUIDs(new File(testFile));
-		boolean found = false;
+		IdentificationResult found = null;
 		for (IdentificationResult ir : lir) {
 			System.out.println(testFile + ": " + ir.getPuid() + " '"
 					+ ir.getName() + "' (" + ir.getMimeType() + ") by "
-					+ ir.getMethod().name());
+					+ ir.getMethod());
 			if (expectedPUID.equals(ir.getPuid()))
-				found = true;
+				found = ir;
 		}
-		assertEquals("None of the PUIDs matched " + expectedPUID, true, found);
+		assertNotNull("None of the PUIDs matched " + expectedPUID, found);
+		assertEquals(method, found.getMethod());
 	}
 }

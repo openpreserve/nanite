@@ -47,8 +47,6 @@ import uk.gov.nationalarchives.droid.container.ContainerSignatureDefinitions;
 import uk.gov.nationalarchives.droid.container.TriggerPuid;
 import uk.gov.nationalarchives.droid.container.ole2.Ole2IdentifierEngine;
 import uk.gov.nationalarchives.droid.container.zip.ZipIdentifierEngine;
-import uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier;
-import uk.gov.nationalarchives.droid.core.interfaces.IdentificationMethod;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
@@ -148,13 +146,16 @@ public class CustomResultPrinter {
                     puid = ZIP_ARCHIVE;
                 }
                 //System.out.println(fileName + "," + puid );
-                FileFormat hit = binarySignatureIdentifier.getSigFile().getFileFormat(identResult.getPuid());
+				// For some reason, need to do this to fully populate the
+				// result:
+				FileFormat hit = binarySignatureIdentifier.getSigFile()
+						.getFileFormat(identResult.getPuid());
                 IdentificationResultImpl resultImpl = new IdentificationResultImpl();
-                resultImpl.setMimeType(hit.getMimeType());
-                resultImpl.setName(hit.getName());
-                resultImpl.setVersion(hit.getVersion());
-                resultImpl.setPuid(hit.getPUID());
-                resultImpl.setMethod(IdentificationMethod.CONTAINER);
+				resultImpl.setMimeType(hit.getMimeType());
+				resultImpl.setName(hit.getName());
+				resultImpl.setVersion(hit.getVersion());
+				resultImpl.setPuid(identResult.getPuid());
+                resultImpl.setMethod(identResult.getMethod());
                 result = resultImpl;
                 
                 if (archives && !container) {
