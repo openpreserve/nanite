@@ -9,12 +9,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
@@ -56,6 +59,9 @@ public class DroidDetectorTest {
 		// Test a WPD
 		innerTestDetectInputStreamMetadata("src/test/resources/simple.pdf",
 				"application/pdf");
+		// Test a DOC
+		innerTestDetectInputStreamMetadata(
+				"src/test/resources/lorem-ipsum.doc", "application/msword");
 	}
 
 	private void innerTestDetectInputStreamMetadata(String filepath,
@@ -74,5 +80,31 @@ public class DroidDetectorTest {
 		type = dd.detect(new FileInputStream(f), metadata);
 		System.out.println("Got via InputStream: "+type);
 		assertEquals(expectedMime, type.getBaseType().toString());
+	}
+
+
+	/**
+	 * Test that we have access to the PUIDs
+	 */
+	@Test
+	public void testPUIDs() {
+		innerTestPUIDs("src/test/resources/wpd/TOPOPREC.WPD", "x-fmt/44");
+		innerTestPUIDs("src/test/resources/cc0.mp3", "fmt/134");
+		innerTestPUIDs("src/test/resources/simple.pdf", "fmt/18");
+		innerTestPUIDs("src/test/resources/lorem-ipsum.doc", "fmt/40");
+	}
+
+	private void innerTestPUIDs(String testFile, String expectedPUID) {
+		// Get the PUID results:
+		List<IdentificationResult> lir = dd.detectPUIDs(new File(testFile));
+		boolean found = false;
+		for (IdentificationResult ir : lir) {
+			System.out.println(testFile + ": " + ir.getPuid() + " '"
+					+ ir.getName() + "' (" + ir.getMimeType() + ") by "
+					+ ir.getMethod().name());
+			if (expectedPUID.equals(ir.getPuid()))
+				found = true;
+		}
+		assertEquals("None of the PUIDs matched " + expectedPUID, true, found);
 	}
 }
