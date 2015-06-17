@@ -39,7 +39,7 @@
    </scm>
    <properties>
       <jdk.version>1.6</jdk.version>
-      <tika.version>1.6</tika.version>
+      <tika.version>1.8</tika.version>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <license.licenseName>apache_v2</license.licenseName>
    </properties>  
