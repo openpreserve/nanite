@@ -55,6 +55,13 @@ You can use the Nanite API like so:
 
 The DroidDetector is not threadsafe, and multithreaded processes should have a separate instance of the DroidDetector for each thread.
 
+Limitations
+-----------
+
+The Nanite system deliberately embeds a copy of the latest PRONOM signature files at the time of release, with the -XX part of the version number tracking the PRONOM release number. i.e. 1.2.0-82 includes PRONOM signature file version 82 and the corresponding container signatures.
+
+Nanite does not support auto-updating the signature files, but if you wish, you can [download them](https://www.nationalarchives.gov.uk/aboutapps/pronom/droid-signature-files.htm) and pass them to the ```DroidDetector``` via the ```DroidDetector(File fileSignaturesFile, File containerSignaturesFile)``` constructor.
+
 Acknowledgements
 ----------------
 
