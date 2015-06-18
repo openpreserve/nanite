@@ -151,4 +151,5 @@ public class DroidDetectorTest {
 		assertNotNull("None of the PUIDs matched " + expectedPUID, found);
 		assertEquals(method, found.getMethod());
 	}
+
 }
