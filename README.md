@@ -15,7 +15,7 @@ Nanite has been used at scale, see this [blog post](http://www.openplanetsfounda
 Using the Nanite API
 --------------------
 
-In version 1.2.0-82, a new API has been introduced to make it possible to get the PUID-level data out, as an alternative to only being able to access the extended MIME type.
+In version [1.2.0-82 of nanite-core](http://search.maven.org/#artifactdetails|eu.scape-project.nanite|nanite-core|1.2.0-82|jar), a new API has been introduced to make it possible to get the PUID-level data out, as an alternative to only being able to access the extended MIME type.
 
 You can use the Nanite API like so:
 
