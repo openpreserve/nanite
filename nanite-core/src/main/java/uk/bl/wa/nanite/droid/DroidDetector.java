@@ -438,6 +438,10 @@ public class DroidDetector implements Detector {
 			return MediaType.OCTET_STREAM;
 		// Get the first result:
 		IdentificationResult r = results.get(0);
+		// It it's NULL:
+		if (r == null) {
+			return MediaType.OCTET_STREAM;
+		}
 		// Sort out the MIME type mapping:
 		String mimeType = null;
 		String mimeTypeString = r.getMimeType();
