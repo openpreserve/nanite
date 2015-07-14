@@ -364,7 +364,6 @@ public class DroidDetector implements Detector {
 			} else {
 				nameUri = new URI("file", "", "/" + fileName, null);
 			}
-			log.info("Made URI " + nameUri);
 		} catch (URISyntaxException e) {
 			log.warning("Exception when building filename URI for " + fileName
 					+ ": " + e);
