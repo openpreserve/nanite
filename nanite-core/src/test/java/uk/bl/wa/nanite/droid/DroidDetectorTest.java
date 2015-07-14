@@ -102,7 +102,7 @@ public class DroidDetectorTest {
 		assertEquals(expectedMime, type.getBaseType().toString());
 		// Via InputStream:
 		metadata = new Metadata();
-		metadata.set(Metadata.RESOURCE_NAME_KEY, f.toURI().toString());
+		metadata.set(Metadata.RESOURCE_NAME_KEY, f.getName());
 		type = dd.detect(new FileInputStream(f), metadata);
 		System.out.println("Got via InputStream: "+type);
 		assertEquals(expectedMime, type.getBaseType().toString());

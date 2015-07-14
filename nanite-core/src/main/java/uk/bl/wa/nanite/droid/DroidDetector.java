@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -356,8 +357,20 @@ public class DroidDetector implements Detector {
 		}
 		RequestMetaData metaData = new RequestMetaData(
 				(long) input.available(), null, fileName);
-		RequestIdentifier identifier = new RequestIdentifier(
-				URI.create("file:///./" + fileName));
+		URI nameUri = null;
+		try {
+			if (fileName.startsWith("file:")) {
+				nameUri = new URI(fileName);
+			} else {
+				nameUri = new URI("file", "", "/" + fileName, null);
+			}
+			log.info("Made URI " + nameUri);
+		} catch (URISyntaxException e) {
+			log.warning("Exception when building filename URI for " + fileName
+					+ ": " + e);
+			nameUri = URI.create("file://./name-with-no-extension");
+		}
+		RequestIdentifier identifier = new RequestIdentifier(nameUri);
 		identifier.setParentId(1L);
 
 		InputStreamIdentificationRequest request = new InputStreamIdentificationRequest(
