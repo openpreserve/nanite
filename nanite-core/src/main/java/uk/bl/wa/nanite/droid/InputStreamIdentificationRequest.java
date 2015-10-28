@@ -11,6 +11,7 @@ import org.apache.commons.io.input.CloseShieldInputStream;
 import net.domesdaybook.reader.ByteReader;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
+import uk.gov.nationalarchives.droid.core.interfaces.resource.ResourceUtils;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
@@ -19,10 +20,14 @@ import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
 public class InputStreamIdentificationRequest extends ByteArrayIdentificationRequest {
 
 	private InputStreamByteReader isReader;
+    private String fileName;
+    private String extension;
 	
 	public InputStreamIdentificationRequest(RequestMetaData metaData,
 			RequestIdentifier identifier, InputStream in) {
 		this.metaData = metaData;
+        this.fileName = metaData.getName();
+        this.extension = ResourceUtils.getExtension(fileName);
 		this.identifier = identifier;
 		try {
 			this.size = in.available();
@@ -68,9 +73,29 @@ public class InputStreamIdentificationRequest extends ByteArrayIdentificationReq
 		return in;
 	}
 
-	/**
-	 * 
-	 */
+    @Override
+    public String getFileName() {
+        return this.fileName;
+    }
+
+    @Override
+    public long size() {
+        return this.size;
+    }
+
+    @Override
+    public String getExtension() {
+        return this.extension;
+    }
+
+    @Override
+    public RequestMetaData getRequestMetaData() {
+        return this.metaData;
+    }
+
+    /**
+     * 
+     */
 	public void disposeBuffer() {
 		if( this.isReader != null ) {
 			try {

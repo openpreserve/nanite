@@ -18,6 +18,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationMethod;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 
@@ -47,6 +48,24 @@ public class DroidDetectorTest {
 	@After
 	public void tearDown() throws Exception {
 	}
+
+    @Test
+    public void testDetectByExtension() throws FileNotFoundException,
+            IOException, CommandExecutionException {
+
+        DroidDetector dde = new DroidDetector();
+
+        // Test a TXT (no file extension matching:
+        dde.setAllowMatchByFileExtension(false);
+        innerTestDetectInputStreamMetadata(dde,
+                "src/test/resources/plain-text.txt",
+                "application/octet-stream");
+
+        // Test a TXT (binary sigs only):
+        dde.setAllowMatchByFileExtension(true);
+        innerTestDetectInputStreamMetadata(dde,
+                "src/test/resources/plain-text.txt", "text/plain");
+    }
 
 	/**
 	 * Test method for {@link uk.bl.wa.nanite.droid.DroidDetector#detect(java.io.InputStream, org.apache.tika.metadata.Metadata)}.

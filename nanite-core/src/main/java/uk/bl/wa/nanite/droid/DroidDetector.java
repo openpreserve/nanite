@@ -138,6 +138,19 @@ public class DroidDetector implements Detector {
 
 	/** Set binarySignaturesOnly to disable container-based identification */
 	private boolean binarySignaturesOnly = false;
+
+    /**
+     * Whether to allow the BinSig matcher to fall back on the file extension
+     * when magic matching fails:
+     */
+    private boolean allowMatchByFileExtension = true;
+
+    /**
+     * When BigSig magic fails, whether to match against all known extensions or
+     * just those that have no other signature (BinSig or Container):
+     */
+    private boolean matchAllExtensions = true;
+
 	/**
 	 * Disable this flag to prevent the file extension being used as a format
 	 * hint
@@ -241,9 +254,35 @@ public class DroidDetector implements Detector {
 				containerSignatureDefinitions, "", slash, slash1, archives);
 	}
 
-	/**
-	 * @return the binarySignaturesOnly
-	 */
+    public boolean isAllowMatchByFileExtension() {
+        return allowMatchByFileExtension;
+    }
+
+    public void setAllowMatchByFileExtension(
+            boolean allowMatchByFileExtension) {
+        this.allowMatchByFileExtension = allowMatchByFileExtension;
+    }
+
+    public boolean isMatchAllExtensions() {
+        return matchAllExtensions;
+    }
+
+    public void setMatchAllExtensions(boolean matchAllExtensions) {
+        this.matchAllExtensions = matchAllExtensions;
+    }
+
+    public boolean isPassFilenameWithInputStream() {
+        return passFilenameWithInputStream;
+    }
+
+    public void setPassFilenameWithInputStream(
+            boolean passFilenameWithInputStream) {
+        this.passFilenameWithInputStream = passFilenameWithInputStream;
+    }
+
+    /**
+     * @return the binarySignaturesOnly
+     */
 	public boolean isBinarySignaturesOnly() {
 		return binarySignaturesOnly;
 	}
@@ -355,8 +394,10 @@ public class DroidDetector implements Detector {
 				fileName = metadata.get(Metadata.RESOURCE_NAME_KEY);
 			}
 		}
+        log.finer("Set up filename: " + fileName);
 		RequestMetaData metaData = new RequestMetaData(
 				(long) input.available(), null, fileName);
+
 		URI nameUri = null;
 		try {
 			if (fileName.startsWith("file:")) {
@@ -369,6 +410,7 @@ public class DroidDetector implements Detector {
 					+ ": " + e);
 			nameUri = URI.create("file://./name-with-no-extension");
 		}
+        log.finer("Set up nameUri: " + nameUri);
 		RequestIdentifier identifier = new RequestIdentifier(nameUri);
 		identifier.setParentId(1L);
 
@@ -401,7 +443,25 @@ public class DroidDetector implements Detector {
 		request.open(input);
 		IdentificationResultCollection results = binarySignatureIdentifier
 				.matchBinarySignatures(request);
-		// log.info("Got "+results.getResults().size() +" matches.");
+        log.finer("Got " + results.getResults().size() + " matches.");
+
+        // If there is no BinSig match, fall back on file extension:
+		List<IdentificationResult> resultList = results.getResults();
+        if (resultList != null && resultList.isEmpty()
+                && allowMatchByFileExtension) {
+            // If we call matchExtensions with "true", it will match
+            // ALL files formats which have a given extension.
+            // If "false", it will only match file formats for which
+            // there is no other signature defined.
+            IdentificationResultCollection checkExtensionResults =
+                    binarySignatureIdentifier.matchExtensions(request, matchAllExtensions);
+            if (checkExtensionResults != null) {
+                results = checkExtensionResults;
+                log.finer(
+                        "Fallen back on file extension results, with # results = "
+                                + results.getResults().size());
+            }
+        }
 
 		// Optionally, return top results from binary signature match only:
 		if (this.isBinarySignaturesOnly()) {
