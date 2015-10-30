@@ -42,6 +42,7 @@
       <tika.version>1.8</tika.version>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <license.licenseName>apache_v2</license.licenseName>
+      <additionalparam>-Xdoclint:none</additionalparam>
    </properties>  
   <modules>
   	<module>nanite-core</module>

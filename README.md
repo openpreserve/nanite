@@ -62,6 +62,12 @@ The Nanite system deliberately embeds a copy of the latest PRONOM signature file
 
 Nanite does not support auto-updating the signature files, but if you wish, you can [download them](https://www.nationalarchives.gov.uk/aboutapps/pronom/droid-signature-files.htm) and pass them to the ```DroidDetector``` via the ```DroidDetector(File fileSignaturesFile, File containerSignaturesFile)``` constructor.
 
+Change Log
+----------
+
+1.3.0
+: As of this release, the DROID code for guessing based on file extension is also included by default, if binary signature detection fails. New parameters on the DroidDetector allow this to be controlled.
+
 Acknowledgements
 ----------------
 
