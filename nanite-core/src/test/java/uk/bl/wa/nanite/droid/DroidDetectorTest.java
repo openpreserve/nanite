@@ -55,8 +55,7 @@ public class DroidDetectorTest {
 
         DroidDetector dde = new DroidDetector();
 
-        // Test a TXT (no file extension matching:
-        dde.setAllowMatchByFileExtension(false);
+        // Test a TXT (no file extension matching - should be default):
         innerTestDetectInputStreamMetadata(dde,
                 "src/test/resources/plain-text.txt",
                 "application/octet-stream");

@@ -143,7 +143,7 @@ public class DroidDetector implements Detector {
      * Whether to allow the BinSig matcher to fall back on the file extension
      * when magic matching fails:
      */
-    private boolean allowMatchByFileExtension = true;
+    private boolean allowMatchByFileExtension = false;
 
     /**
      * When BigSig magic fails, whether to match against all known extensions or

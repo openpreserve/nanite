@@ -65,8 +65,10 @@ Nanite does not support auto-updating the signature files, but if you wish, you 
 Change Log
 ----------
 
-1.3.0
-: As of this release, the DROID code for guessing based on file extension is also included by default, if binary signature detection fails. New parameters on the DroidDetector allow this to be controlled.
+* 1.3.1
+    - Revert to *not* falling back on extension-based identification by default, as enabling this is a breaking API change.
+* 1.3.0
+    - As of this release, the DROID code for guessing based on file extension is also included by default, if binary signature detection fails. New parameters on the DroidDetector allow this to be controlled.
 
 Acknowledgements
 ----------------
