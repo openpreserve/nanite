@@ -25,3 +25,10 @@ You can also tweak the DROID configuration if you wish. e.g. this config only us
 
     droidDetector.setBinarySignaturesOnly( true ); 
     droidDetector.setMaxBytesToScan( -1 );
+
+    
+Changes
+-------
+
+* 1.3.2-83
+    * Updated DROID binary (and container) signatures to v83.

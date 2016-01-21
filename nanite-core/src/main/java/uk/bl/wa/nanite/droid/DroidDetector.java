@@ -117,11 +117,11 @@ public class DroidDetector implements Detector {
 
 	// static final String DROID_SIGNATURE_FILE =
 	// "DROID_SignatureFile_V100069.xml";
-	static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V82.xml";
+    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V84.xml";
 	static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
 
 	static final String DROID_SIG_FILE = "" + DROID_SIG_RESOURCE;
-	static final String CONTAINER_SIG_FILE = "droid/container-signature-20150327.xml";
+    static final String CONTAINER_SIG_FILE = "droid/container-signature-20160121.xml";
 
 	// Set up DROID binary handler:
 	private BinarySignatureIdentifier binarySignatureIdentifier;
@@ -587,12 +587,12 @@ public class DroidDetector implements Detector {
 
 	/* ----- ----- ----- ----- */
 
-	/**
-	 * 
-	 * @param args
-	 * @throws CommandExecutionException
-	 * @throws IOException
-	 */
+    /**
+     * 
+     * @param args
+     * @throws CommandExecutionException
+     * @throws IOException
+     */
 	public static void main(String[] args) throws CommandExecutionException,
 			IOException {
 		DroidDetector dr = new DroidDetector();
