@@ -187,6 +187,10 @@ public class DroidDetector implements Detector {
 
 		// And initialise:
 		init(fileSignaturesFile, containerSignaturesFile);
+		
+		//dont fill up tmp space with signature files
+		fileSignaturesFile.delete();
+		containerSignaturesFile.delete();
 	}
 
 	/**
