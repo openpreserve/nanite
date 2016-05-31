@@ -87,6 +87,14 @@ public class DroidDetectorTest {
 		innerTestDetectInputStreamMetadata(ddc,
 				"src/test/resources/lorem-ipsum.doc", "application/msword");
 
+        // Test an ICO
+        innerTestDetectInputStreamMetadata(ddc,
+                "src/test/resources/favicon.ico", "image/vnd.microsoft.icon");
+
+        // Test a PNG ICO
+        innerTestDetectInputStreamMetadata(ddc,
+                "src/test/resources/favicon-png.ico", "image/png");
+
 		// --- Binary sigs only:
 
 		// Test a WPD
