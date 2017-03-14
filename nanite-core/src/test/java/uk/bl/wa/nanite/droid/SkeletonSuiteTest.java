@@ -1,5 +1,7 @@
 package uk.bl.wa.nanite.droid;
 
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +14,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 public class SkeletonSuiteTest {
 
     @Test
-    public void testAll() throws CommandExecutionException {
+    public void testSkeletonSuite() throws CommandExecutionException {
 
         DroidDetector dd = new DroidDetector();
 
@@ -21,10 +23,12 @@ public class SkeletonSuiteTest {
 
         List<String> fails = new ArrayList<String>();
 
+        // For all sources:
         for (String source : sources) {
             File folder = new File(source);
             File[] listOfFiles = folder.listFiles();
 
+            // For all giles:
             for (int i = 0; i < listOfFiles.length; i++) {
                 File f = listOfFiles[i];
                 if (f.isFile()) {
@@ -37,6 +41,8 @@ public class SkeletonSuiteTest {
                     boolean match = false;
                     String firstPuid = null;
                     for (IdentificationResult puid : puids) {
+                        // Record the first (potentially mis-matched) PUID for
+                        // reporting purposes:
                         if (firstPuid == null) {
                             if (puid == null) {
                                 firstPuid = "NULL!";
@@ -44,8 +50,8 @@ public class SkeletonSuiteTest {
                                 firstPuid = puid.getPuid();
                             }
                         }
+                        // Skip any further processing if a NULL is returned:
                         if (puid == null) {
-                            System.out.println("NULL!!!: " + f);
                             continue;
                         }
                         // Compare:
@@ -67,7 +73,11 @@ public class SkeletonSuiteTest {
         for (String fail : fails) {
             System.out.println("FAIL: " + fail);
         }
-        // fail("Not yet implemented");
+        // Check this is as expected:
+        if (fails.size() > 4) {
+            fail("More errors than expected when running against the Skeleton Suite! Total = "
+                    + fails.size());
+        }
     }
 
 }
