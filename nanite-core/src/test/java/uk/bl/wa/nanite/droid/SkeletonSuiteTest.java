@@ -4,10 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.tika.mime.MediaType;
 import org.junit.Test;
 
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
+import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 
 public class SkeletonSuiteTest {
 
@@ -26,22 +26,46 @@ public class SkeletonSuiteTest {
             File[] listOfFiles = folder.listFiles();
 
             for (int i = 0; i < listOfFiles.length; i++) {
-                if (listOfFiles[i].isFile()) {
-                    MediaType fmt = dd.detect(listOfFiles[i]);
-                    if (fmt.equals(MediaType.OCTET_STREAM)) {
-                        fails.add("File could not be identified! "
-                                + listOfFiles[i]);
+                File f = listOfFiles[i];
+                if (f.isFile()) {
+
+                    // Do the detection:
+                    List<IdentificationResult> puids = dd
+                            .detectPUIDs(f);
+
+                    // Check for a match:
+                    boolean match = false;
+                    String firstPuid = null;
+                    for (IdentificationResult puid : puids) {
+                        if (firstPuid == null) {
+                            if (puid == null) {
+                                firstPuid = "NULL!";
+                            } else {
+                                firstPuid = puid.getPuid();
+                            }
+                        }
+                        if (puid == null) {
+                            System.out.println("NULL!!!: " + f);
+                            continue;
+                        }
+                        // Compare:
+                        String puidPrefix = puid.getPuid().replaceAll("/", "-");
+                        if (f.getName().startsWith(puidPrefix)) {
+                            match = true;
+                        }
                     }
-                    System.out.println(
-                            "File " + listOfFiles[i].getName() + " " + fmt);
-                } else if (listOfFiles[i].isDirectory()) {
-                    System.out.println("Directory " + listOfFiles[i].getName());
+
+                    // Store result:
+                    if (!match) {
+                        fails.add("File could not be identified! "
+                                + f.getName()+ " : got "+firstPuid);
+                    }
                 }
             }
         }
 
         for (String fail : fails) {
-            System.err.println("FAIL: " + fail);
+            System.out.println("FAIL: " + fail);
         }
         // fail("Not yet implemented");
     }
