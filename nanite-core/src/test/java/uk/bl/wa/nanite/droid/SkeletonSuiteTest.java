@@ -18,8 +18,8 @@ public class SkeletonSuiteTest {
 
         DroidDetector dd = new DroidDetector();
 
-        String[] sources = { "src/test/resources/skeleton-suite-test/skeleton-suite-pronom-export-2017-03-08-sig-file-v89/fmt",
-                "src/test/resources/skeleton-suite-test/skeleton-suite-pronom-export-2017-03-08-sig-file-v89/x-fmt"};
+        String[] sources = { "src/test/resources/skeleton-suite/fmt",
+                "src/test/resources/skeleton-suite/x-fmt" };
 
         List<String> fails = new ArrayList<String>();
 
