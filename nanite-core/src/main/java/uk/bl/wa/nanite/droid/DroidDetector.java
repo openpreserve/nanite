@@ -117,11 +117,11 @@ public class DroidDetector implements Detector {
 
 	// static final String DROID_SIGNATURE_FILE =
 	// "DROID_SignatureFile_V100069.xml";
-    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V89.xml";
+    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V90.xml";
 	static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
 
 	static final String DROID_SIG_FILE = "" + DROID_SIG_RESOURCE;
-    static final String CONTAINER_SIG_FILE = "droid/container-signature-20170308.xml";
+    static final String CONTAINER_SIG_FILE = "droid/container-signature-20170330.xml";
 
 	// Set up DROID binary handler:
 	private BinarySignatureIdentifier binarySignatureIdentifier;

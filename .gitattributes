@@ -1,3 +1,3 @@
 * text=auto
-/nanite-core/src/test/resources/skeleton-suite-test/skeleton-suite-pronom-export-2017-03-08-sig-file-v89/fmt/* binary
-/nanite-core/src/test/resources/skeleton-suite-test/skeleton-suite-pronom-export-2017-03-08-sig-file-v89/x-fmt/* binary
+/nanite-core/src/test/resources/skeleton-suite/fmt/* binary
+/nanite-core/src/test/resources/skeleton-suite/x-fmt/* binary
