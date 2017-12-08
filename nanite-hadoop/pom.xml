@@ -81,27 +81,6 @@
 		<!-- warc-hadoop-recordreaders moved to profile section due to library 
 			incompatibilities with some versions of hadoop -->
 
-		<!-- download and "mvn install" from here: https://github.com/openplanets/libmagic-jna-wrapper -->
-		<dependency>
-			<groupId>org.opf-labs</groupId>
-			<artifactId>libmagic-jna-wrapper</artifactId>
-			<version>0.0.2-SNAPSHOT</version>
-		</dependency>
-
-		<!-- required for tika parser code -->
-
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-compress</artifactId>
-			<version>1.7</version>
-		</dependency>
-		<!-- Install from here: https://github.com/willp-bl/ProcessIsolatedTika -->
-		<dependency>
-			<groupId>uk.bl.dpt.qa</groupId>
-			<artifactId>processisolatedtika</artifactId>
-			<version>0.0.4-SNAPSHOT</version>
-		</dependency>
-
 	</dependencies>
 
 	<profiles>
