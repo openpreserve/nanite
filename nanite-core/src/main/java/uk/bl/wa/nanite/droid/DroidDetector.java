@@ -117,11 +117,11 @@ public class DroidDetector implements Detector {
 
 	// static final String DROID_SIGNATURE_FILE =
 	// "DROID_SignatureFile_V100069.xml";
-    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V90.xml";
+    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V93.xml";
 	static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
 
 	static final String DROID_SIG_FILE = "" + DROID_SIG_RESOURCE;
-    static final String CONTAINER_SIG_FILE = "droid/container-signature-20170330.xml";
+    static final String CONTAINER_SIG_FILE = "droid/container-signature-20171130.xml";
 
 	// Set up DROID binary handler:
 	private BinarySignatureIdentifier binarySignatureIdentifier;
@@ -149,12 +149,12 @@ public class DroidDetector implements Detector {
      * When BigSig magic fails, whether to match against all known extensions or
      * just those that have no other signature (BinSig or Container):
      */
-    private boolean matchAllExtensions = true;
+    private boolean matchAllExtensions = false;
 
 	/**
-	 * Disable this flag to prevent the file extension being used as a format
-	 * hint
-	 */
+     * Disable this flag to make it impossible for the file extension to be used
+     * as a format hint
+     */
 	private boolean passFilenameWithInputStream = true;
 
 	/**
@@ -512,7 +512,8 @@ public class DroidDetector implements Detector {
 			List<IdentificationResult> results) {
 		if (results == null || results.size() == 0)
 			return MediaType.OCTET_STREAM;
-		// Get the first result:
+        // Get the first result: TODO This is getting to be a problem since .txt
+        // now mismatches.
 		IdentificationResult r = results.get(0);
 		// It it's NULL:
 		if (r == null) {
