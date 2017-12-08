@@ -10,7 +10,7 @@
 	<artifactId>nanite-hadoop</artifactId>
 
 	<properties>
-		<nanite-core.version>${parent.version}</nanite-core.version>
+		<nanite-core.version>${project.parent.version}</nanite-core.version>
 		<warc-hadoop-recordreaders.version>2.2.0-BETA-6</warc-hadoop-recordreaders.version>
 		<mainClass>uk.bl.wap.hadoop.profiler.FormatProfiler</mainClass>
 	</properties>

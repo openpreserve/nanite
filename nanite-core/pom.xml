@@ -21,6 +21,7 @@
          <plugin>
             <groupId>com.mycila.maven-license-plugin</groupId>
             <artifactId>maven-license-plugin</artifactId>
+            <version>1.14</version>
             <configuration>
                <header>src/etc/header.txt</header>
                <year>2012</year>
