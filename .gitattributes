@@ -1,3 +1,4 @@
 * text=auto
-/nanite-core/src/test/resources/skeleton-suite/fmt/* binary
+/nanite-historical-sigs/src/main/resources/droid/* binary
 /nanite-core/src/test/resources/skeleton-suite/x-fmt/* binary
+/nanite-core/src/test/resources/skeleton-suite/fmt/* binary
