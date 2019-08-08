@@ -349,7 +349,8 @@ public class DroidDetector implements Detector {
 			IdentificationRequest request = new FileSystemIdentificationRequest(
 					metaData, identifier);
 			try {
-				return getPUIDs(request, new FileInputStream(file));
+				in = new FileInputStream(file);
+				return getPUIDs(request, in);
 			} catch (IOException e) {
 				throw new CommandExecutionException(e);
 			} finally {
