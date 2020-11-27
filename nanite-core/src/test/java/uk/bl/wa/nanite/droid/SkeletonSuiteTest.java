@@ -11,6 +11,13 @@ import org.junit.Test;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 
+/**
+ * 
+ * Note: Now to update the skeleton test suite.
+ * 
+ * @author anj
+ *
+ */
 public class SkeletonSuiteTest {
 
     @Test
