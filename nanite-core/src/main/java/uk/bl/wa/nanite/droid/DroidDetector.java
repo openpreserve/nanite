@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -345,9 +347,11 @@ public class DroidDetector implements Detector {
 			RequestIdentifier identifier = new RequestIdentifier(uri);
 			identifier.setParentId(1L);
 
+			Path tempDir = Files.createTempDirectory("nanite-tmp");
+
 			InputStream in = null;
-			IdentificationRequest request = new FileSystemIdentificationRequest(
-					metaData, identifier);
+			IdentificationRequest<InputStream> request = new InputStreamIdentificationRequest(
+					metaData, identifier, tempDir);
 			try {
 				return getPUIDs(request, new FileInputStream(file));
 			} catch (IOException e) {
@@ -361,7 +365,7 @@ public class DroidDetector implements Detector {
 					}
 				}
 			}
-		} catch (CommandExecutionException e) {
+		} catch (CommandExecutionException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -388,8 +392,8 @@ public class DroidDetector implements Detector {
 			Metadata metadata) throws IOException {
 
 		// As this is an inputstream, restrict the number of bytes to inspect
-		this.binarySignatureIdentifier
-				.setMaxBytesToScan(InputStreamByteReader.BUFFER_SIZE);
+		//this.binarySignatureIdentifier
+		//		.setMaxBytesToScan(InputStreamByteReader.BUFFER_SIZE);
 		// And identify:
 		// Optionally, get filename and identifiers from metadata:
 		String fileName = "";
@@ -417,14 +421,16 @@ public class DroidDetector implements Detector {
         log.finer("Set up nameUri: " + nameUri);
 		RequestIdentifier identifier = new RequestIdentifier(nameUri);
 		identifier.setParentId(1L);
+		
+		Path tempDir = Files.createTempDirectory("nanite-tmp");
 
 		InputStreamIdentificationRequest request = new InputStreamIdentificationRequest(
-				metaData, identifier, input);
+				metaData, identifier, tempDir);
+	
 		try {
 			List<IdentificationResult> type = getPUIDs(request, input);
 			// We can do this because API change to CloseShieldInputStream so
 			// "input" parameter is not affected
-			request.disposeBuffer();
 			return type;
 		} catch (CommandExecutionException e) {
 			log.warning("Caught exception: " + e);
@@ -442,47 +448,52 @@ public class DroidDetector implements Detector {
 	 * @throws IOException
 	 * @throws CommandExecutionException
 	 */
-	private List<IdentificationResult> getPUIDs(IdentificationRequest request,
+	private List<IdentificationResult> getPUIDs(IdentificationRequest<InputStream> request,
 			InputStream input) throws IOException, CommandExecutionException {
-		request.open(input);
-		IdentificationResultCollection results = binarySignatureIdentifier
-				.matchBinarySignatures(request);
-        log.finer("Got " + results.getResults().size() + " matches.");
-
-        // If there is no BinSig match, fall back on file extension:
-		List<IdentificationResult> resultList = results.getResults();
-        if (resultList != null && resultList.isEmpty()
-                && allowMatchByFileExtension) {
-            // If we call matchExtensions with "true", it will match
-            // ALL files formats which have a given extension.
-            // If "false", it will only match file formats for which
-            // there is no other signature defined.
-            IdentificationResultCollection checkExtensionResults =
-                    binarySignatureIdentifier.matchExtensions(request, matchAllExtensions);
-            if (checkExtensionResults != null) {
-                results = checkExtensionResults;
-                log.finer(
-                        "Fallen back on file extension results, with # results = "
-                                + results.getResults().size());
-            }
-        }
-
-		// Optionally, return top results from binary signature match only:
-		if (this.isBinarySignaturesOnly()) {
-			if (results.getResults().size() > 0) {
-				return results.getResults();
-			} else {
-				return null;
+		try {
+			request.open(input);
+			
+			IdentificationResultCollection results = binarySignatureIdentifier
+					.matchBinarySignatures(request);
+	        log.finer("Got " + results.getResults().size() + " matches.");
+	
+	        // If there is no BinSig match, fall back on file extension:
+			List<IdentificationResult> resultList = results.getResults();
+	        if (resultList != null && resultList.isEmpty()
+	                && allowMatchByFileExtension) {
+	            // If we call matchExtensions with "true", it will match
+	            // ALL files formats which have a given extension.
+	            // If "false", it will only match file formats for which
+	            // there is no other signature defined.
+	            IdentificationResultCollection checkExtensionResults =
+	                    binarySignatureIdentifier.matchExtensions(request, matchAllExtensions);
+	            if (checkExtensionResults != null) {
+	                results = checkExtensionResults;
+	                log.finer(
+	                        "Fallen back on file extension results, with # results = "
+	                                + results.getResults().size());
+	            }
+	        }
+	
+			// Optionally, return top results from binary signature match only:
+			if (this.isBinarySignaturesOnly()) {
+				if (results.getResults().size() > 0) {
+					return results.getResults();
+				} else {
+					return null;
+				}
 			}
+	
+			// Also get container results:
+			resultPrinter.print(results, request);
+	
+			// Return as a MediaType:
+			List<IdentificationResult> lir = new ArrayList<IdentificationResult>();
+			lir.add(resultPrinter.getResult());
+			return lir;
+		} finally {
+			request.close();
 		}
-
-		// Also get container results:
-		resultPrinter.print(results, request);
-
-		// Return as a MediaType:
-		List<IdentificationResult> lir = new ArrayList<IdentificationResult>();
-		lir.add(resultPrinter.getResult());
-		return lir;
 	}
 
 	/**

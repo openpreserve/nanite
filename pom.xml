@@ -38,8 +38,8 @@
       <url>git@github.com:openpreserve/nanite.git</url>
    </scm>
    <properties>
-      <jdk.version>1.7</jdk.version>
-      <tika.version>1.16</tika.version>
+      <jdk.version>1.8</jdk.version>
+      <tika.version>1.24.1</tika.version>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <license.licenseName>apache_v2</license.licenseName>
       <additionalparam>-Xdoclint:none</additionalparam>

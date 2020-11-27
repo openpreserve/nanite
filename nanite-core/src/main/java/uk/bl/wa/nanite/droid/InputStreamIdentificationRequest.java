@@ -5,118 +5,133 @@ package uk.bl.wa.nanite.droid;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 
-import org.apache.commons.io.input.CloseShieldInputStream;
-
-import net.domesdaybook.reader.ByteReader;
+import net.byteseek.io.reader.ReaderInputStream;
+import net.byteseek.io.reader.WindowReader;
+import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.ResourceUtils;
 
 /**
- * @author Andrew Jackson <Andrew.Jackson@bl.uk>
+ * 
+ * Just like WebArchiveEntryIdentificationRequest
+ * 
+ * @author anj
  *
  */
-public class InputStreamIdentificationRequest extends ByteArrayIdentificationRequest {
+public class InputStreamIdentificationRequest implements IdentificationRequest<InputStream> {
 
-	private InputStreamByteReader isReader;
-    private String fileName;
-    private String extension;
-	
-	public InputStreamIdentificationRequest(RequestMetaData metaData,
-			RequestIdentifier identifier, InputStream in) {
-		this.metaData = metaData;
+    private static final int BUFFER_CACHE_CAPACITY = 16;
+    private static final int CAPACITY = 32 * 1024; // 50 kB
+    private static final int TOP_TAIL_CAPACITY = 2 * 1024 * 1024; // hold 2Mb cache on either end of zip entry.
+
+    private final String extension;
+    private final String fileName;
+    private final RequestMetaData requestMetaData;
+    private final RequestIdentifier identifier;
+
+    private Path tempDir;
+    private Long size;
+    private WindowReader reader;
+    
+    /**
+     * @param metaData the request meta data
+     * @param identifier the request identifier
+     * @param tempDir the location to write temp files.
+     */
+    public InputStreamIdentificationRequest(RequestMetaData metaData, RequestIdentifier identifier, Path tempDir) {
+        this.identifier = identifier;
+        this.size = metaData.getSize();
         this.fileName = metaData.getName();
         this.extension = ResourceUtils.getExtension(fileName);
-		this.identifier = identifier;
-		try {
-			this.size = in.available();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		// Init the reader:
-		this.isReader = new InputStreamByteReader(new CloseShieldInputStream(in));
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest#getByte(long)
-	 */
-	@Override
-	public byte getByte(long position) {
-		return this.isReader.readByte(position);
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest#getReader()
-	 */
-	@Override
-	public ByteReader getReader() {
-		return this.isReader;
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest#close()
-	 */
-	@Override
-	public void close() throws IOException {
-		InputStream in = this.isReader.getInputStream();
-		in.close();
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest#getSourceInputStream()
-	 */
-	@Override
-	public InputStream getSourceInputStream() throws IOException {
-		InputStream in = this.isReader.getInputStream();
-	    in.reset();
-		return in;
-	}
-
+        this.tempDir = tempDir;
+        this.requestMetaData = metaData;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getFileName() {
-        return this.fileName;
+    public final void open(final InputStream in) throws IOException {
+        reader = ResourceUtils.getStreamReader(in, tempDir, TOP_TAIL_CAPACITY);
+        // Force read of entire input stream to build reader and remove dependence on source input stream.
+        size = reader.length(); // getting the size of a reader backed by a stream forces a stream read.
     }
 
-    @Override
-    public long size() {
-        return this.size;
-    }
 
+    /**
+     * Releases resources for this resource.
+     * @throws IOException if the resource could not be closed
+     */
     @Override
-    public String getExtension() {
-        return this.extension;
-    }
-
-    @Override
-    public RequestMetaData getRequestMetaData() {
-        return this.metaData;
+    public final void close() throws IOException {
+        reader.close();
     }
 
     /**
-     * 
+     * {@inheritDoc}
      */
-	public void disposeBuffer() {
-		if( this.isReader != null ) {
-			try {
-				this.isReader.finalize();
-			} catch (Throwable e) {
-				//e.printStackTrace();
-				// TODO Log this...
-			}
-		}
-		this.isReader = null;
-	}
+    @Override
+    public final String getExtension() {
+        return extension;
+    }
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#finalize()
-	 */
-	@Override
-	protected void finalize() throws Throwable {
-		super.finalize();
-		// Shut down any buffering:
-		this.disposeBuffer();
-	}
-	
-	
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final String getFileName() {
+        return fileName;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final long size() {
+        return size;
+    }
+
+    /**
+     * {@inheritDoc}
+     * @throws IOException exception
+     */
+    @Override
+    public final InputStream getSourceInputStream() throws IOException {
+        return new ReaderInputStream(reader, false);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final RequestMetaData getRequestMetaData() {
+        return requestMetaData;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final RequestIdentifier getIdentifier() {
+        return identifier;
+    }
+
+    @Override
+    public byte getByte(long position) throws IOException {
+        final int result = reader.readByte(position);
+        if (result < 0) {
+            throw new IOException("No byte at position " + position);
+        }
+        return (byte) result;
+    }
+
+    @Override
+    public WindowReader getWindowReader() {
+        return reader;
+    }
+
+
 }

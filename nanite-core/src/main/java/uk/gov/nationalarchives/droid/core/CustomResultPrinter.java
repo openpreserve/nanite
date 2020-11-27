@@ -37,6 +37,7 @@ import java.util.List;
 import org.apache.commons.io.input.CloseShieldInputStream;
 
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
+import uk.gov.nationalarchives.droid.command.archive.ArchiveConfiguration;
 import uk.gov.nationalarchives.droid.command.archive.GZipArchiveContentIdentifier;
 import uk.gov.nationalarchives.droid.command.archive.TarArchiveContentIdentifier;
 import uk.gov.nationalarchives.droid.command.archive.ZipArchiveContentIdentifier;
@@ -158,21 +159,24 @@ public class CustomResultPrinter {
                 resultImpl.setMethod(identResult.getMethod());
                 result = resultImpl;
                 
+                // Do not go into archives:
+                ArchiveConfiguration ac = new ArchiveConfiguration(false, null, false, null);
+                
                 if (archives && !container) {
                     if (GZIP_ARCHIVE.equals(puid)) {
                         GZipArchiveContentIdentifier gzipArchiveIdentifier = 
                                 new GZipArchiveContentIdentifier(binarySignatureIdentifier,
-                                    containerSignatureDefinitions, path, slash, slash1);
+                                    containerSignatureDefinitions, path, slash, slash1, ac);
                         gzipArchiveIdentifier.identify(results.getUri(), request);
                     } else if (TAR_ARCHIVE.equals(puid)) {
                         TarArchiveContentIdentifier tarArchiveIdentifier = 
                                 new TarArchiveContentIdentifier(binarySignatureIdentifier,
-                                    containerSignatureDefinitions, path, slash, slash1);
+                                    containerSignatureDefinitions, path, slash, slash1, ac);
                         tarArchiveIdentifier.identify(results.getUri(), request);
                     } else if (ZIP_ARCHIVE.equals(puid) || JIP_ARCHIVE.equals(puid)) {
                         ZipArchiveContentIdentifier zipArchiveIdentifier = 
                                 new ZipArchiveContentIdentifier(binarySignatureIdentifier,
-                                    containerSignatureDefinitions, path, slash, slash1);
+                                    containerSignatureDefinitions, path, slash, slash1, ac);
                         zipArchiveIdentifier.identify(results.getUri(), request);
                     }
                 }
