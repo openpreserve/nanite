@@ -22,7 +22,6 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 public class SkeletonSuiteTest {
 
     @Test
-    @Ignore
     public void testSkeletonSuite() throws CommandExecutionException {
 
         DroidDetector dd = new DroidDetector();
