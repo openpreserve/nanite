@@ -14,7 +14,17 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 
 /**
  * 
- * Note: Now to update the skeleton test suite.
+ * The suite needs updating for every PRONOM release. 
+ * 
+ * nanite-core/src/test/resources/skeleton-suite
+ * 
+ * How to update this test suite is outlined here: https://github.com/exponential-decay/skeleton-test-suite-generator#howto
+ * 
+ * We use the pronom-export Python 2 script to download the PRONOM XML into a folder with that name in the skeleton-test-suite-generator repo
+ * 
+ * Then we run the skeleton generator.
+ * 
+ * Then replace nanite-core/src/test/resources/skeleton-suite with that new skeleton-suite
  * 
  * @author anj
  *
