@@ -9,7 +9,7 @@
 	<artifactId>nanite-hadoop</artifactId>
 
 	<properties>
-		<warc-hadoop-recordreaders.version>2.2.0-BETA-6</warc-hadoop-recordreaders.version>
+		<warc-hadoop-recordreaders.version>3.1.0</warc-hadoop-recordreaders.version>
 		<mainClass>uk.bl.wap.hadoop.profiler.FormatProfiler</mainClass>
 	</properties>
 
