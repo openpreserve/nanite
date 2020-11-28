@@ -67,7 +67,8 @@ public class FormatProfiler extends Configured implements Tool {
 		conf.setMapOutputValueClass( Text.class );
 		
 		// search our classpath first- otherwise we get dependency problems
-		conf.setUserClassesTakesPrecedence(true);
+        conf.setBoolean("mapreduce.task.classpath.user.precedence", true);
+		//conf.setUserClassesTakesPrecedence(true); // Requires later Hadoop
 
 		// Override the task timeout to cope with behaviour when processing malformed archive files
 		// Value set in MS.  Default value is 600,000ms (i.e. 10 mins)

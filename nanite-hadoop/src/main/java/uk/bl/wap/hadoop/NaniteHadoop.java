@@ -9,7 +9,6 @@ import java.io.PrintWriter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.GlobFilter;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -45,20 +44,24 @@ public class NaniteHadoop {
 
 			// Recover the output here and cache to a local file
 			FileSystem fs = FileSystem.get(new Configuration());
-			FileStatus[] i = fs.listStatus(new Path(gzargs[1]), new GlobFilter("part-*"));
+			//FileStatus[] i = fs.listStatus(new Path(gzargs[1]), new GlobFilter("part-*")); // Requires later Hadoop
+			FileStatus[] i = fs.listStatus(new Path(gzargs[1]));
 			File tempFile = File.createTempFile("nanite-", ".txt");
 			tempFile.deleteOnExit();
 			PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
 			for(FileStatus f:i) {
-				BufferedReader is = new BufferedReader(new InputStreamReader(fs.open(f.getPath())));
-				String[] line = null;
-				while(is.ready()) {
-					line = is.readLine().split("\t");;
-					if(line[1].equals(GZChecker.OK)) {
-						pw.println(line[0]);
+				// Only get part-* files.
+				if( f.getPath().toString().contains("part-")) {
+					BufferedReader is = new BufferedReader(new InputStreamReader(fs.open(f.getPath())));
+					String[] line = null;
+					while(is.ready()) {
+						line = is.readLine().split("\t");;
+						if(line[1].equals(GZChecker.OK)) {
+							pw.println(line[0]);
+						}
 					}
+					is.close();
 				}
-				is.close();
 			}
 			fs.close();
 			pw.close();

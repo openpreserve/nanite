@@ -16,15 +16,6 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.1</version>
-				<configuration>
-					<source>${jdk.version}</source>
-					<target>${jdk.version}</target>
-				</configuration>
-			</plugin>
-			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
 					<finalName>${project.name}-${project.version}</finalName>
@@ -85,7 +76,7 @@
 		<profile>
 			<id>dpt</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<activeByDefault>false</activeByDefault>
 			</activation>
 			<properties>
 				<hadoop.version>2.0.0-mr1-cdh4.2.2</hadoop.version>
@@ -137,7 +128,7 @@
 		<profile>
 			<id>wap</id>
 			<activation>
-				<activeByDefault>false</activeByDefault>
+				<activeByDefault>true</activeByDefault>
 				<!-- enable this profile on Travis -->
 				<!-- <property>
 					<name>env.TRAVIS</name>
