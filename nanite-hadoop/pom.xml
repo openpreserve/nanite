@@ -88,7 +88,7 @@
 				<activeByDefault>true</activeByDefault>
 			</activation>
 			<properties>
-				<hadoop.version>2.0.0-mr1-cdh4.2.0</hadoop.version>
+				<hadoop.version>2.0.0-mr1-cdh4.2.2</hadoop.version>
 			</properties>
 			<dependencies>
 				<dependency>
