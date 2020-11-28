@@ -136,7 +136,7 @@
 				</property> -->
 			</activation>
 			<properties>
-				<hadoop.version>0.20.205.0</hadoop.version>
+				<hadoop.version>0.20.2</hadoop.version>
 			</properties>
 			<dependencies>
 				<dependency>
