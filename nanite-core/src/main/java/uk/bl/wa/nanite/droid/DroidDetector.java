@@ -443,6 +443,8 @@ public class DroidDetector implements Detector {
 			throw new IOException(e.toString());
 		}
 		finally {
+			request.close();
+			
 			if (tempDir != null) {
 				Files.delete(tempDir);
 			}
