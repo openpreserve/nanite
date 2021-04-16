@@ -365,9 +365,6 @@ public class DroidDetector implements Detector {
 						throw new CommandExecutionException(e);
 					}
 				}
-				if (tempDir != null) {
-					Files.delete(tempDir);				
-				}
 			}
 		} catch (CommandExecutionException | IOException e) {
 			// TODO Auto-generated catch block
@@ -441,13 +438,6 @@ public class DroidDetector implements Detector {
 			e.printStackTrace();
 			log.warning("Throwing wrapped exception: " + e);
 			throw new IOException(e.toString());
-		}
-		finally {
-			request.close();
-			
-			if (tempDir != null) {
-				Files.delete(tempDir);
-			}
 		}
 	}
 
