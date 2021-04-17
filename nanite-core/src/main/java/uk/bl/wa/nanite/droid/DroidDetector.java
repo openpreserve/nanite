@@ -347,11 +347,9 @@ public class DroidDetector implements Detector {
 			RequestIdentifier identifier = new RequestIdentifier(uri);
 			identifier.setParentId(1L);
 
-			Path tempDir = Files.createTempDirectory("nanite-tmp");
-
 			InputStream in = new FileInputStream(file);
 			IdentificationRequest<InputStream> request = new InputStreamIdentificationRequest(
-					metaData, identifier, tempDir);
+					metaData, identifier);
 			try {
 				return getPUIDs(request, in);
 			} catch (IOException e) {
@@ -423,10 +421,8 @@ public class DroidDetector implements Detector {
 		RequestIdentifier identifier = new RequestIdentifier(nameUri);
 		identifier.setParentId(1L);
 		
-		Path tempDir = Files.createTempDirectory("nanite-tmp");
-
 		InputStreamIdentificationRequest request = new InputStreamIdentificationRequest(
-				metaData, identifier, tempDir);
+				metaData, identifier);
 	
 		try {
 			List<IdentificationResult> type = getPUIDs(request, input);
@@ -438,6 +434,9 @@ public class DroidDetector implements Detector {
 			e.printStackTrace();
 			log.warning("Throwing wrapped exception: " + e);
 			throw new IOException(e.toString());
+		}
+		finally {
+			request.removeTempDir();
 		}
 	}
 
