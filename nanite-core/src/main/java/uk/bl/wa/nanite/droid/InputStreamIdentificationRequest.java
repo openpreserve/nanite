@@ -5,7 +5,10 @@ package uk.bl.wa.nanite.droid;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+
+import org.apache.commons.io.FileUtils;
 
 import net.byteseek.io.reader.ReaderInputStream;
 import net.byteseek.io.reader.WindowReader;
@@ -39,14 +42,15 @@ public class InputStreamIdentificationRequest implements IdentificationRequest<I
     /**
      * @param metaData the request meta data
      * @param identifier the request identifier
-     * @param tempDir the location to write temp files.
+     * @throws IOException 
      */
-    public InputStreamIdentificationRequest(RequestMetaData metaData, RequestIdentifier identifier, Path tempDir) {
+    public InputStreamIdentificationRequest(RequestMetaData metaData, RequestIdentifier identifier) throws IOException {
         this.identifier = identifier;
         this.size = metaData.getSize();
         this.fileName = metaData.getName();
         this.extension = ResourceUtils.getExtension(fileName);
-        this.tempDir = tempDir;
+        this.tempDir = Files.createTempDirectory("nanite-tmp");
+
         this.requestMetaData = metaData;
     }
     
@@ -68,6 +72,18 @@ public class InputStreamIdentificationRequest implements IdentificationRequest<I
     @Override
     public final void close() throws IOException {
         reader.close();
+        removeTempDir();
+    }
+    
+    /**
+     * Removes Tempdir
+     * @throws IOException if the resource could not be closed
+     */
+    public void removeTempDir() throws IOException {
+        if (tempDir != null) {
+        	FileUtils.deleteDirectory(tempDir.toFile());
+        	tempDir = null;
+        }
     }
 
     /**
