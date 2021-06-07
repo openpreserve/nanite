@@ -38,7 +38,6 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
-import uk.gov.nationalarchives.droid.core.interfaces.resource.FileSystemIdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
 import uk.gov.nationalarchives.droid.core.signature.droid6.FFSignatureFile;
 
@@ -348,7 +347,7 @@ public class DroidDetector implements Detector {
             identifier.setParentId(1L);
 
             InputStream in = null;
-            IdentificationRequest request = new FileSystemIdentificationRequest(
+            IdentificationRequest<InputStream> request = new InputStreamIdentificationRequest(
                     metaData, identifier);
             try {
                 in = new FileInputStream(file);
@@ -371,7 +370,7 @@ public class DroidDetector implements Detector {
                     }
                 }
             }
-        } catch (CommandExecutionException e) {
+        } catch (CommandExecutionException | IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
