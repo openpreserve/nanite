@@ -119,11 +119,11 @@ public class DroidDetector implements Detector {
 
     // static final String DROID_SIGNATURE_FILE =
     // "DROID_SignatureFile_V100069.xml";
-    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V97.xml";
+    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V94.xml";
     static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
 
     static final String DROID_SIG_FILE = "" + DROID_SIG_RESOURCE;
-    static final String CONTAINER_SIG_FILE = "droid/container-signature-20201001.xml";
+    static final String CONTAINER_SIG_FILE = "droid/container-signature-20180920.xml";
 
     // Set up DROID binary handler:
     private BinarySignatureIdentifier binarySignatureIdentifier;
@@ -224,15 +224,16 @@ public class DroidDetector implements Detector {
             throw new CommandExecutionException("Signature file not found");
         }
 
-        binarySignatureIdentifier
-                .setSignatureFile(fileSignaturesFile.getAbsolutePath());
+        binarySignatureIdentifier.setSignatureFile(fileSignaturesFile
+                .getAbsolutePath());
         try {
             binarySignatureIdentifier.init();
         } catch (SignatureParseException e) {
-            log.log(Level.SEVERE, "Error '" + e.getMessage() + "' when parsing "
-                    + DROID_SIG_FILE + " unpacked to " + fileSignaturesFile, e);
-            throw new CommandExecutionException(
-                    "Can't parse signature file! " + e.getMessage());
+            log.log(Level.SEVERE, "Error '" + e.getMessage()
+            + "' when parsing " + DROID_SIG_FILE + " unpacked to "
+            + fileSignaturesFile, e);
+            throw new CommandExecutionException("Can't parse signature file! "
+                    + e.getMessage());
         }
         binarySignatureIdentifier.setMaxBytesToScan(maxBytesToScan);
         String path = fileSignaturesFile.getAbsolutePath();
@@ -346,15 +347,15 @@ public class DroidDetector implements Detector {
             RequestIdentifier identifier = new RequestIdentifier(uri);
             identifier.setParentId(1L);
 
-            InputStream in = new FileInputStream(file);
-            IdentificationRequest<InputStream> request = new InputStreamIdentificationRequest(
+            InputStream in = null;
+            IdentificationRequest request = new FileSystemIdentificationRequest(
                     metaData, identifier);
             try {
+                in = new FileInputStream(file);
                 return getPUIDs(request, in);
             } catch (IOException e) {
                 throw new CommandExecutionException(e);
             } finally {
-                request.close();
                 if (in != null) {
                     try {
                         in.close();
@@ -362,8 +363,15 @@ public class DroidDetector implements Detector {
                         throw new CommandExecutionException(e);
                     }
                 }
+                if (request != null) {
+                    try {
+                        request.close();
+                    } catch (IOException e) {
+                        throw new CommandExecutionException(e);
+                    }
+                }
             }
-        } catch (CommandExecutionException | IOException e) {
+        } catch (CommandExecutionException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -390,6 +398,7 @@ public class DroidDetector implements Detector {
             Metadata metadata) throws IOException {
 
         // As this is an inputstream, restrict the number of bytes to inspect
+        // TODO Make this optional:
         // this.binarySignatureIdentifier
         // .setMaxBytesToScan(InputStreamByteReader.BUFFER_SIZE);
         // And identify:
@@ -401,8 +410,8 @@ public class DroidDetector implements Detector {
             }
         }
         log.finer("Set up filename: " + fileName);
-        RequestMetaData metaData = new RequestMetaData((long) input.available(),
-                null, fileName);
+        RequestMetaData metaData = new RequestMetaData(
+                (long) input.available(), null, fileName);
 
         URI nameUri = null;
         try {
@@ -422,11 +431,8 @@ public class DroidDetector implements Detector {
 
         InputStreamIdentificationRequest request = new InputStreamIdentificationRequest(
                 metaData, identifier);
-
         try {
             List<IdentificationResult> type = getPUIDs(request, input);
-            // We can do this because API change to CloseShieldInputStream so
-            // "input" parameter is not affected
             return type;
         } catch (CommandExecutionException e) {
             log.warning("Caught exception: " + e);
@@ -487,7 +493,7 @@ public class DroidDetector implements Detector {
         resultPrinter.print(results, request);
 
         // Return as a MediaType:
-        List<IdentificationResult> lir = new ArrayList<IdentificationResult>();
+        List<IdentificationResult> lir = new ArrayList<>();
         lir.add(resultPrinter.getResult());
         return lir;
     }
@@ -498,9 +504,10 @@ public class DroidDetector implements Detector {
      * @return
      */
     public static MediaType getMimeTypeFromResult(IdentificationResult result) {
-        List<IdentificationResult> list = new ArrayList<IdentificationResult>();
-        if (result != null)
+        List<IdentificationResult> list = new ArrayList<>();
+        if (result != null) {
             list.add(result);
+        }
         return getMimeTypeFromResults(list);
     }
 
@@ -517,8 +524,9 @@ public class DroidDetector implements Detector {
      */
     public static MediaType getMimeTypeFromResults(
             List<IdentificationResult> results) {
-        if (results == null || results.size() == 0)
+        if (results == null || results.size() == 0) {
             return MediaType.OCTET_STREAM;
+        }
         // Get the first result: TODO This is getting to be a problem since .txt
         // now mismatches.
         IdentificationResult r = results.get(0);
@@ -535,15 +543,16 @@ public class DroidDetector implements Detector {
             // Taking first (highest priority) MIME type:
             mimeType = mimeTypeList[0];
             // Fix case where no base type is supplied (e.g. "vnd.wordperfect"):
-            if (mimeType.indexOf('/') == -1)
+            if (mimeType.indexOf('/') == -1) {
                 mimeType = "application/" + mimeType;
+            }
         }
         // Build a MediaType
         MediaType mediaType = MediaType.parse(mimeType);
         Map<String, String> parameters = null;
         // Is there a MIME Type?
         if (mimeType != null && !"".equals(mimeType)) {
-            parameters = new HashMap<String, String>(mediaType.getParameters());
+            parameters = new HashMap<>(mediaType.getParameters());
             // Patch on a version parameter if there isn't one there already:
             if (parameters.get("version") == null && r.getVersion() != null
                     && (!"".equals(r.getVersion())) &&
@@ -552,7 +561,7 @@ public class DroidDetector implements Detector {
                 parameters.put("version", r.getVersion());
             }
         } else {
-            parameters = new HashMap<String, String>();
+            parameters = new HashMap<>();
             // If there isn't a MIME type, make one up:
             String id = "puid-" + r.getPuid().replace("/", "-");
             String name = r.getName().replace("\"", "'");
@@ -605,16 +614,16 @@ public class DroidDetector implements Detector {
      * @throws CommandExecutionException
      * @throws IOException
      */
-    public static void main(String[] args)
-            throws CommandExecutionException, IOException {
+    public static void main(String[] args) throws CommandExecutionException,
+    IOException {
         DroidDetector dr = new DroidDetector();
         for (String fname : args) {
             File file = new File(fname);
             System.out.println("---- Identification Starts ---");
             System.out.println("File: " + fname);
             System.out
-                    .println("Droid using DROID binary signature file version: "
-                            + dr.getBinarySignatureFileVersion());
+            .println("Droid using DROID binary signature file version: "
+                    + dr.getBinarySignatureFileVersion());
             System.out.println("---- VIA File ----");
             System.out.println("Result: " + dr.detect(file));
             System.out.println("---- VIA InputStream ----");
