@@ -65,6 +65,12 @@ Nanite does not support auto-updating the signature files, but if you wish, you 
 Change Log
 ----------
 
+Version numbers are like `x.x.x-yy` - changes to the `yy` refer to updates to the PRONOM signature files, whereas changes to the x.x.x part refer to changes to the code that uses them. Only the latter are recorded here:
+
+* 1.4.1
+    - Updates to how temporary files are handled, attempting to ensure large sets of temporary files are not left in place unnecessarily.
+* 1.4.0
+    - Significant update to the implementation to take advantage of improvements in DROID 6.5. DROID's improved API means less code is required to run it in Nanite.
 * 1.3.1
     - Revert to *not* falling back on extension-based identification by default, as enabling this is a breaking API change.
 * 1.3.0
