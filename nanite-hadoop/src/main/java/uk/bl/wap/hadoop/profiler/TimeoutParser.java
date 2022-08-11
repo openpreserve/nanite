@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AbstractParser;
 import org.apache.tika.parser.AutoDetectParser;
@@ -179,7 +180,7 @@ public class TimeoutParser extends AbstractParser {
 		Parser parser = new TimeoutParser(new AutoDetectParser());//, 10, TimeUnit.SECONDS);
 		System.out.println("Parser init ms: "+(System.currentTimeMillis()-time));
 		Metadata metadata = new Metadata();
-		metadata.set(Metadata.RESOURCE_NAME_KEY, pFile.getAbsolutePath());
+		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, pFile.getAbsolutePath());
 		
 		try {
 			parser.parse(new FileInputStream(pFile), new BodyContentHandler(), metadata, new ParseContext());

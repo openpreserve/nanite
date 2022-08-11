@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.junit.After;
 import org.junit.Before;
@@ -121,14 +122,14 @@ public class DroidDetectorTest {
 		File f = new File(filepath);
 		//File f = new File("src/test/resources/simple.pdf");
 		Metadata metadata = new Metadata();
-		metadata.set(Metadata.RESOURCE_NAME_KEY, f.toURI().toString());
+		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, f.toURI().toString());
 		// Via File:
 		MediaType type = dd.detect(f);
 		System.out.println("Got via File: "+type);
 		assertEquals(expectedMime, type.getBaseType().toString());
 		// Via InputStream:
 		metadata = new Metadata();
-		metadata.set(Metadata.RESOURCE_NAME_KEY, f.getName());
+		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, f.getName());
 		type = dd.detect(new FileInputStream(f), metadata);
 		System.out.println("Got via InputStream: "+type);
 		assertEquals(expectedMime, type.getBaseType().toString());
