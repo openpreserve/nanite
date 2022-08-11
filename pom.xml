@@ -40,10 +40,30 @@
    <properties>
       <jdk.version>1.8</jdk.version>
       <tika.version>1.24.1</tika.version>
+      <log4j2.version>2.18.0</log4j2.version>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <license.licenseName>apache_v2</license.licenseName>
       <additionalparam>-Xdoclint:none</additionalparam>
-   </properties>  
+   </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <modules>
   	<module>nanite-core</module>
   	<module>nanite-historical-sigs</module>

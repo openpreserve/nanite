@@ -23,8 +23,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URI;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Seekable stream which uses block-based caching.
@@ -33,7 +34,7 @@ import org.apache.commons.logging.LogFactory;
  */
 public class CachedSeekableStream extends SeekableStream {
     //public static final int DEFAULT_BLOCK_SIZE = 65536;
-    private static final Log LOG = LogFactory.getLog(CachedSeekableStream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CachedSeekableStream.class);
 
     private final SeekableStream wrappedStream;
     private final int bufferSize;
