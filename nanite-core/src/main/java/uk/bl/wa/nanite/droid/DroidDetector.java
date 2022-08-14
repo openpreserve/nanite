@@ -22,6 +22,7 @@ import javax.xml.bind.JAXBException;
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 
 import org.slf4j.Logger;
@@ -404,8 +405,8 @@ public class DroidDetector implements Detector {
         // Optionally, get filename and identifiers from metadata:
         String fileName = "";
         if (passFilenameWithInputStream) {
-            if (metadata.get(Metadata.RESOURCE_NAME_KEY) != null) {
-                fileName = metadata.get(Metadata.RESOURCE_NAME_KEY);
+            if (metadata.get(TikaCoreProperties.RESOURCE_NAME_KEY) != null) {
+                fileName = metadata.get(TikaCoreProperties.RESOURCE_NAME_KEY);
             }
         }
         log.debug("Set up filename: " + fileName);
@@ -625,7 +626,7 @@ public class DroidDetector implements Detector {
             System.out.println("Result: " + dr.detect(file));
             System.out.println("---- VIA InputStream ----");
             Metadata metadata = new Metadata();
-            metadata.set(Metadata.RESOURCE_NAME_KEY, file.toURI().toString());
+            metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, file.toURI().toString());
             System.out.println("Result: "
                     + dr.detect(new FileInputStream(file), metadata));
             System.out.println("---- VIA byte array ----");

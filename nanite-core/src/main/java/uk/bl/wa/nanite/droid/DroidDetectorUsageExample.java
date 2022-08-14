@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
@@ -34,7 +35,7 @@ public class DroidDetectorUsageExample {
 		// If you use the InputStream, you need to add the resource name if you
 		// want extension-based identification to work:
 		Metadata metadata = new Metadata();
-		metadata.set(Metadata.RESOURCE_NAME_KEY, inFile.toURI().toString());
+		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, inFile.toURI().toString());
 
 		// To get the identification as an extended MIME type:
 		MediaType mt = dd.detect(inFile);

@@ -18,6 +18,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpParser;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -26,8 +27,8 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.log4j.Logger;
 import org.apache.tika.Tika;
-import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
@@ -482,7 +483,7 @@ public class FormatProfilerMapper extends MapReduceBase
             if (gProps.get(USE_DROID)) {
                 // Type according to DroidDetector
                 Metadata metadata = new Metadata();
-                metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+                metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, extURL);
 
                 log.trace("Using DroidDetector...");
                 droidDetector.setMaxBytesToScan(BUF_SIZE);
@@ -500,7 +501,7 @@ public class FormatProfilerMapper extends MapReduceBase
             if (gProps.get(USE_TIKADETECT)) {
                 // Type according to Tika detect
                 Metadata metadata = new Metadata();
-                metadata.set(Metadata.RESOURCE_NAME_KEY, extURL);
+                metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, extURL);
 
                 log.trace("Using Tika detect...");
                 tdaTikaType = tikaDetect.detect(datastream, metadata);
