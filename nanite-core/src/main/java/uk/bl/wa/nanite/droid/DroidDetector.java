@@ -16,8 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBException;
 
@@ -26,6 +24,8 @@ import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.bl.wa.util.Unpack;
 import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 import uk.gov.nationalarchives.droid.container.ContainerSignatureDefinitions;
@@ -114,7 +114,7 @@ public class DroidDetector implements Detector {
     /** */
     private static final long serialVersionUID = -170173360485335112L;
 
-    private static Logger log = Logger.getLogger(DroidDetector.class.getName());
+    private static Logger log = LoggerFactory.getLogger(DroidDetector.class.getName());
 
     // static final String DROID_SIGNATURE_FILE =
     // "DROID_SignatureFile_V100069.xml";
@@ -228,7 +228,7 @@ public class DroidDetector implements Detector {
         try {
             binarySignatureIdentifier.init();
         } catch (SignatureParseException e) {
-            log.log(Level.SEVERE, "Error '" + e.getMessage()
+            log.error("Error '" + e.getMessage()
             + "' when parsing " + DROID_SIG_FILE + " unpacked to "
             + fileSignaturesFile, e);
             throw new CommandExecutionException("Can't parse signature file! "
@@ -408,7 +408,7 @@ public class DroidDetector implements Detector {
                 fileName = metadata.get(Metadata.RESOURCE_NAME_KEY);
             }
         }
-        log.finer("Set up filename: " + fileName);
+        log.debug("Set up filename: " + fileName);
         RequestMetaData metaData = new RequestMetaData(
                 (long) input.available(), null, fileName);
 
@@ -420,11 +420,11 @@ public class DroidDetector implements Detector {
                 nameUri = new URI("file", "", "/" + fileName, null);
             }
         } catch (URISyntaxException e) {
-            log.warning("Exception when building filename URI for " + fileName
+            log.warn("Exception when building filename URI for " + fileName
                     + ": " + e);
             nameUri = URI.create("file://./name-with-no-extension");
         }
-        log.finer("Set up nameUri: " + nameUri);
+        log.debug("Set up nameUri: " + nameUri);
         RequestIdentifier identifier = new RequestIdentifier(nameUri);
         identifier.setParentId(1L);
 
@@ -434,9 +434,7 @@ public class DroidDetector implements Detector {
             List<IdentificationResult> type = getPUIDs(request, input);
             return type;
         } catch (CommandExecutionException e) {
-            log.warning("Caught exception: " + e);
-            e.printStackTrace();
-            log.warning("Throwing wrapped exception: " + e);
+            log.warn("Throwing wrapped exception: " + e);
             throw new IOException(e.toString());
         } finally {
             request.removeTempDir();
@@ -459,7 +457,7 @@ public class DroidDetector implements Detector {
 
         IdentificationResultCollection results = binarySignatureIdentifier
                 .matchBinarySignatures(request);
-        log.finer("Got " + results.getResults().size() + " matches.");
+        log.debug("Got " + results.getResults().size() + " matches.");
 
         // If there is no BinSig match, fall back on file extension:
         List<IdentificationResult> resultList = results.getResults();
@@ -473,7 +471,7 @@ public class DroidDetector implements Detector {
                     .matchExtensions(request, matchAllExtensions);
             if (checkExtensionResults != null) {
                 results = checkExtensionResults;
-                log.finer(
+                log.debug(
                         "Fallen back on file extension results, with # results = "
                                 + results.getResults().size());
             }
