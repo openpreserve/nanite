@@ -39,8 +39,8 @@
    </scm>
    <properties>
       <jdk.version>1.8</jdk.version>
-      <tika.version>2.4.1</tika.version>
-      <log4j2.version>2.18.0</log4j2.version>
+      <tika.version>2.7.0</tika.version>
+      <log4j2.version>2.20.0</log4j2.version>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <license.licenseName>apache_v2</license.licenseName>
       <additionalparam>-Xdoclint:none</additionalparam>

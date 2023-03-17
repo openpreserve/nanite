@@ -33,6 +33,9 @@ package uk.gov.nationalarchives.droid.internal.api;
 
 import java.nio.file.Files;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -40,17 +43,21 @@ import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.apache.commons.compress.harmony.unpack200.bytecode.forms.ThisFieldRefForm;
 import org.apache.commons.lang.StringUtils;
 
+import uk.bl.wa.nanite.droid.InputStreamIdentificationRequest;
 import uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier;
 import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.DroidCore;
+import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.archive.ContainerIdentifier;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.FileSystemIdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
+import uk.gov.nationalarchives.droid.core.signature.droid6.FFSignatureFile;
 
 
 /**
@@ -71,7 +78,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
  * This version of the based class extends it to allow more control over configuration and to allow it to be used with InputStreams etc.
  * </p>
  */
-public final class DroidAPI {
+public final class DroidAPIExtended {
 
     private static final String ZIP_PUID = "x-fmt/263";
     private static final String OLE2_PUID = "fmt/111";
@@ -89,14 +96,29 @@ public final class DroidAPI {
     private final String binarySignatureVersion;
 
     private final String droidVersion;
+    
+    private long maxBytesToScan = -1;
+	
+	private boolean binarySignaturesOnly;
+	
+    /**
+     * Whether to allow the BinSig matcher to fall back on the file extension
+     * when magic matching fails:
+     */
+    private boolean allowMatchByFileExtension = true;
+    
+    private FFSignatureFile signatureFile;
+	
 
-    private DroidAPI(DroidCore droidCore, ContainerIdentifier zipIdentifier, ContainerIdentifier ole2Identifier, String containerSignatureVersion, String binarySignatureVersion, String droidVersion) {
+    private DroidAPIExtended(DroidCore droidCore, FFSignatureFile ffSignatureFile, ContainerIdentifier zipIdentifier, ContainerIdentifier ole2Identifier, String containerSignatureVersion, String binarySignatureVersion, String droidVersion, long maxBytesToScan) {
         this.droidCore = droidCore;
+        this.signatureFile = ffSignatureFile;
         this.zipIdentifier = zipIdentifier;
         this.ole2Identifier = ole2Identifier;
         this.containerSignatureVersion = containerSignatureVersion;
         this.binarySignatureVersion = binarySignatureVersion;
         this.droidVersion = droidVersion;
+        this.maxBytesToScan = maxBytesToScan;
     }
 
     /**
@@ -106,17 +128,20 @@ public final class DroidAPI {
      * @return Instance of droid with binary and container signature.
      * @throws SignatureParseException On invalid signature file.
      */
-    public static DroidAPI getInstance(final Path binarySignature, final Path containerSignature) throws SignatureParseException {
+    public static DroidAPIExtended getInstance(final Path binarySignature, final Path containerSignature, long maxBytesToScan) throws SignatureParseException {
         BinarySignatureIdentifier droidCore = new BinarySignatureIdentifier();
         droidCore.setSignatureFile(binarySignature.toAbsolutePath().toString());
 
         droidCore.init();
-        droidCore.setMaxBytesToScan(Long.MAX_VALUE);
+        if( maxBytesToScan < 0 ) {
+        	maxBytesToScan = Long.MAX_VALUE;
+        }
+        droidCore.setMaxBytesToScan(maxBytesToScan);
         droidCore.getSigFile().prepareForUse();
         String containerVersion = StringUtils.substringAfterLast(containerSignature.getFileName().toString(), "-").split("\\.")[0];
         String droidVersion = ResourceBundle.getBundle("options").getString("version_no");
         ContainerApi containerApi = new ContainerApi(droidCore, containerSignature);
-        return new DroidAPI(droidCore, containerApi.zipIdentifier(), containerApi.ole2Identifier(), containerVersion, droidCore.getSigFile().getVersion(), droidVersion);
+        return new DroidAPIExtended(droidCore, droidCore.getSigFile(), containerApi.zipIdentifier(), containerApi.ole2Identifier(), containerVersion, droidCore.getSigFile().getVersion(), droidVersion, maxBytesToScan);
     }
 
     /**
@@ -126,7 +151,7 @@ public final class DroidAPI {
      * @return File identification result. File can have multiple matching signatures.
      * @throws IOException If File can't be read or there is IO error.
      */
-    public List<ApiResult> submit(final Path file) throws IOException {
+    public List<ApiResultExtended> submit(final Path file) throws IOException {
         final RequestMetaData metaData = new RequestMetaData(
                 Files.size(file),
                 Files.getLastModifiedTime(file).toMillis(),
@@ -137,33 +162,65 @@ public final class DroidAPI {
         id.setParentId(ID_GENERATOR.getAndIncrement());
         id.setNodeId(ID_GENERATOR.getAndIncrement());
 
-        IdentificationResultCollection resultCollection;
-
         try (final FileSystemIdentificationRequest request = new FileSystemIdentificationRequest(metaData, id)) {
-            request.open(file);
-            String extension = request.getExtension();
-
-            IdentificationResultCollection binaryResult = droidCore.matchBinarySignatures(request);
-            Optional<String> containerPuid = getContainerPuid(binaryResult);
-
-            if (containerPuid.isPresent()) {
-                resultCollection = handleContainer(binaryResult, request, containerPuid.get());
-            } else {
-                droidCore.removeLowerPriorityHits(binaryResult);
-                droidCore.checkForExtensionsMismatches(binaryResult, request.getExtension());
-                if (binaryResult.getResults().isEmpty()) {
-                    resultCollection = identifyByExtension(request);
-                } else {
-                    resultCollection = binaryResult;
-                }
-            }
-            return resultCollection.getResults()
-                    .stream().map(res -> new ApiResult(extension, res.getMethod(), res.getPuid(), res.getName()))
-                    .collect(Collectors.toList());
+        	request.open(file);
+        	return submit(request);
         }
     }
+    
+    
+    public List<ApiResultExtended> submit(final InputStream input, final String filePath) throws IOException {
+        RequestMetaData metaData = new RequestMetaData(
+                (long) input.available(), null, filePath);
 
-    private IdentificationResultCollection identifyByExtension(final FileSystemIdentificationRequest identificationRequest) {
+        URI nameUri = null;
+        try {
+            if (filePath.startsWith("file:")) {
+                nameUri = new URI(filePath);
+            } else {
+                nameUri = new URI("file", "", "/" + filePath, null);
+            }
+        } catch (URISyntaxException e) {
+            nameUri = URI.create("file://./name-with-no-extension");
+        }
+        final RequestIdentifier id = new RequestIdentifier(nameUri);
+        id.setParentId(ID_GENERATOR.getAndIncrement());
+        id.setNodeId(ID_GENERATOR.getAndIncrement());
+
+        final InputStreamIdentificationRequest request = new InputStreamIdentificationRequest(metaData, id);
+        try {
+        	request.open(input);
+        	return submit(request);
+        } finally {
+            request.removeTempDir();
+        }
+    }
+    
+    private List<ApiResultExtended> submit(IdentificationRequest request) throws IOException {
+        IdentificationResultCollection resultCollection;
+
+        String extension = request.getExtension();
+
+        IdentificationResultCollection binaryResult = droidCore.matchBinarySignatures(request);
+        Optional<String> containerPuid = getContainerPuid(binaryResult);
+
+        if (!this.binarySignaturesOnly && containerPuid.isPresent()) {
+            resultCollection = handleContainer(binaryResult, request, containerPuid.get());
+        } else {
+            droidCore.removeLowerPriorityHits(binaryResult);
+            droidCore.checkForExtensionsMismatches(binaryResult, request.getExtension());
+            if (binaryResult.getResults().isEmpty() && this.allowMatchByFileExtension) {
+                resultCollection = identifyByExtension(request);
+            } else {
+                resultCollection = binaryResult;
+            }
+        }
+        return resultCollection.getResults()
+                .stream().map(res -> ApiResultExtended.fromIdentificationResult(extension, res, this.signatureFile))
+                .collect(Collectors.toList());
+    }
+
+    private IdentificationResultCollection identifyByExtension(final IdentificationRequest identificationRequest) {
         IdentificationResultCollection extensionResult = droidCore.matchExtensions(identificationRequest, false);
         droidCore.removeLowerPriorityHits(extensionResult);
         return extensionResult;
@@ -176,7 +233,7 @@ public final class DroidAPI {
     }
 
     private IdentificationResultCollection handleContainer(final IdentificationResultCollection binaryResult,
-                                                           final FileSystemIdentificationRequest identificationRequest, final String containerPuid) throws IOException {
+                                                           final IdentificationRequest identificationRequest, final String containerPuid) throws IOException {
         ContainerIdentifier identifier;
 
         switch (containerPuid) {
@@ -210,4 +267,45 @@ public final class DroidAPI {
     public String getDroidVersion() {
         return droidVersion;
     }
+    
+    /**
+     * @return the binarySignaturesOnly
+     */
+    public boolean isBinarySignaturesOnly() {
+        return binarySignaturesOnly;
+    }
+
+    /**
+     * @param binarySignaturesOnly
+     *            the binarySignaturesOnly to set
+     */
+    public void setBinarySignaturesOnly(boolean binarySignaturesOnly) {
+        this.binarySignaturesOnly = binarySignaturesOnly;
+    }
+    
+    public boolean isAllowMatchByFileExtension() {
+        return allowMatchByFileExtension;
+    }
+
+    public void setAllowMatchByFileExtension(
+            boolean allowMatchByFileExtension) {
+        this.allowMatchByFileExtension = allowMatchByFileExtension;
+    }
+
+    /**
+     * @return the maxBytesToScan
+     */
+    public long getMaxBytesToScan() {
+        return this.maxBytesToScan;
+    }
+
+    /**
+     * @param maxBytesToScan
+     *            the maxBytesToScan to set
+     */
+    public void setMaxBytesToScan(long maxBytesToScan) {
+        this.droidCore.setMaxBytesToScan(maxBytesToScan);
+    	this.maxBytesToScan = maxBytesToScan;
+    }
+    
 }

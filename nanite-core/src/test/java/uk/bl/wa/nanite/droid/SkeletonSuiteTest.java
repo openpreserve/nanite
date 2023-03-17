@@ -3,14 +3,15 @@ package uk.bl.wa.nanite.droid;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
-import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
-import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
+import uk.gov.nationalarchives.droid.core.SignatureParseException;
+import uk.gov.nationalarchives.droid.internal.api.ApiResultExtended;
 
 /**
  * 
@@ -20,7 +21,8 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
  * 
  * How to update this test suite is outlined here: https://github.com/exponential-decay/skeleton-test-suite-generator#howto
  * 
- * We use the pronom-export Python 2 script to download the PRONOM XML into a folder with that name in the skeleton-test-suite-generator repo
+ * We use the pronom-export Python script (https://github.com/exponential-decay/pronom-xml-export) 
+ * to download the PRONOM XML into a folder with the name pronom-export in the skeleton-test-suite-generator repo
  * 
  * Then we run the skeleton generator.
  * 
@@ -32,7 +34,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 public class SkeletonSuiteTest {
 
     @Test
-    public void testSkeletonSuite() throws CommandExecutionException {
+    public void testSkeletonSuite() throws IOException, SignatureParseException  {
 
         DroidDetector dd = new DroidDetector();
 
@@ -52,13 +54,13 @@ public class SkeletonSuiteTest {
                 if (f.isFile()) {
 
                     // Do the detection:
-                    List<IdentificationResult> puids = dd
-                            .detectPUIDs(f);
+                    List<ApiResultExtended> puids = dd
+                            .identify(f);
 
                     // Check for a match:
                     boolean match = false;
                     String firstPuid = null;
-                    for (IdentificationResult puid : puids) {
+                    for (ApiResultExtended puid : puids) {
                         // Record the first (potentially mis-matched) PUID for
                         // reporting purposes:
                         if (firstPuid == null) {

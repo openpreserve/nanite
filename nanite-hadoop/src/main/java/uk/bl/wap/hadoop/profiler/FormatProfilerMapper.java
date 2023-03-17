@@ -37,7 +37,7 @@ import org.archive.io.warc.WARCRecord;
 
 import uk.bl.wa.hadoop.WritableArchiveRecord;
 import uk.bl.wa.nanite.droid.DroidDetector;
-import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
+import uk.gov.nationalarchives.droid.core.SignatureParseException;
 
 /**
  * 
@@ -358,9 +358,11 @@ public class FormatProfilerMapper extends MapReduceBase
                 droidDetector = new DroidDetector();
                 droidDetector
                         .setBinarySignaturesOnly(droidUseBinarySignaturesOnly);
-            } catch (CommandExecutionException e) {
-                log.error("droidDetector CommandExecutionException " + e);
-            }
+            } catch (IOException e) {
+                log.error("droidDetector IOException " + e);
+            } catch (SignatureParseException e) {
+                log.error("droidDetector SignatureParseException " + e);
+			}
         }
 
         // Set up Tika (detect)

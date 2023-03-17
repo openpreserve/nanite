@@ -67,11 +67,10 @@
          <artifactId>log4j-api</artifactId>
          <version>${log4j2.version}</version>
       </dependency>
-
       <dependency>
          <groupId>uk.gov.nationalarchives</groupId>
-         <artifactId>droid-command-line</artifactId>
-         <version>6.5.2</version>
+         <artifactId>droid-api</artifactId>
+         <version>6.6.1</version>
       </dependency>
    </dependencies>
 </project>

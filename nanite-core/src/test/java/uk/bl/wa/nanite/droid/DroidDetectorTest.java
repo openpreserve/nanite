@@ -19,9 +19,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
+import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationMethod;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
+import uk.gov.nationalarchives.droid.internal.api.ApiResultExtended;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
@@ -52,7 +53,7 @@ public class DroidDetectorTest {
 
     @Test
     public void testDetectByExtension() throws FileNotFoundException,
-            IOException, CommandExecutionException {
+            IOException, SignatureParseException {
 
         DroidDetector dde = new DroidDetector();
 
@@ -138,9 +139,10 @@ public class DroidDetectorTest {
 
 	/**
 	 * Test that we have access to the PUIDs
+	 * @throws IOException 
 	 */
 	@Test
-	public void testPUIDs() {
+	public void testPUIDs() throws IOException {
 		innerTestPUIDs(ddc, "src/test/resources/wpd/TOPOPREC.WPD", "x-fmt/44",
 				IdentificationMethod.BINARY_SIGNATURE);
 		innerTestPUIDs(ddc, "src/test/resources/cc0.mp3", "fmt/134",
@@ -164,11 +166,11 @@ public class DroidDetectorTest {
 
 	private void innerTestPUIDs(DroidDetector dd, String testFile,
 			String expectedPUID,
-			IdentificationMethod method) {
+			IdentificationMethod method) throws IOException {
 		// Get the PUID results:
-		List<IdentificationResult> lir = dd.detectPUIDs(new File(testFile));
-		IdentificationResult found = null;
-		for (IdentificationResult ir : lir) {
+		List<ApiResultExtended> lir = dd.identify(new File(testFile));
+		ApiResultExtended found = null;
+		for (ApiResultExtended ir : lir) {
 			System.out.println(testFile + ": " + ir.getPuid() + " '"
 					+ ir.getName() + "' (" + ir.getMimeType() + ") by "
 					+ ir.getMethod());

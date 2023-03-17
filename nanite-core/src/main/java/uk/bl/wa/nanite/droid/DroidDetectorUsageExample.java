@@ -13,8 +13,9 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 
-import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
+import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
+import uk.gov.nationalarchives.droid.internal.api.ApiResultExtended;
 
 /**
  * 
@@ -25,8 +26,7 @@ import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
  */
 public class DroidDetectorUsageExample {
 
-	public static void main(String[] args) throws CommandExecutionException,
-			FileNotFoundException, IOException {
+	public static void main(String[] args) throws FileNotFoundException, IOException, SignatureParseException {
 		DroidDetector dd = new DroidDetector();
 
 		// Can use a File or an InputStream:
@@ -46,8 +46,8 @@ public class DroidDetectorUsageExample {
 		System.out.println("MIME Type: " + mt);
 
 		// Or, get the raw DROID results
-		List<IdentificationResult> lir = dd.detectPUIDs(inFile);
-		for (IdentificationResult ir : lir) {
+		List<ApiResultExtended> lir = dd.identify(inFile);
+		for (ApiResultExtended ir : lir) {
 
 			System.out.println("PUID: " + ir.getPuid() + " '" + ir.getName()
 					+ "' " + ir.getVersion() + " (" + ir.getMimeType()
@@ -57,7 +57,7 @@ public class DroidDetectorUsageExample {
 
 			// Which you can then turn into an extended MIME type if required:
 			System.out.println("Extended MIME:"
-					+ DroidDetector.getMimeTypeFromResult(ir));
+					+ dd.getMimeTypeFromResult(ir));
 			// Extended MIME:application/msword; version=97-2003
 		}
 	}
