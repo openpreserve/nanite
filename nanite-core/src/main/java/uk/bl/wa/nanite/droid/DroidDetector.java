@@ -417,6 +417,7 @@ public class DroidDetector implements Detector {
                     + dr.detect(new ByteArrayInputStream(bytes), metadata));
             System.out.println("----\n");
         }
+        
     }
 
 }

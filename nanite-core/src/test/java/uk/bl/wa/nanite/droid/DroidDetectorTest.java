@@ -181,4 +181,54 @@ public class DroidDetectorTest {
 		assertEquals(method, found.getMethod());
 	}
 
+	/**
+	 * This is the example code shown in the README
+	 * 
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws SignatureParseException
+	 */
+	@Test
+    public void testExampleForDocumentation() throws FileNotFoundException, IOException, SignatureParseException {
+		// Use a thread-local Detector:
+		final ThreadLocal<DroidDetector> threadLocal = new ThreadLocal<>();
+		if (threadLocal.get() == null) {
+	        // Create a DroidDetector using the default build-in sig file:
+			threadLocal.set(new DroidDetector());
+		}
+		DroidDetector dd = threadLocal.get();
+        
+		// Can use a File or an InputStream:
+		File inFile = new File("src/test/resources/lorem-ipsum.doc");
+
+		// If you use the InputStream, you need to add the resource name if you
+		// want extension-based identification to work:
+		Metadata metadata = new Metadata();
+		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, inFile.toURI().toString());
+
+		// To get the identification as an extended MIME type:
+		MediaType mt = dd.detect(inFile);
+		// Or:
+		mt = dd.detect(new FileInputStream(inFile), metadata);
+		// Giving:
+		// MIME Type: application/msword; version=97-2003
+		System.out.println("MIME Type: " + mt);
+
+		// Or, get the raw DROID results
+		List<ApiResultExtended> lir = dd.identify(inFile);
+		for (ApiResultExtended ir : lir) {
+
+			System.out.println("PUID: " + ir.getPuid() + " '" + ir.getName()
+					+ "' " + ir.getVersion() + " (" + ir.getMimeType()
+					+ ") via " + ir.getMethod() + " identification.");
+			// PUID: fmt/40 'Microsoft Word Document' 97-2003
+			// (application/msword) via Container identification.
+
+			// Which you can then turn into an extended MIME type if required:
+			System.out.println("Extended MIME:"
+					+ dd.getMimeTypeFromResult(ir));
+			// Extended MIME:application/msword; version=97-2003
+		}    
+	}
+	
 }
