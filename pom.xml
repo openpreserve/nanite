@@ -67,7 +67,6 @@
   <modules>
   	<module>nanite-core</module>
   	<module>nanite-historical-sigs</module>
-    <module>nanite-hadoop</module>
   </modules>
   <name>Nanite - a friendly swarm of format-identifying robots</name>
   <build>
