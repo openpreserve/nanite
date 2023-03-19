@@ -22,25 +22,21 @@ import javax.xml.bind.JAXBException;
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.Property;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.bl.wa.util.Unpack;
-import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
-import uk.gov.nationalarchives.droid.container.ContainerSignatureDefinitions;
-import uk.gov.nationalarchives.droid.container.ContainerSignatureSaxParser;
-import uk.gov.nationalarchives.droid.core.BinarySignatureIdentifier;
-import uk.gov.nationalarchives.droid.core.CustomResultPrinter;
-import uk.gov.nationalarchives.droid.core.DroidSigUtils;
 import uk.gov.nationalarchives.droid.core.SignatureParseException;
+import uk.gov.nationalarchives.droid.internal.api.ApiResult;
+import uk.gov.nationalarchives.droid.internal.api.ApiResultExtended;
+import uk.gov.nationalarchives.droid.internal.api.DroidAPIExtended;
+import uk.gov.nationalarchives.droid.core.interfaces.IdentificationMethod;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationRequest;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResultCollection;
-import uk.gov.nationalarchives.droid.core.interfaces.RequestIdentifier;
-import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
-import uk.gov.nationalarchives.droid.core.signature.droid6.FFSignatureFile;
 
 /**
  * 
@@ -119,39 +115,26 @@ public class DroidDetector implements Detector {
 
     // static final String DROID_SIGNATURE_FILE =
     // "DROID_SignatureFile_V100069.xml";
-    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V97.xml";
+    static final String DROID_SIGNATURE_FILE = "DROID_SignatureFile_V111.xml";
     static final String DROID_SIG_RESOURCE = "droid/" + DROID_SIGNATURE_FILE;
 
     static final String DROID_SIG_FILE = "" + DROID_SIG_RESOURCE;
-    static final String CONTAINER_SIG_FILE = "droid/container-signature-20201001.xml";
+    static final String CONTAINER_SIG_FILE = "droid/container-signature-20230307.xml";
+    
+    
+    // Reference to the Droid API:
+    private DroidAPIExtended api;
 
-    // Set up DROID binary handler:
-    private BinarySignatureIdentifier binarySignatureIdentifier;
-    private ContainerSignatureDefinitions containerSignatureDefinitions;
-
-    private static final String FORWARD_SLASH = "/";
-    private static final String BACKWARD_SLASH = "\\";
-    private long maxBytesToScan = -1;
+    //
     boolean archives = false;
-
-    private uk.gov.nationalarchives.droid.core.CustomResultPrinter resultPrinter;
+    
+    public static Property PUID = Property.internalTextBag("nanite:puid");
+    public static Property MIMETYPE = Property.internalTextBag("nanite:mimetype");
+    public static Property NAME = Property.internalTextBag("nanite:name");
+    public static Property VERSION = Property.internalTextBag("nanite:version");
+    public static Property METHOD = Property.internalTextBag("nanite:method");
 
     // Options:
-
-    /** Set binarySignaturesOnly to disable container-based identification */
-    private boolean binarySignaturesOnly = false;
-
-    /**
-     * Whether to allow the BinSig matcher to fall back on the file extension
-     * when magic matching fails:
-     */
-    private boolean allowMatchByFileExtension = false;
-
-    /**
-     * When BigSig magic fails, whether to match against all known extensions or
-     * just those that have no other signature (BinSig or Container):
-     */
-    private boolean matchAllExtensions = false;
 
     /**
      * Disable this flag to make it impossible for the file extension to be used
@@ -161,35 +144,40 @@ public class DroidDetector implements Detector {
 
     /**
      * Set up DROID resources
+     * @throws IOException 
+     * @throws SignatureParseException 
      */
-    public DroidDetector() throws CommandExecutionException {
+    public DroidDetector() throws IOException, SignatureParseException {
+    	
         // Set up the binary sig file.
         File fileSignaturesFile;
         try {
             fileSignaturesFile = Unpack.streamToTemp(DroidDetector.class,
                     DROID_SIG_FILE, false);
         } catch (IOException e1) {
-            throw new CommandExecutionException(
-                    "Signature file could not be extracted! " + e1);
+            throw new IOException(
+                    "Signature file could not be extracted! ", e1);
         }
 
         // Set up container sig file:
-        containerSignatureDefinitions = null;
         File containerSignaturesFile = null;
         if (CONTAINER_SIG_FILE != null) {
             try {
                 containerSignaturesFile = Unpack.streamToTemp(
                         DroidDetector.class, CONTAINER_SIG_FILE, false);
             } catch (IOException e1) {
-                throw new CommandExecutionException(
-                        "Container signature file could not be extracted! "
-                                + e1);
+                throw new IOException(
+                        "Container signature file could not be extracted! ",
+                                e1);
             }
         }
 
         // And initialise:
-        init(fileSignaturesFile, containerSignaturesFile);
-
+        init(
+        		fileSignaturesFile,
+        		containerSignaturesFile
+        );
+        
         // dont fill up tmp space with signature files
         fileSignaturesFile.delete();
         containerSignaturesFile.delete();
@@ -201,81 +189,23 @@ public class DroidDetector implements Detector {
      * 
      * @param fileSignaturesFile
      * @param containerSignaturesFile
-     * @throws CommandExecutionException
+     * @throws SignatureParseException 
      */
-    public DroidDetector(File fileSignaturesFile, File containerSignaturesFile)
-            throws CommandExecutionException {
-        init(fileSignaturesFile, containerSignaturesFile);
+    public DroidDetector(File fileSignaturesFile, File containerSignaturesFile) throws SignatureParseException {
+    	init(fileSignaturesFile, containerSignaturesFile);
     }
 
-    /**
-     * Initialise the DROID engine using the supplied signature files:
-     * 
-     * @param fileSignaturesFile
-     * @param containerSignaturesFile
-     * @throws CommandExecutionException
-     */
-    private void init(File fileSignaturesFile, File containerSignaturesFile)
-            throws CommandExecutionException {
-        // Set up the binary sig file.
-        binarySignatureIdentifier = new BinarySignatureIdentifier();
-
-        if (!fileSignaturesFile.exists()) {
-            throw new CommandExecutionException("Signature file not found");
-        }
-
-        binarySignatureIdentifier.setSignatureFile(fileSignaturesFile
-                .getAbsolutePath());
-        try {
-            binarySignatureIdentifier.init();
-        } catch (SignatureParseException e) {
-            log.error("Error '" + e.getMessage()
-            + "' when parsing " + DROID_SIG_FILE + " unpacked to "
-            + fileSignaturesFile, e);
-            throw new CommandExecutionException("Can't parse signature file! "
-                    + e.getMessage());
-        }
-        binarySignatureIdentifier.setMaxBytesToScan(maxBytesToScan);
-        String path = fileSignaturesFile.getAbsolutePath();
-        String slash = path.contains(FORWARD_SLASH) ? FORWARD_SLASH
-                : BACKWARD_SLASH;
-        String slash1 = slash;
-
-        // Set up container sig file:
-        try {
-            final InputStream in = new FileInputStream(
-                    containerSignaturesFile.getAbsoluteFile());
-            final ContainerSignatureSaxParser parser = new ContainerSignatureSaxParser();
-            containerSignatureDefinitions = parser.parse(in);
-        } catch (SignatureParseException e) {
-            throw new CommandExecutionException(
-                    "Can't parse container signature file");
-        } catch (IOException ioe) {
-            throw new CommandExecutionException(ioe);
-        } catch (JAXBException jaxbe) {
-            throw new CommandExecutionException(jaxbe);
-        }
-
-        resultPrinter = new CustomResultPrinter(binarySignatureIdentifier,
-                containerSignatureDefinitions, "", slash, slash1, archives);
+    // Set up with defaults:
+    private void init(File fileSignaturesFile, File containerSignaturesFile) throws SignatureParseException {
+        api = DroidAPIExtended.getInstance(
+        		fileSignaturesFile.toPath(),
+        		containerSignaturesFile.toPath(),
+        		Long.MAX_VALUE
+        );
+        // Default to not using extension matches:
+        api.setAllowMatchByFileExtension(false);
     }
-
-    public boolean isAllowMatchByFileExtension() {
-        return allowMatchByFileExtension;
-    }
-
-    public void setAllowMatchByFileExtension(
-            boolean allowMatchByFileExtension) {
-        this.allowMatchByFileExtension = allowMatchByFileExtension;
-    }
-
-    public boolean isMatchAllExtensions() {
-        return matchAllExtensions;
-    }
-
-    public void setMatchAllExtensions(boolean matchAllExtensions) {
-        this.matchAllExtensions = matchAllExtensions;
-    }
+    
 
     public boolean isPassFilenameWithInputStream() {
         return passFilenameWithInputStream;
@@ -290,7 +220,7 @@ public class DroidDetector implements Detector {
      * @return the binarySignaturesOnly
      */
     public boolean isBinarySignaturesOnly() {
-        return binarySignaturesOnly;
+        return this.api.isBinarySignaturesOnly();
     }
 
     /**
@@ -298,14 +228,24 @@ public class DroidDetector implements Detector {
      *            the binarySignaturesOnly to set
      */
     public void setBinarySignaturesOnly(boolean binarySignaturesOnly) {
-        this.binarySignaturesOnly = binarySignaturesOnly;
+    	this.api.setBinarySignaturesOnly(binarySignaturesOnly);
     }
 
+    public boolean isAllowMatchByFileExtension() {
+        return this.api.isAllowMatchByFileExtension();
+    }
+
+    public void setAllowMatchByFileExtension(
+            boolean allowMatchByFileExtension) {
+    	this.api.setAllowMatchByFileExtension(allowMatchByFileExtension);
+    }
+    
+    
     /**
      * @return the maxBytesToScan
      */
     public long getMaxBytesToScan() {
-        return maxBytesToScan;
+        return this.api.getMaxBytesToScan();
     }
 
     /**
@@ -313,69 +253,7 @@ public class DroidDetector implements Detector {
      *            the maxBytesToScan to set
      */
     public void setMaxBytesToScan(long maxBytesToScan) {
-        this.maxBytesToScan = maxBytesToScan;
-    }
-
-    /**
-     * 
-     * @param file
-     * @return
-     */
-    public MediaType detect(File file) {
-        return getMimeTypeFromResults(detectPUIDs(file));
-    }
-
-    /**
-     * 
-     * @param file
-     * @return
-     */
-    public List<IdentificationResult> detectPUIDs(File file) {
-        // As this is a file, use the default number of bytes to inspect
-        this.binarySignatureIdentifier.setMaxBytesToScan(this.maxBytesToScan);
-        // And identify:
-        try {
-            String fileName;
-            try {
-                fileName = file.getCanonicalPath();
-            } catch (IOException e) {
-                throw new CommandExecutionException(e);
-            }
-            URI uri = file.toURI();
-            RequestMetaData metaData = new RequestMetaData(file.length(),
-                    file.lastModified(), fileName);
-            RequestIdentifier identifier = new RequestIdentifier(uri);
-            identifier.setParentId(1L);
-
-            InputStream in = null;
-            IdentificationRequest<InputStream> request = new InputStreamIdentificationRequest(
-                    metaData, identifier);
-            try {
-                in = new FileInputStream(file);
-                return getPUIDs(request, in);
-            } catch (IOException e) {
-                throw new CommandExecutionException(e);
-            } finally {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        throw new CommandExecutionException(e);
-                    }
-                }
-                if (request != null) {
-                    try {
-                        request.close();
-                    } catch (IOException e) {
-                        throw new CommandExecutionException(e);
-                    }
-                }
-            }
-        } catch (CommandExecutionException | IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return null;
+        this.api.setMaxBytesToScan(maxBytesToScan);
     }
 
     /**
@@ -384,18 +262,6 @@ public class DroidDetector implements Detector {
     @Override
     public MediaType detect(InputStream input, Metadata metadata)
             throws IOException {
-        return getMimeTypeFromResults(detectPUIDs(input, metadata));
-    }
-
-    /**
-     * 
-     * @param input
-     * @param metadata
-     * @return
-     * @throws IOException
-     */
-    public List<IdentificationResult> detectPUIDs(InputStream input,
-            Metadata metadata) throws IOException {
 
         // As this is an inputstream, restrict the number of bytes to inspect
         // TODO Make this optional:
@@ -409,104 +275,65 @@ public class DroidDetector implements Detector {
                 fileName = metadata.get(TikaCoreProperties.RESOURCE_NAME_KEY);
             }
         }
-        log.debug("Set up filename: " + fileName);
-        RequestMetaData metaData = new RequestMetaData(
-                (long) input.available(), null, fileName);
-
-        URI nameUri = null;
-        try {
-            if (fileName.startsWith("file:")) {
-                nameUri = new URI(fileName);
-            } else {
-                nameUri = new URI("file", "", "/" + fileName, null);
-            }
-        } catch (URISyntaxException e) {
-            log.warn("Exception when building filename URI for " + fileName
-                    + ": " + e);
-            nameUri = URI.create("file://./name-with-no-extension");
+        log.debug("Got filename: " + fileName);
+        List<ApiResultExtended> ids = this.api.submit(input, fileName);
+		MediaType mt = getMimeTypeFromApiResults(ids);
+		this.addResultsToMetadata(ids, metadata, mt);
+        return mt;
+    }
+    
+    /**
+     * Pass in fields to be noted in the Metadata object.
+     * 
+     * @param ids
+     * @param metadata
+     * @param mt
+     */
+    private void addResultsToMetadata(List<ApiResultExtended> ids, Metadata metadata, MediaType mt) {
+        // Also add format information to metadata:
+		for( ApiResultExtended id : ids) {
+        	metadata.add(PUID, id.getPuid());
+        	metadata.add(NAME, id.getName());
+        	metadata.add(VERSION, id.getVersion());
+        	metadata.add(METHOD, id.getMethod().name());
         }
-        log.debug("Set up nameUri: " + nameUri);
-        RequestIdentifier identifier = new RequestIdentifier(nameUri);
-        identifier.setParentId(1L);
-
-        InputStreamIdentificationRequest request = new InputStreamIdentificationRequest(
-                metaData, identifier);
-        try {
-            List<IdentificationResult> type = getPUIDs(request, input);
-            return type;
-        } catch (CommandExecutionException e) {
-            log.warn("Throwing wrapped exception: " + e);
-            throw new IOException(e.toString());
-        } finally {
-            request.removeTempDir();
-        }
+		metadata.add(MIMETYPE, mt.toString());
     }
 
     /**
      * 
-     * @param request
-     * @param input
+     * @param file
      * @return
-     * @throws IOException
-     * @throws CommandExecutionException
      */
-    private List<IdentificationResult> getPUIDs(
-            IdentificationRequest<InputStream> request, InputStream input)
-            throws IOException, CommandExecutionException {
-        // Open up the stream:
-        request.open(input);
-
-        IdentificationResultCollection results = binarySignatureIdentifier
-                .matchBinarySignatures(request);
-        log.debug("Got " + results.getResults().size() + " matches.");
-
-        // If there is no BinSig match, fall back on file extension:
-        List<IdentificationResult> resultList = results.getResults();
-        if (resultList != null && resultList.isEmpty()
-                && allowMatchByFileExtension) {
-            // If we call matchExtensions with "true", it will match
-            // ALL files formats which have a given extension.
-            // If "false", it will only match file formats for which
-            // there is no other signature defined.
-            IdentificationResultCollection checkExtensionResults = binarySignatureIdentifier
-                    .matchExtensions(request, matchAllExtensions);
-            if (checkExtensionResults != null) {
-                results = checkExtensionResults;
-                log.debug(
-                        "Fallen back on file extension results, with # results = "
-                                + results.getResults().size());
-            }
-        }
-
-        // Optionally, return top results from binary signature match only:
-        if (this.isBinarySignaturesOnly()) {
-            if (results.getResults().size() > 0) {
-                return results.getResults();
-            } else {
-                return null;
-            }
-        }
-
-        // Also get container results:
-        resultPrinter.print(results, request);
-
-        // Return as a MediaType:
-        List<IdentificationResult> lir = new ArrayList<>();
-        lir.add(resultPrinter.getResult());
-        return lir;
+    public MediaType detect(File file) {
+    	List<ApiResultExtended> results;
+		try {
+			results = this.api.submit(file.toPath());
+	        return getMimeTypeFromApiResults(results);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+    }
+    
+    // lower-level api for raw results
+    public List<ApiResultExtended> identify(File file) throws IOException {
+    	return this.api.submit(file.toPath());
     }
 
+ 
     /**
      * 
      * @param result
      * @return
      */
-    public static MediaType getMimeTypeFromResult(IdentificationResult result) {
-        List<IdentificationResult> list = new ArrayList<>();
+    public MediaType getMimeTypeFromResult(ApiResultExtended result) {
+        List<ApiResultExtended> list = new ArrayList<>();
         if (result != null) {
             list.add(result);
         }
-        return getMimeTypeFromResults(list);
+        return getMimeTypeFromApiResults(list);
     }
 
     /**
@@ -520,14 +347,14 @@ public class DroidDetector implements Detector {
      * @return
      * @throws MimeTypeParseException
      */
-    public static MediaType getMimeTypeFromResults(
-            List<IdentificationResult> results) {
+    public MediaType getMimeTypeFromApiResults(
+            List<ApiResultExtended> results) {
         if (results == null || results.size() == 0) {
             return MediaType.OCTET_STREAM;
         }
         // Get the first result: TODO This is getting to be a problem since .txt
         // now mismatches.
-        IdentificationResult r = results.get(0);
+        ApiResultExtended r = results.get(0);
         // It it's NULL:
         if (r == null) {
             return MediaType.OCTET_STREAM;
@@ -535,6 +362,7 @@ public class DroidDetector implements Detector {
         // Sort out the MIME type mapping:
         String mimeType = null;
         String mimeTypeString = r.getMimeType();
+        // Clean up
         if (mimeTypeString != null && !"".equals(mimeTypeString.trim())) {
             // This sometimes has ", " separated multiple types
             String[] mimeTypeList = mimeTypeString.split(", ");
@@ -583,25 +411,7 @@ public class DroidDetector implements Detector {
      * @return String version
      */
     public String getBinarySignatureFileVersion() {
-        return resultPrinter.getBinarySignatureFileVersion();
-    }
-
-    /**
-     * Allow the binary signature file to be accessed directly.
-     * 
-     * @return FFSignatureFile
-     */
-    public FFSignatureFile getBinarySignatures() {
-        return DroidSigUtils.getSigFile(binarySignatureIdentifier);
-    }
-
-    /**
-     * Allow the container signatures to be accessed directly.
-     * 
-     * @return ContainerSignatureDefinitions
-     */
-    public ContainerSignatureDefinitions getContainerSignatures() {
-        return this.containerSignatureDefinitions;
+        return api.getBinarySignatureVersion();
     }
 
     /* ----- ----- ----- ----- */
@@ -611,9 +421,9 @@ public class DroidDetector implements Detector {
      * @param args
      * @throws CommandExecutionException
      * @throws IOException
+     * @throws SignatureParseException 
      */
-    public static void main(String[] args) throws CommandExecutionException,
-    IOException {
+    public static void main(String[] args) throws IOException, SignatureParseException {
         DroidDetector dr = new DroidDetector();
         for (String fname : args) {
             File file = new File(fname);
@@ -635,6 +445,7 @@ public class DroidDetector implements Detector {
                     + dr.detect(new ByteArrayInputStream(bytes), metadata));
             System.out.println("----\n");
         }
+        
     }
 
 }

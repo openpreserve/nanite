@@ -12,12 +12,10 @@ import java.io.InputStream;
 import javax.activation.MimeTypeParseException;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 
 import uk.bl.wa.nanite.droid.DroidDetector;
-import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
 import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureFileException;
 import uk.gov.nationalarchives.droid.core.interfaces.signature.SignatureManagerException;
@@ -29,7 +27,7 @@ public class Nanite {
 
 	DroidDetector nan = null;
 	
-	public Nanite() throws IOException, SignatureFileException, SignatureParseException, ConfigurationException, CommandExecutionException {
+	public Nanite() throws IOException, SignatureFileException, SignatureParseException, ConfigurationException {
 		nan = new DroidDetector();
 	}
 
@@ -43,7 +41,7 @@ public class Nanite {
 	 * @throws SignatureParseException 
 	 * @throws CommandExecutionException 
 	 */
-	public static void main(String[] args) throws IOException, SignatureManagerException, ConfigurationException, SignatureFileException, MimeTypeParseException, SignatureParseException, CommandExecutionException {
+	public static void main(String[] args) throws IOException, SignatureManagerException, ConfigurationException, SignatureFileException, MimeTypeParseException, SignatureParseException {
 		DroidDetector nan = new DroidDetector();
 		for( String fname : args ) {
 			File file = new File(fname);

@@ -19,9 +19,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import uk.gov.nationalarchives.droid.command.action.CommandExecutionException;
+import uk.gov.nationalarchives.droid.core.SignatureParseException;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationMethod;
 import uk.gov.nationalarchives.droid.core.interfaces.IdentificationResult;
+import uk.gov.nationalarchives.droid.internal.api.ApiResultExtended;
 
 /**
  * @author Andrew Jackson <Andrew.Jackson@bl.uk>
@@ -52,7 +53,7 @@ public class DroidDetectorTest {
 
     @Test
     public void testDetectByExtension() throws FileNotFoundException,
-            IOException, CommandExecutionException {
+            IOException, SignatureParseException {
 
         DroidDetector dde = new DroidDetector();
 
@@ -123,24 +124,41 @@ public class DroidDetectorTest {
 		//File f = new File("src/test/resources/simple.pdf");
 		Metadata metadata = new Metadata();
 		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, f.toURI().toString());
+		
 		// Via File:
 		MediaType type = dd.detect(f);
 		System.out.println("Got via File: "+type);
+		printNaniteProperties(metadata);
 		assertEquals(expectedMime, type.getBaseType().toString());
+		
 		// Via InputStream:
 		metadata = new Metadata();
 		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, f.getName());
 		type = dd.detect(new FileInputStream(f), metadata);
+		printNaniteProperties(metadata);
 		System.out.println("Got via InputStream: "+type);
+		
 		assertEquals(expectedMime, type.getBaseType().toString());
+	}
+	
+	private void printNaniteProperties(Metadata metadata) {
+		for( String name: metadata.names() ) {
+			if( name.startsWith("nanite:") ) {
+				for( String value: metadata.getValues(name)) {
+					System.out.println("- " + name + " = " + value);
+				}
+
+			}
+		}
 	}
 
 
 	/**
 	 * Test that we have access to the PUIDs
+	 * @throws IOException 
 	 */
 	@Test
-	public void testPUIDs() {
+	public void testPUIDs() throws IOException {
 		innerTestPUIDs(ddc, "src/test/resources/wpd/TOPOPREC.WPD", "x-fmt/44",
 				IdentificationMethod.BINARY_SIGNATURE);
 		innerTestPUIDs(ddc, "src/test/resources/cc0.mp3", "fmt/134",
@@ -164,11 +182,11 @@ public class DroidDetectorTest {
 
 	private void innerTestPUIDs(DroidDetector dd, String testFile,
 			String expectedPUID,
-			IdentificationMethod method) {
+			IdentificationMethod method) throws IOException {
 		// Get the PUID results:
-		List<IdentificationResult> lir = dd.detectPUIDs(new File(testFile));
-		IdentificationResult found = null;
-		for (IdentificationResult ir : lir) {
+		List<ApiResultExtended> lir = dd.identify(new File(testFile));
+		ApiResultExtended found = null;
+		for (ApiResultExtended ir : lir) {
 			System.out.println(testFile + ": " + ir.getPuid() + " '"
 					+ ir.getName() + "' (" + ir.getMimeType() + ") by "
 					+ ir.getMethod());
@@ -179,4 +197,57 @@ public class DroidDetectorTest {
 		assertEquals(method, found.getMethod());
 	}
 
+	/**
+	 * This is the example code shown in the README
+	 * 
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws SignatureParseException
+	 */
+	@Test
+    public void testExampleForDocumentation() throws FileNotFoundException, IOException, SignatureParseException {
+		// Use a thread-local Detector:
+		final ThreadLocal<DroidDetector> threadLocal = new ThreadLocal<>();
+		if (threadLocal.get() == null) {
+	        // Create a DroidDetector using the default build-in sig file:
+			threadLocal.set(new DroidDetector());
+		}
+		DroidDetector dd = threadLocal.get();
+        
+		// Can use a File or an InputStream:
+		File inFile = new File("src/test/resources/lorem-ipsum.doc");
+
+		// If you use the InputStream, you need to add the resource name if you
+		// want extension-based identification to work:
+		Metadata metadata = new Metadata();
+		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, inFile.toURI().toString());
+
+		// To get the identification as an extended MIME type:
+		MediaType mt = dd.detect(inFile);
+		// Or:
+		mt = dd.detect(new FileInputStream(inFile), metadata);
+		// Giving:
+		// MIME Type: application/msword; version=97-2003
+		System.out.println("MIME Type: " + mt);
+		for( String value: metadata.getValues(DroidDetector.PUID)) {
+			System.out.println("- "+DroidDetector.PUID.getName()+" = "+ value);
+		}
+
+		// Or, get the raw DROID results
+		List<ApiResultExtended> lir = dd.identify(inFile);
+		for (ApiResultExtended ir : lir) {
+
+			System.out.println("PUID: " + ir.getPuid() + " '" + ir.getName()
+					+ "' " + ir.getVersion() + " (" + ir.getMimeType()
+					+ ") via " + ir.getMethod() + " identification.");
+			// PUID: fmt/40 'Microsoft Word Document' 97-2003
+			// (application/msword) via Container identification.
+
+			// Which you can then turn into an extended MIME type if required:
+			System.out.println("Extended MIME:"
+					+ dd.getMimeTypeFromResult(ir));
+			// Extended MIME:application/msword; version=97-2003
+		}    
+	}
+	
 }
