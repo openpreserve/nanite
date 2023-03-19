@@ -124,22 +124,32 @@ public class DroidDetectorTest {
 		//File f = new File("src/test/resources/simple.pdf");
 		Metadata metadata = new Metadata();
 		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, f.toURI().toString());
+		
 		// Via File:
 		MediaType type = dd.detect(f);
 		System.out.println("Got via File: "+type);
-		for( String value: metadata.getValues(DroidDetector.PUID)) {
-			System.out.println("- "+DroidDetector.PUID.getName()+" = "+ value);
-		}
+		printNaniteProperties(metadata);
 		assertEquals(expectedMime, type.getBaseType().toString());
+		
 		// Via InputStream:
 		metadata = new Metadata();
 		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, f.getName());
 		type = dd.detect(new FileInputStream(f), metadata);
+		printNaniteProperties(metadata);
 		System.out.println("Got via InputStream: "+type);
-		for( String value: metadata.getValues(DroidDetector.PUID)) {
-			System.out.println("- "+DroidDetector.PUID.getName()+" = "+ value);
-		}
+		
 		assertEquals(expectedMime, type.getBaseType().toString());
+	}
+	
+	private void printNaniteProperties(Metadata metadata) {
+		for( String name: metadata.names() ) {
+			if( name.startsWith("nanite:") ) {
+				for( String value: metadata.getValues(name)) {
+					System.out.println("- " + name + " = " + value);
+				}
+
+			}
+		}
 	}
 
 

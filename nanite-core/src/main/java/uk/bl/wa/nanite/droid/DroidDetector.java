@@ -130,6 +130,9 @@ public class DroidDetector implements Detector {
     
     public static Property PUID = Property.internalTextBag("nanite:puid");
     public static Property MIMETYPE = Property.internalTextBag("nanite:mimetype");
+    public static Property NAME = Property.internalTextBag("nanite:name");
+    public static Property VERSION = Property.internalTextBag("nanite:version");
+    public static Property METHOD = Property.internalTextBag("nanite:method");
 
     // Options:
 
@@ -290,6 +293,9 @@ public class DroidDetector implements Detector {
         // Also add format information to metadata:
 		for( ApiResultExtended id : ids) {
         	metadata.add(PUID, id.getPuid());
+        	metadata.add(NAME, id.getName());
+        	metadata.add(VERSION, id.getVersion());
+        	metadata.add(METHOD, id.getMethod().name());
         }
 		metadata.add(MIMETYPE, mt.toString());
     }
