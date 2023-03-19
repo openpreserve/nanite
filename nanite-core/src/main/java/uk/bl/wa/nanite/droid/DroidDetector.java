@@ -22,6 +22,7 @@ import javax.xml.bind.JAXBException;
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.Property;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 
@@ -126,6 +127,9 @@ public class DroidDetector implements Detector {
 
     //
     boolean archives = false;
+    
+    public static Property PUID = Property.internalTextBag("nanite:puid");
+    public static Property MIMETYPE = Property.internalTextBag("nanite:mimetype");
 
     // Options:
 
@@ -269,7 +273,25 @@ public class DroidDetector implements Detector {
             }
         }
         log.debug("Got filename: " + fileName);
-        return getMimeTypeFromApiResults(this.api.submit(input, fileName));
+        List<ApiResultExtended> ids = this.api.submit(input, fileName);
+		MediaType mt = getMimeTypeFromApiResults(ids);
+		this.addResultsToMetadata(ids, metadata, mt);
+        return mt;
+    }
+    
+    /**
+     * Pass in fields to be noted in the Metadata object.
+     * 
+     * @param ids
+     * @param metadata
+     * @param mt
+     */
+    private void addResultsToMetadata(List<ApiResultExtended> ids, Metadata metadata, MediaType mt) {
+        // Also add format information to metadata:
+		for( ApiResultExtended id : ids) {
+        	metadata.add(PUID, id.getPuid());
+        }
+		metadata.add(MIMETYPE, mt.toString());
     }
 
     /**

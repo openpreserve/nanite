@@ -127,12 +127,18 @@ public class DroidDetectorTest {
 		// Via File:
 		MediaType type = dd.detect(f);
 		System.out.println("Got via File: "+type);
+		for( String value: metadata.getValues(DroidDetector.PUID)) {
+			System.out.println("- "+DroidDetector.PUID.getName()+" = "+ value);
+		}
 		assertEquals(expectedMime, type.getBaseType().toString());
 		// Via InputStream:
 		metadata = new Metadata();
 		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, f.getName());
 		type = dd.detect(new FileInputStream(f), metadata);
 		System.out.println("Got via InputStream: "+type);
+		for( String value: metadata.getValues(DroidDetector.PUID)) {
+			System.out.println("- "+DroidDetector.PUID.getName()+" = "+ value);
+		}
 		assertEquals(expectedMime, type.getBaseType().toString());
 	}
 
@@ -213,6 +219,9 @@ public class DroidDetectorTest {
 		// Giving:
 		// MIME Type: application/msword; version=97-2003
 		System.out.println("MIME Type: " + mt);
+		for( String value: metadata.getValues(DroidDetector.PUID)) {
+			System.out.println("- "+DroidDetector.PUID.getName()+" = "+ value);
+		}
 
 		// Or, get the raw DROID results
 		List<ApiResultExtended> lir = dd.identify(inFile);

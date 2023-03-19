@@ -17,7 +17,35 @@ Using the Nanite API
 
 Since version [1.3.1-90 of nanite-core](http://search.maven.org/#artifactdetails|eu.scape-project.nanite|nanite-core|1.3.1-90|jar), a new API has been introduced to make it possible to get the PUID-level data out, as an alternative to only being able to access the extended MIME type. This was modified slightly in version 1.5.0.
 
-You can use the Nanite API like so:
+First add the ```nanite-core``` [dependency](http://search.maven.org/#artifactdetails|eu.scape-project.nanite|nanite-core|1.5.0-111|jar) to your Java project, e.g. for Maven:
+
+```xml
+    <dependency>
+        <groupId>eu.scape-project.nanite</groupId>
+        <artifactId>nanite-core</artifactId>
+        <version>1.5.0-111</version>
+    </dependency>
+```
+
+Then from your code, you can use this to identify an input stream :
+
+```java
+    DroidDetector dd = new DroidDetector();
+    Metadata metadata = new Metadata();
+    metadata.set(Metadata.RESOURCE_NAME_KEY, "filename");
+    MediaType droidType = dd.detect(inputstream, metadata);
+```
+
+You can also tweak the DROID configuration if you wish. e.g. this configuration only uses binary signatures, but allows DROID to scan all the bytes in the bytestream:
+
+```java
+    dd.setBinarySignaturesOnly( true );
+    dd.setMaxBytesToScan( -1 );
+```
+
+You can use the Tika-compatible `detect` method to get a `MediaType`. This assembles the DROID result into an extended MIME type.  Where a format has a known MIME type, this means adding the version to it, like this: `application/pdf; version="1.4"`. Formats with no known MIME type use a constructed one of the form: `application/x-puid-fmt-111; name="OLE2 Compound Document Format"`. The format results are also added to the Tika `Metadata` results as `nanite:format` values, e.g. `nanite:format = info:pronom/fmt/12`.
+
+Alternatively, you can use the `identify` method to get a DROID `ApiResult` and use the PUID directly, like this:
 
 ```java
         // Create a DroidDetector using the default build-in sig file:
@@ -38,6 +66,9 @@ You can use the Nanite API like so:
 		// Giving:
 		// MIME Type: application/msword; version=97-2003
 		System.out.println("MIME Type: " + mt);
+		for( String value: metadata.getValues(DroidDetector.PUID)) {
+			System.out.println("- "+DroidDetector.PUID.getName()+" = "+ value);
+		}
 
 		// Or, get the raw DROID results
 		List<ApiResultExtended> lir = dd.identify(inFile);
@@ -86,6 +117,8 @@ Version numbers are like `x.x.x-yy` - changes to the `yy` refer to updates to th
     - Updates to how temporary files are handled, attempting to ensure large sets of temporary files are not left in place unnecessarily.
 * 1.4.0
     - Significant update to the implementation to take advantage of improvements in DROID 6.5. DROID's improved API means less code is required to run it in Nanite.
+* 1.3.2-83
+    * Updated DROID binary (and container) signatures to v83.
 * 1.3.1
     - Revert to *not* falling back on extension-based identification by default, as enabling this is a breaking API change.
 * 1.3.0
