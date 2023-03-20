@@ -12,6 +12,19 @@ The Nanite project builds on DROID and Apache Tika to provide a rich format iden
 
 Nanite has been used at scale, see this [blog post](http://www.openplanetsfoundation.org/blogs/2014-05-28-weekend-nanite)
 
+
+Using DROID Directly
+--------------------
+
+At first, this project was necessary because the way DROID was written made it difficult to re-use the core format identification code.  This has improved over the years, meaning more code could be deleted from this project and replaced with calls to standard DROID code.
+
+As of DROID 6.6.0, there is now ['internal' API](https://github.com/digital-preservation/droid/wiki/How-to-use-DROID-internal-API) that can be used instead of Nanite.  If you just need simple identification of files, you should consider using that instead (while keeping in mind that the API itself is not yet stable).
+
+Nanite extends the DROID API code to make it work on InputStreams, and to a little more information about the formats accessible via the API. It provides this extended API as an Apache Tika Detector, acting as a stable alternative API.
+
+Hopefully, as the offical DROID API evolves, this project can be reduced to being just a Apache Tika compatibility wrapper/shim. 
+
+
 Using the Nanite API
 --------------------
 
