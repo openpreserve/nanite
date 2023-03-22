@@ -32,6 +32,9 @@ public class DroidDetectorTest {
 
 	private DroidDetector ddc;
 	private DroidDetector ddb;
+	
+	// For experimenting with shorter byte sequences:
+	private long MAX_BYTES = 64*1024;
 
 	/**
 	 * @throws java.lang.Exception
@@ -39,9 +42,12 @@ public class DroidDetectorTest {
 	@Before
 	public void setUp() throws Exception {
 		ddc = new DroidDetector();
+		//ddc.setMaxBytesToScan(MAX_BYTES);
+		
 		// Another, with only binary sigs:
 		ddb = new DroidDetector();
 		ddb.setBinarySignaturesOnly(true);
+		//ddb.setMaxBytesToScan(MAX_BYTES);
 	}
 
 	/**
@@ -159,6 +165,8 @@ public class DroidDetectorTest {
 	 */
 	@Test
 	public void testPUIDs() throws IOException {
+		innerTestPUIDs(ddc, "src/test/resources/random.zip", "x-fmt/263",
+				IdentificationMethod.BINARY_SIGNATURE);
 		innerTestPUIDs(ddc, "src/test/resources/wpd/TOPOPREC.WPD", "x-fmt/44",
 				IdentificationMethod.BINARY_SIGNATURE);
 		innerTestPUIDs(ddc, "src/test/resources/cc0.mp3", "fmt/134",
@@ -170,6 +178,8 @@ public class DroidDetectorTest {
 
 		// --- Binary sigs only:
 
+		innerTestPUIDs(ddc, "src/test/resources/random.zip", "x-fmt/263",
+				IdentificationMethod.BINARY_SIGNATURE);
 		innerTestPUIDs(ddb, "src/test/resources/wpd/TOPOPREC.WPD", "x-fmt/44",
 				IdentificationMethod.BINARY_SIGNATURE);
 		innerTestPUIDs(ddb, "src/test/resources/cc0.mp3", "fmt/134",
@@ -184,6 +194,7 @@ public class DroidDetectorTest {
 			String expectedPUID,
 			IdentificationMethod method) throws IOException {
 		// Get the PUID results:
+		long start = System.currentTimeMillis();
 		List<ApiResultExtended> lir = dd.identify(new File(testFile));
 		ApiResultExtended found = null;
 		for (ApiResultExtended ir : lir) {
@@ -193,6 +204,7 @@ public class DroidDetectorTest {
 			if (expectedPUID.equals(ir.getPuid()))
 				found = ir;
 		}
+		System.out.println("That took " + (System.currentTimeMillis() - start) + " ms");
 		assertNotNull("None of the PUIDs matched " + expectedPUID, found);
 		assertEquals(method, found.getMethod());
 	}
